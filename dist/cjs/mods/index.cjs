@@ -1,5 +1,6 @@
 'use strict';
 
+var alert = require('./binary/alerts/alert.cjs');
 var extension = require('./binary/extensions/extension.cjs');
 var extension$1 = require('./binary/extensions/supported_versions/extension.cjs');
 var handshake = require('./binary/handshakes/client_hello/handshake.cjs');
@@ -9,11 +10,11 @@ var opaque = require('./binary/opaque.cjs');
 var record = require('./binary/record.cjs');
 var vector = require('./binary/vector.cjs');
 var tls = require('./tls.cjs');
-var http = require('./transports/http.cjs');
 var ws = require('./transports/ws.cjs');
 
 
 
+exports.Alert = alert.Alert;
 exports.Extension = extension.Extension;
 exports.ClientSupportedVersions = extension$1.ClientSupportedVersions;
 exports.ClientHello = handshake.ClientHello;
@@ -28,6 +29,5 @@ exports.BufferVector = vector.BufferVector;
 exports.Vector16 = vector.Vector16;
 exports.Vector8 = vector.Vector8;
 exports.Tls = tls.Tls;
-exports.TlsOverHttp = http.TlsOverHttp;
-exports.TlsOverWebSocket = ws.TlsOverWebSocket;
+exports.WebSocketTransport = ws.WebSocketTransport;
 //# sourceMappingURL=index.cjs.map

@@ -1,24 +1,21 @@
-import { Tls } from "mods/tls.js"
+import { Transport } from "mods/transports/transport.js"
 
-export class TlsOverWebSocket extends Tls {
-  readonly class = TlsOverWebSocket
+export class WebSocketTransport extends EventTarget implements Transport {
+  readonly class = WebSocketTransport
 
   constructor(
     readonly socket: WebSocket
   ) {
     super()
 
-    socket.addEventListener("message", async e => {
-      this.onData(Buffer.from(await e.data.arrayBuffer()))
+    socket.addEventListener("message", async (e: MessageEvent<Blob>) => {
+      const data = Buffer.from(await e.data.arrayBuffer())
+      this.dispatchEvent(new MessageEvent("message", { data }))
     }, { passive: true })
   }
 
-  async sendRaw(buffer: Buffer) {
-    console.log("->", buffer)
-    this.socket.send(buffer)
-  }
-
-  private async onData(buffer: Buffer) {
-    console.log("<-", buffer)
+  send(data: Buffer) {
+    console.log("->", data)
+    this.socket.send(data)
   }
 }

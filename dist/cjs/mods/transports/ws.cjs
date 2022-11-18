@@ -1,29 +1,22 @@
 'use strict';
 
 var tslib = require('tslib');
-var tls = require('../tls.cjs');
 
-class TlsOverWebSocket extends tls.Tls {
+class WebSocketTransport extends EventTarget {
     constructor(socket) {
         super();
         this.socket = socket;
-        this.class = TlsOverWebSocket;
+        this.class = WebSocketTransport;
         socket.addEventListener("message", (e) => tslib.__awaiter(this, void 0, void 0, function* () {
-            this.onData(Buffer.from(yield e.data.arrayBuffer()));
+            const data = Buffer.from(yield e.data.arrayBuffer());
+            this.dispatchEvent(new MessageEvent("message", { data }));
         }), { passive: true });
     }
-    sendRaw(buffer) {
-        return tslib.__awaiter(this, void 0, void 0, function* () {
-            console.log("->", buffer);
-            this.socket.send(buffer);
-        });
-    }
-    onData(buffer) {
-        return tslib.__awaiter(this, void 0, void 0, function* () {
-            console.log("<-", buffer);
-        });
+    send(data) {
+        console.log("->", data);
+        this.socket.send(data);
     }
 }
 
-exports.TlsOverWebSocket = TlsOverWebSocket;
+exports.WebSocketTransport = WebSocketTransport;
 //# sourceMappingURL=ws.cjs.map

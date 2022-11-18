@@ -13,7 +13,7 @@ export class ClientSupportedVersions {
   ) { }
 
   static default3() {
-    const versions = new Vector16<Number8>([0x0303, 0x0304], Number8)
+    const versions = new Vector16<Number8>([0x0304], Number8)
 
     return new this(versions)
   }

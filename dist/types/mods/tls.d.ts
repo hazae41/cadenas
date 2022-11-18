@@ -1,6 +1,10 @@
+import { Transport } from './transports/transport.js';
+
 declare abstract class Tls {
-    protected abstract sendRaw(buffer: Buffer): Promise<void>;
+    readonly transport: Transport;
+    constructor(transport: Transport);
     handshake(): Promise<void>;
+    onData(data: Buffer): Promise<void>;
 }
 
 export { Tls };

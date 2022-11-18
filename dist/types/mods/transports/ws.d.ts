@@ -1,11 +1,10 @@
-import { Tls } from '../tls.js';
+import { Transport } from './transport.js';
 
-declare class TlsOverWebSocket extends Tls {
+declare class WebSocketTransport extends EventTarget implements Transport {
     readonly socket: WebSocket;
-    readonly class: typeof TlsOverWebSocket;
+    readonly class: typeof WebSocketTransport;
     constructor(socket: WebSocket);
-    sendRaw(buffer: Buffer): Promise<void>;
-    private onData;
+    send(data: Buffer): void;
 }
 
-export { TlsOverWebSocket };
+export { WebSocketTransport };

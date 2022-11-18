@@ -1,3 +1,4 @@
+export { Alert } from './binary/alerts/alert.js';
 export { Extension, IExtension } from './binary/extensions/extension.js';
 export { ClientSupportedVersions } from './binary/extensions/supported_versions/extension.js';
 export { ClientHello } from './binary/handshakes/client_hello/handshake.js';
@@ -8,5 +9,5 @@ export { IRecord, Record } from './binary/record.js';
 export { AnyVector, ArrayVector, BufferVector, Vector, Vector16, Vector8 } from './binary/vector.js';
 export { Writable } from './binary/writable.js';
 export { Tls } from './tls.js';
-export { TlsOverHttp } from './transports/http.js';
-export { TlsOverWebSocket } from './transports/ws.js';
+export { Transport } from './transports/transport.js';
+export { WebSocketTransport } from './transports/ws.js';

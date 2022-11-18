@@ -1,4 +1,4 @@
-import { TlsOverHttp, TlsOverWebSocket } from "@hazae41/telsa"
+import { Tls, WebSocketTransport } from "@hazae41/telsa"
 import { useCallback } from "react"
 
 async function ws() {
@@ -9,20 +9,21 @@ async function ws() {
     ws.addEventListener("error", err)
   })
 
-  return new TlsOverWebSocket(ws)
+  return new WebSocketTransport(ws)
 }
 
-async function http() {
-  const headers = { "x-session-id": crypto.randomUUID() }
-  const request = new Request("https://meek.bamsoftware.com/", { headers })
+// async function http() {
+//   const headers = { "x-session-id": crypto.randomUUID() }
+//   const request = new Request("https://meek.bamsoftware.com/", { headers })
 
-  return new TlsOverHttp(request)
-}
+//   return new TlsOverHttp(request)
+// }
 
 export default function Home() {
 
   const onClick = useCallback(async () => {
-    const tls = await ws()
+    const transport = await ws()
+    const tls = new Tls(transport)
     await tls.handshake()
   }, [])
 
