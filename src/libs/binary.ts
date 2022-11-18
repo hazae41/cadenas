@@ -64,6 +64,17 @@ export class Binary {
     if (!shallow) this.offset += 2
   }
 
+  readUint24(shallow = false) {
+    const x = this.buffer.readUIntBE(this.offset, 3)
+    if (!shallow) this.offset += 3
+    return x
+  }
+
+  writeUint24(x: number, shallow = false) {
+    this.buffer.writeUIntBE(x, this.offset, 3)
+    if (!shallow) this.offset += 3
+  }
+
   readUint32(shallow = false) {
     const x = this.buffer.readUInt32BE(this.offset)
     if (!shallow) this.offset += 4

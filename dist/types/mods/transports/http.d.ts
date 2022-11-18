@@ -1,9 +1,11 @@
-declare class TlsOverHttp {
+import { Tls } from '../tls.js';
+
+declare class TlsOverHttp extends Tls {
     readonly info: RequestInfo;
     readonly class: typeof TlsOverHttp;
     constructor(info: RequestInfo);
-    fetch(body?: Buffer): Promise<void>;
-    handshake(): Promise<void>;
+    private fetch;
+    protected sendRaw(buffer: Buffer): Promise<void>;
     private onData;
 }
 

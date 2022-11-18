@@ -14,6 +14,8 @@ declare class Binary {
     writeUint8(x: number, shallow?: boolean): void;
     readUint16(shallow?: boolean): number;
     writeUint16(x: number, shallow?: boolean): void;
+    readUint24(shallow?: boolean): number;
+    writeUint24(x: number, shallow?: boolean): void;
     readUint32(shallow?: boolean): number;
     writeUint32(x: number, shallow?: boolean): void;
     readString(length: number): string;

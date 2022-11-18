@@ -1,5 +1,8 @@
-export { ClientHello } from './binary/client_hello.js';
-export { Extension } from './binary/extensions/extension.js';
+export { Extension, IExtension } from './binary/extensions/extension.js';
 export { ClientSupportedVersions } from './binary/extensions/supported_versions/extension.js';
-export { Number16, Number8, NumberX, Opaque, Vector, Writable } from './binary/vector.js';
-export { TlsOverHttp } from './http.js';
+export { ClientHello } from './binary/handshakes/client_hello/handshake.js';
+export { Handshake, Handshakes } from './binary/handshakes/handshake.js';
+export { Number16, Number8, NumberX, Opaque, OpaqueVector, Vector, Vector16, Vector8, Writable } from './binary/vector.js';
+export { Tls } from './tls.js';
+export { TlsOverHttp } from './transports/http.js';
+export { TlsOverWebSocket } from './transports/ws.js';

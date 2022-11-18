@@ -1,24 +1,24 @@
-import { ClientHello } from "mods/binary/client_hello.js"
+import { Tls } from "mods/tls.js"
 
-export class TlsOverHttp {
+export class TlsOverHttp extends Tls {
   readonly class = TlsOverHttp
 
   constructor(
     readonly info: RequestInfo
-  ) { }
+  ) {
+    super()
+  }
 
-  async fetch(body?: Buffer) {
+  private async fetch(body?: Buffer) {
     const res = await fetch(this.info, { method: "POST", body })
     this.onData(Buffer.from(await res.arrayBuffer()))
   }
 
-  async handshake() {
-    const hello = new ClientHello()
-    await this.fetch(hello.export().buffer)
+  protected async sendRaw(buffer: Buffer) {
+    return await this.fetch(buffer)
   }
 
   private async onData(buffer: Buffer) {
-
+    console.log(buffer)
   }
-
 }

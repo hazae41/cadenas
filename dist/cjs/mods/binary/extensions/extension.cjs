@@ -1,6 +1,6 @@
 'use strict';
 
-var binary = require('../../../libs/binary.cjs');
+var vector = require('../vector.cjs');
 
 class Extension {
     constructor(type, data) {
@@ -8,15 +8,17 @@ class Extension {
         this.data = data;
         this.class = Extension;
     }
-    get blength() {
-        return 2 + (2 + this.data.length);
+    static from(extension) {
+        const buffer = extension.export().buffer;
+        const data = new vector.OpaqueVector(buffer, vector.Number16);
+        return new this(extension.type, data);
     }
-    write() {
-        const binary$1 = binary.Binary.allocUnsafe(this.blength);
-        binary$1.writeUint16(this.type);
-        binary$1.writeUint16(this.data.length);
-        binary$1.write(this.data);
-        return binary$1.buffer;
+    size() {
+        return 2 + this.data.size();
+    }
+    write(binary) {
+        binary.writeUint16(this.type);
+        this.data.write(binary);
     }
 }
 

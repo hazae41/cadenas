@@ -1,7 +1,10 @@
 import * as index from './mods/index.js';
 export { index as Telsa };
-export { ClientHello } from './mods/binary/client_hello.js';
-export { Extension } from './mods/binary/extensions/extension.js';
+export { Extension, IExtension } from './mods/binary/extensions/extension.js';
 export { ClientSupportedVersions } from './mods/binary/extensions/supported_versions/extension.js';
-export { Number16, Number8, NumberX, Opaque, Vector, Writable } from './mods/binary/vector.js';
-export { TlsOverHttp } from './mods/http.js';
+export { ClientHello } from './mods/binary/handshakes/client_hello/handshake.js';
+export { Handshake, Handshakes } from './mods/binary/handshakes/handshake.js';
+export { Number16, Number8, NumberX, Opaque, OpaqueVector, Vector, Vector16, Vector8, Writable } from './mods/binary/vector.js';
+export { Tls } from './mods/tls.js';
+export { TlsOverHttp } from './mods/transports/http.js';
+export { TlsOverWebSocket } from './mods/transports/ws.js';

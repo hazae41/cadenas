@@ -1,10 +1,11 @@
 'use strict';
 
 var tslib = require('tslib');
-var client_hello = require('./binary/client_hello.cjs');
+var tls = require('../tls.cjs');
 
-class TlsOverHttp {
+class TlsOverHttp extends tls.Tls {
     constructor(info) {
+        super();
         this.info = info;
         this.class = TlsOverHttp;
     }
@@ -14,14 +15,14 @@ class TlsOverHttp {
             this.onData(Buffer.from(yield res.arrayBuffer()));
         });
     }
-    handshake() {
+    sendRaw(buffer) {
         return tslib.__awaiter(this, void 0, void 0, function* () {
-            const hello = new client_hello.ClientHello();
-            yield this.fetch(hello.export().buffer);
+            return yield this.fetch(buffer);
         });
     }
     onData(buffer) {
         return tslib.__awaiter(this, void 0, void 0, function* () {
+            console.log(buffer);
         });
     }
 }

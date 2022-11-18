@@ -1,26 +1,32 @@
 import { Binary } from "libs/binary.js"
+import { Number16, OpaqueVector } from "mods/binary/vector.js"
+
+export interface IExtension {
+  type: number
+  export(): Binary
+}
 
 export class Extension {
   readonly class = Extension
 
   constructor(
     readonly type: number,
-    readonly data: Buffer
+    readonly data: OpaqueVector<Number16>
   ) { }
 
-  get blength() {
-    return 2 + (2 + this.data.length)
+  static from(extension: IExtension) {
+    const buffer = extension.export().buffer
+    const data = new OpaqueVector(buffer, Number16)
+
+    return new this(extension.type, data)
   }
 
-  write() {
-    const binary = Binary.allocUnsafe(this.blength)
+  size() {
+    return 2 + this.data.size()
+  }
 
+  write(binary: Binary) {
     binary.writeUint16(this.type)
-    binary.writeUint16(this.data.length)
-    binary.write(this.data)
-
-    return binary.buffer
+    this.data.write(binary)
   }
-
-
 }
