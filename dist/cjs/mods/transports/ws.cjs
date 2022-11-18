@@ -14,13 +14,13 @@ class TlsOverWebSocket extends tls.Tls {
     }
     sendRaw(buffer) {
         return tslib.__awaiter(this, void 0, void 0, function* () {
-            console.log(buffer);
+            console.log("->", buffer);
             this.socket.send(buffer);
         });
     }
     onData(buffer) {
         return tslib.__awaiter(this, void 0, void 0, function* () {
-            console.log(buffer);
+            console.log("<-", buffer);
         });
     }
 }

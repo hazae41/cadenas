@@ -14,11 +14,11 @@ export class TlsOverWebSocket extends Tls {
   }
 
   async sendRaw(buffer: Buffer) {
-    console.log(buffer)
+    console.log("->", buffer)
     this.socket.send(buffer)
   }
 
   private async onData(buffer: Buffer) {
-    console.log(buffer)
+    console.log("<-", buffer)
   }
 }

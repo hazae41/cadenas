@@ -1,11 +1,14 @@
 'use strict';
 
-var binary = require('../../../libs/binary.cjs');
+var record = require('../record.cjs');
 
 class Handshake {
     constructor(handshake) {
         this.handshake = handshake;
         this.class = Handshake;
+    }
+    get type() {
+        return this.class.type;
     }
     size() {
         return 1 + 3 + this.handshake.size();
@@ -15,12 +18,11 @@ class Handshake {
         binary.writeUint24(this.handshake.size());
         this.handshake.write(binary);
     }
-    export() {
-        const binary$1 = binary.Binary.allocUnsafe(this.size());
-        this.write(binary$1);
-        return binary$1;
+    record(version) {
+        return record.Record.from(this, version);
     }
 }
+Handshake.type = record.Record.types.handshake;
 Handshake.types = {
     client_hello: 1,
     server_hello: 2

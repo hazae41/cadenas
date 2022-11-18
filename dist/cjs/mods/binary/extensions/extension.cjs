@@ -1,5 +1,6 @@
 'use strict';
 
+var number = require('../number.cjs');
 var vector = require('../vector.cjs');
 
 class Extension {
@@ -9,8 +10,7 @@ class Extension {
         this.class = Extension;
     }
     static from(extension) {
-        const buffer = extension.export().buffer;
-        const data = new vector.OpaqueVector(buffer, vector.Number16);
+        const data = new vector.AnyVector(extension, number.Number16);
         return new this(extension.type, data);
     }
     size() {

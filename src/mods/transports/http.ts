@@ -15,10 +15,11 @@ export class TlsOverHttp extends Tls {
   }
 
   protected async sendRaw(buffer: Buffer) {
+    console.log("->", buffer)
     return await this.fetch(buffer)
   }
 
   private async onData(buffer: Buffer) {
-    console.log(buffer)
+    console.log("<-", buffer)
   }
 }

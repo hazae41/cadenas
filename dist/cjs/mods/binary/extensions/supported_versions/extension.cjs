@@ -1,8 +1,8 @@
 'use strict';
 
-var binary = require('../../../../libs/binary.cjs');
-var vector = require('../../vector.cjs');
 var extension = require('../extension.cjs');
+var number = require('../../number.cjs');
+var vector = require('../../vector.cjs');
 
 class ClientSupportedVersions {
     constructor(versions) {
@@ -10,7 +10,7 @@ class ClientSupportedVersions {
         this.class = ClientSupportedVersions;
     }
     static default3() {
-        const versions = new vector.Vector16([0x0304], vector.Number8);
+        const versions = new vector.Vector16([0x0303, 0x0304], number.Number8);
         return new this(versions);
     }
     get type() {
@@ -21,11 +21,6 @@ class ClientSupportedVersions {
     }
     write(binary) {
         this.versions.write(binary);
-    }
-    export() {
-        const binary$1 = binary.Binary.allocUnsafe(this.size());
-        this.write(binary$1);
-        return binary$1;
     }
     extension() {
         return extension.Extension.from(this);

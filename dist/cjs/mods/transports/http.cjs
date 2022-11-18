@@ -17,12 +17,13 @@ class TlsOverHttp extends tls.Tls {
     }
     sendRaw(buffer) {
         return tslib.__awaiter(this, void 0, void 0, function* () {
+            console.log("->", buffer);
             return yield this.fetch(buffer);
         });
     }
     onData(buffer) {
         return tslib.__awaiter(this, void 0, void 0, function* () {
-            console.log(buffer);
+            console.log("<-", buffer);
         });
     }
 }

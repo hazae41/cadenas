@@ -3,6 +3,7 @@
 var random = require('../../../../libs/random.cjs');
 var extension = require('../../extensions/supported_versions/extension.cjs');
 var handshake = require('../handshake.cjs');
+var number = require('../../number.cjs');
 var vector = require('../../vector.cjs');
 
 class ClientHello {
@@ -21,10 +22,10 @@ class ClientHello {
     static default3() {
         const legacy_version = 0x0303;
         const random$1 = random.generateRandom(32);
-        const legacy_session_id = vector.OpaqueVector.empty(vector.Number8);
-        const cipher_suites = new vector.Vector16([0xC02F, 0xC02F], vector.Number16);
-        const legacy_compression_methods = new vector.OpaqueVector(Buffer.from([0]), vector.Number8);
-        const extensions = new vector.Vector([extension.ClientSupportedVersions.default3().extension()], vector.Number16);
+        const legacy_session_id = new vector.ArrayVector([], number.Number8);
+        const cipher_suites = new vector.Vector16([0xC02F, 0xC02F], number.Number16);
+        const legacy_compression_methods = new vector.Vector8([0], number.Number8);
+        const extensions = new vector.ArrayVector([extension.ClientSupportedVersions.default3().extension()], number.Number16);
         return new this(legacy_version, random$1, legacy_session_id, cipher_suites, legacy_compression_methods, extensions);
     }
     size() {

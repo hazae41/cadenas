@@ -1,68 +1,55 @@
 import { Binary } from "libs/binary.js";
+import { NumberX } from "mods/binary/number.js";
+import { Writable } from "mods/binary/writable.js";
 
-export interface Writable {
-  size(): number
-  write(binary: Binary): void
+export interface Vector<L extends NumberX = any> extends Writable {
+  readonly length: L["class"]
 }
 
-export class Opaque {
-  readonly class = Opaque
+export class BufferVector<L extends NumberX = any> {
+  readonly class = BufferVector<L>
 
   constructor(
-    readonly buffer: Buffer
+    readonly buffer: Buffer,
+    readonly length: L["class"],
   ) { }
 
+  static empty<L extends NumberX = any>(length: L["class"]) {
+    return new this(Buffer.allocUnsafe(0), length)
+  }
+
   size() {
-    return this.buffer.length
+    return this.length.size + this.buffer.length
   }
 
   write(binary: Binary) {
+    new this.length(this.buffer.length).write(binary)
+
     binary.write(this.buffer)
   }
 }
 
-export type NumberX =
-  | Number8
-  | Number16
-
-export class Number8 {
-  readonly class = Number8
-
-  static size: 1 = 1
+export class AnyVector<L extends NumberX = any, T extends Writable = any> {
+  readonly class = AnyVector<L>
 
   constructor(
-    readonly length: number
+    readonly value: T,
+    readonly length: L["class"],
   ) { }
 
   size() {
-    return 1
+    return this.length.size + this.value.size()
   }
 
   write(binary: Binary) {
-    binary.writeUint8(this.length)
+    new this.length(this.value.size()).write(binary)
+
+    this.value.write(binary)
   }
 }
 
-export class Number16 {
-  readonly class = Number16
-
-  static size: 2 = 2
-
-  constructor(
-    readonly length: number
-  ) { }
-
-  size() {
-    return 2
-  }
-
-  write(binary: Binary) {
-    binary.writeUint16(this.length)
-  }
-}
-
-export class Vector<L extends NumberX = any, T extends Writable = any> {
-  readonly class = Vector<L, T>
+export class ArrayVector<L extends NumberX = any, T extends Writable = any> {
+  readonly class = ArrayVector<L, T>
 
   constructor(
     readonly array: T[],
@@ -70,7 +57,7 @@ export class Vector<L extends NumberX = any, T extends Writable = any> {
   ) { }
 
   size() {
-    let size = new this.length(this.array.length).size()
+    let size = this.length.size
 
     for (const element of this.array)
       size += element.size()
@@ -95,7 +82,7 @@ export class Vector8<L extends NumberX = any> {
   ) { }
 
   size() {
-    return new this.length(this.array.length).size() + this.array.length
+    return this.length.size + this.array.length
   }
 
   write(binary: Binary) {
@@ -115,7 +102,7 @@ export class Vector16<L extends NumberX = any> {
   ) { }
 
   size() {
-    return new this.length(this.array.length).size() + (this.array.length * 2)
+    return this.length.size + (this.array.length * 2)
   }
 
   write(binary: Binary) {
@@ -123,28 +110,5 @@ export class Vector16<L extends NumberX = any> {
 
     for (const element of this.array)
       binary.writeUint16(element)
-  }
-}
-
-export class OpaqueVector<L extends NumberX = any> {
-  readonly class = OpaqueVector<L>
-
-  constructor(
-    readonly buffer: Buffer,
-    readonly length: L["class"],
-  ) { }
-
-  static empty<L extends NumberX = any>(length: L["class"]) {
-    return new this(Buffer.allocUnsafe(0), length)
-  }
-
-  size() {
-    return new this.length(this.buffer.length).size() + this.buffer.length
-  }
-
-  write(binary: Binary) {
-    new this.length(this.buffer.length).write(binary)
-
-    binary.write(this.buffer)
   }
 }

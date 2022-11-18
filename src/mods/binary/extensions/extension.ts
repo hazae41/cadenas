@@ -1,9 +1,10 @@
 import { Binary } from "libs/binary.js"
-import { Number16, OpaqueVector } from "mods/binary/vector.js"
+import { Number16 } from "mods/binary/number.js"
+import { AnyVector, Vector } from "mods/binary/vector.js"
+import { Writable } from "mods/binary/writable.js"
 
-export interface IExtension {
+export interface IExtension extends Writable {
   type: number
-  export(): Binary
 }
 
 export class Extension {
@@ -11,12 +12,11 @@ export class Extension {
 
   constructor(
     readonly type: number,
-    readonly data: OpaqueVector<Number16>
+    readonly data: Vector<Number16>
   ) { }
 
   static from(extension: IExtension) {
-    const buffer = extension.export().buffer
-    const data = new OpaqueVector(buffer, Number16)
+    const data = new AnyVector(extension, Number16)
 
     return new this(extension.type, data)
   }

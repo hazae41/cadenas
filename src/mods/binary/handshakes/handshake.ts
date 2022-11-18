@@ -1,11 +1,14 @@
 import { Binary } from "libs/binary.js"
 import { ClientHello } from "mods/binary/handshakes/client_hello/handshake.js"
+import { Record } from "../record.js"
 
 export type Handshakes =
   | ClientHello
 
 export class Handshake {
   readonly class = Handshake
+
+  static type = Record.types.handshake
 
   static types = {
     client_hello: 1,
@@ -15,6 +18,10 @@ export class Handshake {
   constructor(
     readonly handshake: Handshakes
   ) { }
+
+  get type() {
+    return this.class.type
+  }
 
   size() {
     return 1 + 3 + this.handshake.size()
@@ -26,11 +33,7 @@ export class Handshake {
     this.handshake.write(binary)
   }
 
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-
-    this.write(binary)
-
-    return binary
+  record(version: number) {
+    return Record.from(this, version)
   }
 }

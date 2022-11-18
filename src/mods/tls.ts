@@ -5,6 +5,9 @@ export abstract class Tls {
 
   async handshake() {
     const hello = ClientHello.default3()
-    await this.sendRaw(hello.handshake().export().buffer)
+      .handshake()
+      .record(0x0303)
+      .export()
+    await this.sendRaw(hello.buffer)
   }
 }

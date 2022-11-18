@@ -1,51 +1,44 @@
 'use strict';
 
-class Opaque {
-    constructor(buffer) {
+class BufferVector {
+    constructor(buffer, length) {
         this.buffer = buffer;
-        this.class = Opaque;
+        this.length = length;
+        this.class = (BufferVector);
+    }
+    static empty(length) {
+        return new this(Buffer.allocUnsafe(0), length);
     }
     size() {
-        return this.buffer.length;
+        return this.length.size + this.buffer.length;
     }
     write(binary) {
+        new this.length(this.buffer.length).write(binary);
         binary.write(this.buffer);
     }
 }
-class Number8 {
-    constructor(length) {
+class AnyVector {
+    constructor(value, length) {
+        this.value = value;
         this.length = length;
-        this.class = Number8;
+        this.class = (AnyVector);
     }
     size() {
-        return 1;
+        return this.length.size + this.value.size();
     }
     write(binary) {
-        binary.writeUint8(this.length);
+        new this.length(this.value.size()).write(binary);
+        this.value.write(binary);
     }
 }
-Number8.size = 1;
-class Number16 {
-    constructor(length) {
-        this.length = length;
-        this.class = Number16;
-    }
-    size() {
-        return 2;
-    }
-    write(binary) {
-        binary.writeUint16(this.length);
-    }
-}
-Number16.size = 2;
-class Vector {
+class ArrayVector {
     constructor(array, length) {
         this.array = array;
         this.length = length;
-        this.class = (Vector);
+        this.class = (ArrayVector);
     }
     size() {
-        let size = new this.length(this.array.length).size();
+        let size = this.length.size;
         for (const element of this.array)
             size += element.size();
         return size;
@@ -63,7 +56,7 @@ class Vector8 {
         this.class = (Vector8);
     }
     size() {
-        return new this.length(this.array.length).size() + this.array.length;
+        return this.length.size + this.array.length;
     }
     write(binary) {
         new this.length(this.array.length).write(binary);
@@ -78,7 +71,7 @@ class Vector16 {
         this.class = (Vector16);
     }
     size() {
-        return new this.length(this.array.length).size() + (this.array.length * 2);
+        return this.length.size + (this.array.length * 2);
     }
     write(binary) {
         new this.length(this.array.length).write(binary);
@@ -86,29 +79,10 @@ class Vector16 {
             binary.writeUint16(element);
     }
 }
-class OpaqueVector {
-    constructor(buffer, length) {
-        this.buffer = buffer;
-        this.length = length;
-        this.class = (OpaqueVector);
-    }
-    static empty(length) {
-        return new this(Buffer.allocUnsafe(0), length);
-    }
-    size() {
-        return new this.length(this.buffer.length).size() + this.buffer.length;
-    }
-    write(binary) {
-        new this.length(this.buffer.length).write(binary);
-        binary.write(this.buffer);
-    }
-}
 
-exports.Number16 = Number16;
-exports.Number8 = Number8;
-exports.Opaque = Opaque;
-exports.OpaqueVector = OpaqueVector;
-exports.Vector = Vector;
+exports.AnyVector = AnyVector;
+exports.ArrayVector = ArrayVector;
+exports.BufferVector = BufferVector;
 exports.Vector16 = Vector16;
 exports.Vector8 = Vector8;
 //# sourceMappingURL=vector.cjs.map

@@ -1,6 +1,7 @@
 import { Binary } from "libs/binary.js"
-import { Number8, Vector16 } from "mods/binary/vector.js"
-import { Extension } from "../extension.js"
+import { Extension } from "mods/binary/extensions/extension.js"
+import { Number8 } from "mods/binary/number.js"
+import { Vector, Vector16 } from "mods/binary/vector.js"
 
 export class ClientSupportedVersions {
   readonly class = ClientSupportedVersions
@@ -8,11 +9,11 @@ export class ClientSupportedVersions {
   static type = 43
 
   constructor(
-    readonly versions: Vector16<Number8>
+    readonly versions: Vector<Number8>
   ) { }
 
   static default3() {
-    const versions = new Vector16<Number8>([0x0304], Number8)
+    const versions = new Vector16<Number8>([0x0303, 0x0304], Number8)
 
     return new this(versions)
   }
@@ -27,14 +28,6 @@ export class ClientSupportedVersions {
 
   write(binary: Binary) {
     this.versions.write(binary)
-  }
-
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-
-    this.write(binary)
-
-    return binary
   }
 
   extension() {
