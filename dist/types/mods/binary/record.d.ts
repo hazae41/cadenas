@@ -20,6 +20,7 @@ declare class Record {
     static from(record: IRecord, version: number): Record;
     size(): number;
     write(binary: Binary): void;
+    static read(binary: Binary): Record;
     export(): Binary;
 }
 

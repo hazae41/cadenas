@@ -1,6 +1,8 @@
 'use strict';
 
 var binary = require('../../libs/binary.cjs');
+var alert = require('./alerts/alert.cjs');
+var opaque = require('./opaque.cjs');
 
 class Record {
     constructor(type, version, fragment) {
@@ -20,6 +22,19 @@ class Record {
         binary.writeUint16(this.version);
         binary.writeUint16(this.fragment.size());
         this.fragment.write(binary);
+    }
+    static read(binary) {
+        const type = binary.readUint8();
+        const version = binary.readUint16();
+        const length = binary.readUint16();
+        let fragment;
+        if (type === alert.Alert.type) {
+            fragment = alert.Alert.read(binary);
+        }
+        else {
+            fragment = opaque.Opaque.read(binary, length);
+        }
+        return new this(type, version, fragment);
     }
     export() {
         const binary$1 = binary.Binary.allocUnsafe(this.size());

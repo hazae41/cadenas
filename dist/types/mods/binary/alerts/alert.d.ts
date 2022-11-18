@@ -1,9 +1,11 @@
 import { Binary } from '../../../libs/binary.js';
+import { Record } from '../record.js';
 
 declare class Alert {
     readonly level: number;
     readonly description: number;
     readonly class: typeof Alert;
+    static type: number;
     static levels: {
         warning: number;
         fatal: number;
@@ -38,9 +40,11 @@ declare class Alert {
         no_application_protocol: number;
     };
     constructor(level: number, description: number);
+    get type(): number;
     size(): number;
     write(binary: Binary): void;
     static read(binary: Binary): Alert;
+    record(version: number): Record;
 }
 
 export { Alert };

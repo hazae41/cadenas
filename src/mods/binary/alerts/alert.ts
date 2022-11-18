@@ -1,7 +1,10 @@
 import { Binary } from "libs/binary.js"
+import { Record } from "../record.js"
 
 export class Alert {
   readonly class = Alert
+
+  static type = Record.types.alert
 
   static levels = {
     warning: 1,
@@ -43,6 +46,10 @@ export class Alert {
     readonly description: number
   ) { }
 
+  get type() {
+    return this.class.type
+  }
+
   size() {
     return 1 + 1
   }
@@ -57,5 +64,9 @@ export class Alert {
     const description = binary.readUint8()
 
     return new this(level, description)
+  }
+
+  record(version: number) {
+    return Record.from(this, version)
   }
 }

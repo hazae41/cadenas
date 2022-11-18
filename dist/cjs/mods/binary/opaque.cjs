@@ -11,6 +11,10 @@ class Opaque {
     write(binary) {
         binary.write(this.buffer);
     }
+    static read(binary, length) {
+        const buffer = binary.read(length);
+        return new this(buffer);
+    }
 }
 
 exports.Opaque = Opaque;

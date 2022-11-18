@@ -1,4 +1,6 @@
 import { Binary } from "libs/binary.js"
+import { Alert } from "mods/binary/alerts/alert.js"
+import { Opaque } from "mods/binary/opaque.js"
 import { Writable } from "mods/binary/writable.js"
 
 export interface IRecord extends Writable {
@@ -35,6 +37,22 @@ export class Record {
     binary.writeUint16(this.version)
     binary.writeUint16(this.fragment.size())
     this.fragment.write(binary)
+  }
+
+  static read(binary: Binary) {
+    const type = binary.readUint8()
+    const version = binary.readUint16()
+    const length = binary.readUint16()
+
+    let fragment: Writable
+
+    if (type === Alert.type) {
+      fragment = Alert.read(binary)
+    } else {
+      fragment = Opaque.read(binary, length)
+    }
+
+    return new this(type, version, fragment)
   }
 
   export() {

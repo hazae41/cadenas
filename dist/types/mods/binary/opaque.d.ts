@@ -6,6 +6,7 @@ declare class Opaque {
     constructor(buffer: Buffer);
     size(): number;
     write(binary: Binary): void;
+    static read(binary: Binary, length: number): Opaque;
 }
 
 export { Opaque };

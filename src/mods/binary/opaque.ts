@@ -14,4 +14,10 @@ export class Opaque {
   write(binary: Binary) {
     binary.write(this.buffer)
   }
+
+  static read(binary: Binary, length: number) {
+    const buffer = binary.read(length)
+
+    return new this(buffer)
+  }
 }

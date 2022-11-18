@@ -1,10 +1,15 @@
 'use strict';
 
+var record = require('../record.cjs');
+
 class Alert {
     constructor(level, description) {
         this.level = level;
         this.description = description;
         this.class = Alert;
+    }
+    get type() {
+        return this.class.type;
     }
     size() {
         return 1 + 1;
@@ -18,7 +23,11 @@ class Alert {
         const description = binary.readUint8();
         return new this(level, description);
     }
+    record(version) {
+        return record.Record.from(this, version);
+    }
 }
+Alert.type = record.Record.types.alert;
 Alert.levels = {
     warning: 1,
     fatal: 2
