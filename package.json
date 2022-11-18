@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "name": "telsa",
+  "name": "@hazae41/telsa",
   "version": "0.0.1",
   "description": "TLS in the browser",
   "author": "hazae41",
