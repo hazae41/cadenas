@@ -1,6 +1,6 @@
 import { Binary } from '../../../libs/binary.js';
 import { ClientHello } from './client_hello/handshake.js';
-import { Record } from '../record.js';
+import { Record } from '../record/record.js';
 
 type Handshakes = ClientHello;
 declare class Handshake {

@@ -1,6 +1,6 @@
 import { Transport } from './transports/transport.js';
 
-declare abstract class Tls {
+declare class Tls {
     readonly transport: Transport;
     constructor(transport: Transport);
     handshake(): Promise<void>;

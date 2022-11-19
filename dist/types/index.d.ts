@@ -7,7 +7,7 @@ export { ClientHello } from './mods/binary/handshakes/client_hello/handshake.js'
 export { Handshake, Handshakes } from './mods/binary/handshakes/handshake.js';
 export { Number16, Number8, NumberX } from './mods/binary/number.js';
 export { Opaque } from './mods/binary/opaque.js';
-export { IRecord, Record } from './mods/binary/record.js';
+export { IRecord, Record, RecordHeader } from './mods/binary/record/record.js';
 export { AnyVector, ArrayVector, BufferVector, Vector, Vector16, Vector8 } from './mods/binary/vector.js';
 export { Writable } from './mods/binary/writable.js';
 export { Tls } from './mods/tls.js';

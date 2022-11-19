@@ -5,7 +5,7 @@ export { ClientHello } from './binary/handshakes/client_hello/handshake.js';
 export { Handshake, Handshakes } from './binary/handshakes/handshake.js';
 export { Number16, Number8, NumberX } from './binary/number.js';
 export { Opaque } from './binary/opaque.js';
-export { IRecord, Record } from './binary/record.js';
+export { IRecord, Record, RecordHeader } from './binary/record/record.js';
 export { AnyVector, ArrayVector, BufferVector, Vector, Vector16, Vector8 } from './binary/vector.js';
 export { Writable } from './binary/writable.js';
 export { Tls } from './tls.js';

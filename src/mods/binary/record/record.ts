@@ -1,0 +1,85 @@
+import { Binary } from "libs/binary.js"
+import { Writable } from "mods/binary/writable.js"
+
+export interface IRecord extends Writable {
+  type: number
+}
+
+export class RecordHeader {
+  constructor(
+    readonly type: number,
+    readonly version: number,
+    readonly length: number
+  ) { }
+
+  size() {
+    return 1 + 2 + 2
+  }
+
+  write(binary: Binary) {
+    binary.writeUint8(this.type)
+    binary.writeUint16(this.version)
+    binary.writeUint16(this.length)
+  }
+
+  static read(binary: Binary) {
+    const type = binary.readUint8()
+    const version = binary.readUint16()
+    const length = binary.readUint16()
+
+    return new this(type, version, length)
+  }
+
+  record(fragment: Writable) {
+    return new Record(
+      this.type,
+      this.version,
+      fragment)
+  }
+}
+
+export class Record {
+  readonly class = Record
+
+  static types = {
+    invalid: 0,
+    change_cipher_spec: 20,
+    alert: 21,
+    handshake: 22,
+    application_data: 23
+  }
+
+  constructor(
+    readonly type: number,
+    readonly version: number,
+    readonly fragment: Writable
+  ) { }
+
+  static from(record: IRecord, version: number) {
+    return new this(record.type, version, record)
+  }
+
+  size() {
+    return this.header().size() + this.fragment.size()
+  }
+
+  write(binary: Binary) {
+    this.header().write(binary)
+    this.fragment.write(binary)
+  }
+
+  header() {
+    return new RecordHeader(
+      this.type,
+      this.version,
+      this.fragment.size())
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+
+    this.write(binary)
+
+    return binary
+  }
+}

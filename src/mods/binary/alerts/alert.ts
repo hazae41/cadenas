@@ -1,5 +1,5 @@
 import { Binary } from "libs/binary.js"
-import { Record } from "../record.js"
+import { Record } from "../record/record.js"
 
 export class Alert {
   readonly class = Alert

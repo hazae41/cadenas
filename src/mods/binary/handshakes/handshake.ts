@@ -1,6 +1,6 @@
 import { Binary } from "libs/binary.js"
 import { ClientHello } from "mods/binary/handshakes/client_hello/handshake.js"
-import { Record } from "../record.js"
+import { Record } from "../record/record.js"
 
 export type Handshakes =
   | ClientHello

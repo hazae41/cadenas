@@ -1,5 +1,5 @@
 import { Binary } from '../../../libs/binary.js';
-import { Record } from '../record.js';
+import { Record } from '../record/record.js';
 
 declare class Alert {
     readonly level: number;

@@ -1,6 +1,6 @@
 'use strict';
 
-var record = require('../record.cjs');
+var record = require('../record/record.cjs');
 
 class Alert {
     constructor(level, description) {
