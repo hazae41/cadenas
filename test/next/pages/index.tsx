@@ -30,7 +30,7 @@ export default function Home() {
       TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA
     ])
 
-    await tls.handshake2()
+    await tls.handshake()
   }, [])
 
   return <button onClick={onClick}>

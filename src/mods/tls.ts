@@ -1,6 +1,6 @@
 import { Binary } from "libs/binary.js"
 import { Alert } from "mods/binary/alerts/alert.js"
-import { ClientHello } from "mods/binary/handshakes/client_hello/handshake.js"
+import { ClientHello2 } from "mods/binary/handshakes/client_hello/handshake.js"
 import { RecordHeader } from "mods/binary/record/record.js"
 import { Transport } from "mods/transports/transport.js"
 
@@ -16,16 +16,8 @@ export class Tls {
     }, { passive: true })
   }
 
-  async handshake2() {
-    const hello = ClientHello.default2(this.ciphers)
-      .handshake()
-      .record(0x0301)
-      .export()
-    await this.transport.send(hello.buffer)
-  }
-
-  async handshake3() {
-    const hello = ClientHello.default3(this.ciphers)
+  async handshake() {
+    const hello = ClientHello2.default(this.ciphers)
       .handshake()
       .record(0x0301)
       .export()

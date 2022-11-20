@@ -1,10 +1,11 @@
 export { Alert } from './binary/alerts/alert.js';
 export { Extension, IExtension } from './binary/extensions/extension.js';
 export { ClientSupportedVersions } from './binary/extensions/supported_versions/extension.js';
-export { ClientHello } from './binary/handshakes/client_hello/handshake.js';
+export { ClientHello2, ClientHello3 } from './binary/handshakes/client_hello/handshake.js';
 export { Handshake, Handshakes } from './binary/handshakes/handshake.js';
 export { Number16, Number8, NumberX } from './binary/number.js';
 export { Opaque } from './binary/opaque.js';
+export { Random } from './binary/random.js';
 export { IRecord, Record, RecordHeader } from './binary/record/record.js';
 export { AnyVector, ArrayVector, BufferVector, Vector, Vector16, Vector8 } from './binary/vector.js';
 export { Writable } from './binary/writable.js';

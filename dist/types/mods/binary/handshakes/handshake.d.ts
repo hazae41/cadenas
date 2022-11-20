@@ -1,8 +1,8 @@
 import { Binary } from '../../../libs/binary.js';
-import { ClientHello } from './client_hello/handshake.js';
+import { ClientHello2, ClientHello3 } from './client_hello/handshake.js';
 import { Record } from '../record/record.js';
 
-type Handshakes = ClientHello;
+type Handshakes = ClientHello2 | ClientHello3;
 declare class Handshake {
     readonly handshake: Handshakes;
     readonly class: typeof Handshake;

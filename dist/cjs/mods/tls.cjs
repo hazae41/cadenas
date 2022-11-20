@@ -15,18 +15,9 @@ class Tls {
             this.onData(message.data);
         }), { passive: true });
     }
-    handshake2() {
+    handshake() {
         return tslib.__awaiter(this, void 0, void 0, function* () {
-            const hello = handshake.ClientHello.default2(this.ciphers)
-                .handshake()
-                .record(0x0301)
-                .export();
-            yield this.transport.send(hello.buffer);
-        });
-    }
-    handshake3() {
-        return tslib.__awaiter(this, void 0, void 0, function* () {
-            const hello = handshake.ClientHello.default3(this.ciphers)
+            const hello = handshake.ClientHello2.default(this.ciphers)
                 .handshake()
                 .record(0x0301)
                 .export();

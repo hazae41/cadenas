@@ -1,9 +1,10 @@
 import { Binary } from "libs/binary.js"
-import { ClientHello } from "mods/binary/handshakes/client_hello/handshake.js"
+import { ClientHello2, ClientHello3 } from "mods/binary/handshakes/client_hello/handshake.js"
 import { Record } from "../record/record.js"
 
 export type Handshakes =
-  | ClientHello
+  | ClientHello2
+  | ClientHello3
 
 export class Handshake {
   readonly class = Handshake
