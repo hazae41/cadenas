@@ -2,6 +2,7 @@ import { Binary } from "libs/binary.js"
 import { Alert } from "mods/binary/alerts/alert.js"
 import { ClientHello2 } from "mods/binary/handshakes/client_hello/handshake2.js"
 import { Handshake, HandshakeHeader } from "mods/binary/handshakes/handshake.js"
+import { ServerHello2 } from "mods/binary/handshakes/server_hello/handshake2.js"
 import { RecordHeader } from "mods/binary/record/record.js"
 import { Transport } from "mods/transports/transport.js"
 
@@ -18,28 +19,48 @@ export class Tls {
   }
 
   async handshake() {
-    const hello = ClientHello2.default(this.ciphers)
+    const hello = ClientHello2
+      .default(this.ciphers)
       .handshake()
       .record(0x0301)
       .export()
     await this.transport.send(hello.buffer)
   }
 
-  async onData(data: Buffer) {
+  private async onData(data: Buffer) {
     console.log("<-", data)
-    const binary = new Binary(data)
+    this.onRecord(new Binary(data))
+  }
 
-    const recordh = RecordHeader.read(binary)
-    console.log(recordh)
+  private async onRecord(binary: Binary) {
+    const record = RecordHeader.read(binary)
 
-    if (recordh.type === Alert.type) {
-      const fragment = Alert.read(binary)
-      console.log(fragment)
-    }
+    if (record.type === Alert.type)
+      return this.onAlert(binary)
+    if (record.type === Handshake.type)
+      return this.onHandshake(binary)
 
-    if (recordh.type === Handshake.type) {
-      const handshakeh = HandshakeHeader.read(binary)
-      console.log(handshakeh)
-    }
+    console.warn(record)
+  }
+
+  private async onAlert(binary: Binary) {
+    const alert = Alert.read(binary)
+
+    console.log(alert)
+  }
+
+  private async onHandshake(binary: Binary) {
+    const handshake = HandshakeHeader.read(binary)
+
+    if (handshake.type === ServerHello2.type)
+      return this.onServerHello(binary, handshake.length)
+
+    console.warn(handshake)
+  }
+
+  private async onServerHello(binary: Binary, length: number) {
+    const hello = ServerHello2.read(binary, length)
+
+    console.log(hello)
   }
 }

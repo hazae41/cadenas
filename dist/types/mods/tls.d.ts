@@ -5,7 +5,11 @@ declare class Tls {
     readonly ciphers: number[];
     constructor(transport: Transport, ciphers: number[]);
     handshake(): Promise<void>;
-    onData(data: Buffer): Promise<void>;
+    private onData;
+    private onRecord;
+    private onAlert;
+    private onHandshake;
+    private onServerHello;
 }
 
 export { Tls };

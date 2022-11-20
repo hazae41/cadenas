@@ -10,7 +10,7 @@ export class Number8 {
   static size: 1 = 1
 
   constructor(
-    readonly length: number
+    readonly value: number
   ) { }
 
   size() {
@@ -18,7 +18,11 @@ export class Number8 {
   }
 
   write(binary: Binary) {
-    binary.writeUint8(this.length)
+    binary.writeUint8(this.value)
+  }
+
+  static read(binary: Binary) {
+    return new this(binary.readUint8())
   }
 }
 
@@ -28,7 +32,7 @@ export class Number16 {
   static size: 2 = 2
 
   constructor(
-    readonly length: number
+    readonly value: number
   ) { }
 
   size() {
@@ -36,6 +40,10 @@ export class Number16 {
   }
 
   write(binary: Binary) {
-    binary.writeUint16(this.length)
+    binary.writeUint16(this.value)
+  }
+
+  static read(binary: Binary) {
+    return new this(binary.readUint16())
   }
 }

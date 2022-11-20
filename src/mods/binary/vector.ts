@@ -3,7 +3,7 @@ import { NumberX } from "mods/binary/number.js";
 import { Writable } from "mods/binary/writable.js";
 
 export interface Vector<L extends NumberX = any> extends Writable {
-  readonly length: L["class"]
+  readonly vlength: L["class"]
 }
 
 export class BufferVector<L extends NumberX = any> {
@@ -11,7 +11,7 @@ export class BufferVector<L extends NumberX = any> {
 
   constructor(
     readonly buffer: Buffer,
-    readonly length: L["class"],
+    readonly vlength: L["class"],
   ) { }
 
   static empty<L extends NumberX = any>(length: L["class"]) {
@@ -19,13 +19,20 @@ export class BufferVector<L extends NumberX = any> {
   }
 
   size() {
-    return this.length.size + this.buffer.length
+    return this.vlength.size + this.buffer.length
   }
 
   write(binary: Binary) {
-    new this.length(this.buffer.length).write(binary)
+    new this.vlength(this.buffer.length).write(binary)
 
     binary.write(this.buffer)
+  }
+
+  static read<L extends NumberX = any>(binary: Binary, vlength: L["class"]) {
+    const length = vlength.read(binary).value
+    const buffer = binary.read(length)
+
+    return new this(buffer, vlength)
   }
 }
 
@@ -34,15 +41,15 @@ export class AnyVector<L extends NumberX = any, T extends Writable = any> {
 
   constructor(
     readonly value: T,
-    readonly length: L["class"],
+    readonly vlength: L["class"],
   ) { }
 
   size() {
-    return this.length.size + this.value.size()
+    return this.vlength.size + this.value.size()
   }
 
   write(binary: Binary) {
-    new this.length(this.value.size()).write(binary)
+    new this.vlength(this.value.size()).write(binary)
 
     this.value.write(binary)
   }
@@ -53,11 +60,11 @@ export class ArrayVector<L extends NumberX = any, T extends Writable = any> {
 
   constructor(
     readonly array: T[],
-    readonly length: L["class"],
+    readonly vlength: L["class"],
   ) { }
 
   size() {
-    let size = this.length.size
+    let size = this.vlength.size
 
     for (const element of this.array)
       size += element.size()
@@ -71,7 +78,7 @@ export class ArrayVector<L extends NumberX = any, T extends Writable = any> {
     for (const element of this.array)
       size += element.size()
 
-    new this.length(size).write(binary)
+    new this.vlength(size).write(binary)
 
     for (const element of this.array)
       element.write(binary)
@@ -83,15 +90,15 @@ export class Vector8<L extends NumberX = any> {
 
   constructor(
     readonly array: number[],
-    readonly length: L["class"],
+    readonly vlength: L["class"],
   ) { }
 
   size() {
-    return this.length.size + this.array.length
+    return this.vlength.size + this.array.length
   }
 
   write(binary: Binary) {
-    new this.length(this.array.length).write(binary)
+    new this.vlength(this.array.length).write(binary)
 
     for (const element of this.array)
       binary.writeUint8(element)
@@ -103,15 +110,15 @@ export class Vector16<L extends NumberX = any> {
 
   constructor(
     readonly array: number[],
-    readonly length: L["class"],
+    readonly vlength: L["class"],
   ) { }
 
   size() {
-    return this.length.size + (this.array.length * 2)
+    return this.vlength.size + (this.array.length * 2)
   }
 
   write(binary: Binary) {
-    new this.length(this.array.length * 2).write(binary)
+    new this.vlength(this.array.length * 2).write(binary)
 
     for (const element of this.array)
       binary.writeUint16(element)
