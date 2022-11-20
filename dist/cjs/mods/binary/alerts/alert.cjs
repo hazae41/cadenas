@@ -18,9 +18,12 @@ class Alert {
         binary.writeUint8(this.level);
         binary.writeUint8(this.description);
     }
-    static read(binary) {
+    static read(binary, length) {
+        const start = binary.offset;
         const level = binary.readUint8();
         const description = binary.readUint8();
+        if (binary.offset - start !== length)
+            throw new Error(`Invalid ${this.name} length`);
         return new this(level, description);
     }
     record(version) {

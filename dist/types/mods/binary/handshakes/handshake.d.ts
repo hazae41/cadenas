@@ -11,7 +11,7 @@ declare class HandshakeHeader {
     constructor(type: number, length: number);
     size(): number;
     write(binary: Binary): void;
-    static read(binary: Binary): HandshakeHeader;
+    static read(binary: Binary, length: number): HandshakeHeader;
 }
 declare class Handshake {
     readonly subtype: number;

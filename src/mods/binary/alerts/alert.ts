@@ -59,9 +59,14 @@ export class Alert {
     binary.writeUint8(this.description)
   }
 
-  static read(binary: Binary) {
+  static read(binary: Binary, length: number) {
+    const start = binary.offset
+
     const level = binary.readUint8()
     const description = binary.readUint8()
+
+    if (binary.offset - start !== length)
+      throw new Error(`Invalid ${this.name} length`)
 
     return new this(level, description)
   }

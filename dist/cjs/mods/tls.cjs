@@ -37,21 +37,21 @@ class Tls {
         return tslib.__awaiter(this, void 0, void 0, function* () {
             const record$1 = record.RecordHeader.read(binary);
             if (record$1.type === alert.Alert.type)
-                return this.onAlert(binary);
+                return this.onAlert(binary, record$1.length);
             if (record$1.type === handshake.Handshake.type)
-                return this.onHandshake(binary);
+                return this.onHandshake(binary, record$1.length);
             console.warn(record$1);
         });
     }
-    onAlert(binary) {
+    onAlert(binary, length) {
         return tslib.__awaiter(this, void 0, void 0, function* () {
-            const alert$1 = alert.Alert.read(binary);
+            const alert$1 = alert.Alert.read(binary, length);
             console.log(alert$1);
         });
     }
-    onHandshake(binary) {
+    onHandshake(binary, length) {
         return tslib.__awaiter(this, void 0, void 0, function* () {
-            const handshake$1 = handshake.HandshakeHeader.read(binary);
+            const handshake$1 = handshake.HandshakeHeader.read(binary, length);
             if (handshake$1.type === handshake2$1.ServerHello2.type)
                 return this.onServerHello(binary, handshake$1.length);
             console.warn(handshake$1);

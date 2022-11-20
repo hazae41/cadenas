@@ -21,11 +21,16 @@ export class HandshakeHeader {
     binary.writeUint24(this.length)
   }
 
-  static read(binary: Binary) {
-    const type = binary.readUint8()
-    const length = binary.readUint24()
+  static read(binary: Binary, length: number) {
+    const start = binary.offset
 
-    return new this(type, length)
+    const type = binary.readUint8()
+    const sublength = binary.readUint24()
+
+    if (binary.offset - start !== length - sublength)
+      throw new Error(`Invalid ${this.name} length`)
+
+    return new this(type, sublength)
   }
 }
 

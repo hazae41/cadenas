@@ -14,10 +14,13 @@ class HandshakeHeader {
         binary.writeUint8(this.type);
         binary.writeUint24(this.length);
     }
-    static read(binary) {
+    static read(binary, length) {
+        const start = binary.offset;
         const type = binary.readUint8();
-        const length = binary.readUint24();
-        return new this(type, length);
+        const sublength = binary.readUint24();
+        if (binary.offset - start !== length - sublength)
+            throw new Error(`Invalid ${this.name} length`);
+        return new this(type, sublength);
     }
 }
 class Handshake {

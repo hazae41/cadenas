@@ -36,21 +36,21 @@ export class Tls {
     const record = RecordHeader.read(binary)
 
     if (record.type === Alert.type)
-      return this.onAlert(binary)
+      return this.onAlert(binary, record.length)
     if (record.type === Handshake.type)
-      return this.onHandshake(binary)
+      return this.onHandshake(binary, record.length)
 
     console.warn(record)
   }
 
-  private async onAlert(binary: Binary) {
-    const alert = Alert.read(binary)
+  private async onAlert(binary: Binary, length: number) {
+    const alert = Alert.read(binary, length)
 
     console.log(alert)
   }
 
-  private async onHandshake(binary: Binary) {
-    const handshake = HandshakeHeader.read(binary)
+  private async onHandshake(binary: Binary, length: number) {
+    const handshake = HandshakeHeader.read(binary, length)
 
     if (handshake.type === ServerHello2.type)
       return this.onServerHello(binary, handshake.length)

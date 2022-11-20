@@ -43,7 +43,7 @@ declare class Alert {
     get type(): number;
     size(): number;
     write(binary: Binary): void;
-    static read(binary: Binary): Alert;
+    static read(binary: Binary, length: number): Alert;
     record(version: number): Record;
 }
 
