@@ -1,6 +1,6 @@
 import { Binary } from "libs/binary.js"
 import { Alert } from "mods/binary/alerts/alert.js"
-import { ClientHello2 } from "mods/binary/handshakes/client_hello/handshake.js"
+import { ClientHello2 } from "mods/binary/handshakes/client_hello/handshake2.js"
 import { RecordHeader } from "mods/binary/record/record.js"
 import { Transport } from "mods/transports/transport.js"
 

@@ -1,8 +1,9 @@
 export { Alert } from './binary/alerts/alert.js';
 export { Extension, IExtension } from './binary/extensions/extension.js';
 export { ClientSupportedVersions } from './binary/extensions/supported_versions/extension.js';
-export { ClientHello2, ClientHello3 } from './binary/handshakes/client_hello/handshake.js';
-export { Handshake, Handshakes } from './binary/handshakes/handshake.js';
+export { ClientHello2 } from './binary/handshakes/client_hello/handshake2.js';
+export { ClientHello3 } from './binary/handshakes/client_hello/handshake3.js';
+export { Handshake, IHandshake } from './binary/handshakes/handshake.js';
 export { Number16, Number8, NumberX } from './binary/number.js';
 export { Opaque } from './binary/opaque.js';
 export { Random } from './binary/random.js';

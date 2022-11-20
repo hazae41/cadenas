@@ -3,7 +3,7 @@
 var tslib = require('tslib');
 var binary = require('../libs/binary.cjs');
 var alert = require('./binary/alerts/alert.cjs');
-var handshake = require('./binary/handshakes/client_hello/handshake.cjs');
+var handshake2 = require('./binary/handshakes/client_hello/handshake2.cjs');
 var record = require('./binary/record/record.cjs');
 
 class Tls {
@@ -17,7 +17,7 @@ class Tls {
     }
     handshake() {
         return tslib.__awaiter(this, void 0, void 0, function* () {
-            const hello = handshake.ClientHello2.default(this.ciphers)
+            const hello = handshake2.ClientHello2.default(this.ciphers)
                 .handshake()
                 .record(0x0301)
                 .export();

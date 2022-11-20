@@ -1,21 +1,23 @@
 import { Binary } from '../../../libs/binary.js';
-import { ClientHello2, ClientHello3 } from './client_hello/handshake.js';
 import { Record } from '../record/record.js';
+import { Writable } from '../writable.js';
 
-type Handshakes = ClientHello2 | ClientHello3;
+interface IHandshake extends Writable {
+    type: number;
+}
 declare class Handshake {
-    readonly handshake: Handshakes;
+    readonly handshake: IHandshake;
     readonly class: typeof Handshake;
     static type: number;
     static types: {
         client_hello: number;
         server_hello: number;
     };
-    constructor(handshake: Handshakes);
+    constructor(handshake: IHandshake);
     get type(): number;
     size(): number;
     write(binary: Binary): void;
     record(version: number): Record;
 }
 
-export { Handshake, Handshakes };
+export { Handshake, IHandshake };

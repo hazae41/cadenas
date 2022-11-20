@@ -1,10 +1,10 @@
 import { Binary } from "libs/binary.js"
-import { ClientHello2, ClientHello3 } from "mods/binary/handshakes/client_hello/handshake.js"
-import { Record } from "../record/record.js"
+import { Record } from "mods/binary/record/record.js"
+import { Writable } from "mods/binary/writable.js"
 
-export type Handshakes =
-  | ClientHello2
-  | ClientHello3
+export interface IHandshake extends Writable {
+  type: number
+}
 
 export class Handshake {
   readonly class = Handshake
@@ -17,7 +17,7 @@ export class Handshake {
   }
 
   constructor(
-    readonly handshake: Handshakes
+    readonly handshake: IHandshake
   ) { }
 
   get type() {
