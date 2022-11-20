@@ -66,7 +66,12 @@ export class ArrayVector<L extends NumberX = any, T extends Writable = any> {
   }
 
   write(binary: Binary) {
-    new this.length(this.array.length).write(binary)
+    let size = 0
+
+    for (const element of this.array)
+      size += element.size()
+
+    new this.length(size).write(binary)
 
     for (const element of this.array)
       element.write(binary)
@@ -106,7 +111,7 @@ export class Vector16<L extends NumberX = any> {
   }
 
   write(binary: Binary) {
-    new this.length(this.array.length).write(binary)
+    new this.length(this.array.length * 2).write(binary)
 
     for (const element of this.array)
       binary.writeUint16(element)

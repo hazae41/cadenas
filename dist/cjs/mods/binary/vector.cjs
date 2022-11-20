@@ -44,7 +44,10 @@ class ArrayVector {
         return size;
     }
     write(binary) {
-        new this.length(this.array.length).write(binary);
+        let size = 0;
+        for (const element of this.array)
+            size += element.size();
+        new this.length(size).write(binary);
         for (const element of this.array)
             element.write(binary);
     }
@@ -74,7 +77,7 @@ class Vector16 {
         return this.length.size + (this.array.length * 2);
     }
     write(binary) {
-        new this.length(this.array.length).write(binary);
+        new this.length(this.array.length * 2).write(binary);
         for (const element of this.array)
             binary.writeUint16(element);
     }
