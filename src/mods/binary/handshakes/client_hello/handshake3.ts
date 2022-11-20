@@ -55,6 +55,6 @@ export class ClientHello3 {
   }
 
   handshake() {
-    return new Handshake(this)
+    return Handshake.from(this)
   }
 }

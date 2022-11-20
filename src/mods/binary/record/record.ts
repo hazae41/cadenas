@@ -29,13 +29,6 @@ export class RecordHeader {
 
     return new this(type, version, length)
   }
-
-  record(fragment: Writable) {
-    return new Record(
-      this.type,
-      this.version,
-      fragment)
-  }
 }
 
 export class Record {
@@ -50,7 +43,7 @@ export class Record {
   }
 
   constructor(
-    readonly type: number,
+    readonly subtype: number,
     readonly version: number,
     readonly fragment: Writable
   ) { }
@@ -60,19 +53,14 @@ export class Record {
   }
 
   size() {
-    return this.header().size() + this.fragment.size()
+    return 1 + 2 + 2 + this.fragment.size()
   }
 
   write(binary: Binary) {
-    this.header().write(binary)
+    binary.writeUint8(this.subtype)
+    binary.writeUint16(this.version)
+    binary.writeUint16(this.fragment.size())
     this.fragment.write(binary)
-  }
-
-  header() {
-    return new RecordHeader(
-      this.type,
-      this.version,
-      this.fragment.size())
   }
 
   export() {

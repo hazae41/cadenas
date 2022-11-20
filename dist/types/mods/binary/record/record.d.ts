@@ -12,10 +12,9 @@ declare class RecordHeader {
     size(): number;
     write(binary: Binary): void;
     static read(binary: Binary): RecordHeader;
-    record(fragment: Writable): Record;
 }
 declare class Record {
-    readonly type: number;
+    readonly subtype: number;
     readonly version: number;
     readonly fragment: Writable;
     readonly class: typeof Record;
@@ -26,11 +25,10 @@ declare class Record {
         handshake: number;
         application_data: number;
     };
-    constructor(type: number, version: number, fragment: Writable);
+    constructor(subtype: number, version: number, fragment: Writable);
     static from(record: IRecord, version: number): Record;
     size(): number;
     write(binary: Binary): void;
-    header(): RecordHeader;
     export(): Binary;
 }
 

@@ -46,7 +46,7 @@ class ClientHello2 {
         (_a = this.extensions) === null || _a === void 0 ? void 0 : _a.write(binary);
     }
     handshake() {
-        return new handshake.Handshake(this);
+        return handshake.Handshake.from(this);
     }
 }
 ClientHello2.type = handshake.Handshake.types.client_hello;

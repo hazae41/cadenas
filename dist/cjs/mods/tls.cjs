@@ -4,6 +4,7 @@ var tslib = require('tslib');
 var binary = require('../libs/binary.cjs');
 var alert = require('./binary/alerts/alert.cjs');
 var handshake2 = require('./binary/handshakes/client_hello/handshake2.cjs');
+var handshake = require('./binary/handshakes/handshake.cjs');
 var record = require('./binary/record/record.cjs');
 
 class Tls {
@@ -29,11 +30,15 @@ class Tls {
             console.log("<-", data);
             const binary$1 = new binary.Binary(data);
             const recordh = record.RecordHeader.read(binary$1);
+            console.log(recordh);
             if (recordh.type === alert.Alert.type) {
                 const fragment = alert.Alert.read(binary$1);
                 console.log(fragment);
             }
-            console.log(recordh);
+            if (recordh.type === handshake.Handshake.type) {
+                const handshakeh = handshake.HandshakeHeader.read(binary$1);
+                console.log(handshakeh);
+            }
         });
     }
 }

@@ -1,6 +1,7 @@
 import { Binary } from "libs/binary.js"
 import { Alert } from "mods/binary/alerts/alert.js"
 import { ClientHello2 } from "mods/binary/handshakes/client_hello/handshake2.js"
+import { Handshake, HandshakeHeader } from "mods/binary/handshakes/handshake.js"
 import { RecordHeader } from "mods/binary/record/record.js"
 import { Transport } from "mods/transports/transport.js"
 
@@ -27,13 +28,18 @@ export class Tls {
   async onData(data: Buffer) {
     console.log("<-", data)
     const binary = new Binary(data)
+
     const recordh = RecordHeader.read(binary)
+    console.log(recordh)
 
     if (recordh.type === Alert.type) {
       const fragment = Alert.read(binary)
       console.log(fragment)
     }
 
-    console.log(recordh)
+    if (recordh.type === Handshake.type) {
+      const handshakeh = HandshakeHeader.read(binary)
+      console.log(handshakeh)
+    }
   }
 }

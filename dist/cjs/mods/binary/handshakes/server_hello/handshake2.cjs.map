@@ -1,0 +1,1 @@
+{"version":3,"file":"handshake2.cjs","sources":["../../../../../../src/mods/binary/handshakes/server_hello/handshake2.ts"],"sourcesContent":["export class ServerHello {\n\n}"],"names":[],"mappings":";;MAAa,WAAW,CAAA;AAEvB;;;;"}

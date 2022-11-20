@@ -22,13 +22,10 @@ class RecordHeader {
         const length = binary.readUint16();
         return new this(type, version, length);
     }
-    record(fragment) {
-        return new Record(this.type, this.version, fragment);
-    }
 }
 class Record {
-    constructor(type, version, fragment) {
-        this.type = type;
+    constructor(subtype, version, fragment) {
+        this.subtype = subtype;
         this.version = version;
         this.fragment = fragment;
         this.class = Record;
@@ -37,14 +34,13 @@ class Record {
         return new this(record.type, version, record);
     }
     size() {
-        return this.header().size() + this.fragment.size();
+        return 1 + 2 + 2 + this.fragment.size();
     }
     write(binary) {
-        this.header().write(binary);
+        binary.writeUint8(this.subtype);
+        binary.writeUint16(this.version);
+        binary.writeUint16(this.fragment.size());
         this.fragment.write(binary);
-    }
-    header() {
-        return new RecordHeader(this.type, this.version, this.fragment.size());
     }
     export() {
         const binary$1 = binary.Binary.allocUnsafe(this.size());
