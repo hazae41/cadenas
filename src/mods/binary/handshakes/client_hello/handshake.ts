@@ -16,18 +16,30 @@ export class ClientHello {
     readonly legacy_session_id: Vector<Number8>,
     readonly cipher_suites: Vector<Number16>,
     readonly legacy_compression_methods: Vector<Number8>,
-    readonly extensions: Vector<Number16>
+    readonly extensions?: Vector<Number16>
   ) { }
 
   get type() {
     return this.class.type
   }
 
-  static default3() {
+  static default2(ciphers: number[]) {
     const legacy_version = 0x0303
     const random = generateRandom(32)
+
     const legacy_session_id = new ArrayVector<Number8>([], Number8)
-    const cipher_suites = new Vector16<Number16>([0xC02F, 0xC02F], Number16)
+    const cipher_suites = new Vector16<Number16>(ciphers, Number16)
+    const legacy_compression_methods = new Vector8<Number8>([0], Number8)
+
+    return new this(legacy_version, random, legacy_session_id, cipher_suites, legacy_compression_methods)
+  }
+
+  static default3(ciphers: number[]) {
+    const legacy_version = 0x0303
+    const random = generateRandom(32)
+
+    const legacy_session_id = new ArrayVector<Number8>([], Number8)
+    const cipher_suites = new Vector16<Number16>(ciphers, Number16)
     const legacy_compression_methods = new Vector8<Number8>([0], Number8)
     const extensions = new ArrayVector<Number16>([ClientSupportedVersions.default3().extension()], Number16)
 
@@ -41,7 +53,7 @@ export class ClientHello {
       + this.legacy_session_id.size()
       + this.cipher_suites.size()
       + this.legacy_compression_methods.size()
-      + this.extensions.size()
+      + (this.extensions?.size() ?? 0)
   }
 
   write(binary: Binary) {
@@ -50,7 +62,7 @@ export class ClientHello {
     this.legacy_session_id.write(binary)
     this.cipher_suites.write(binary)
     this.legacy_compression_methods.write(binary)
-    this.extensions.write(binary)
+    this.extensions?.write(binary)
   }
 
   handshake() {

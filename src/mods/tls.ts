@@ -7,7 +7,8 @@ import { Transport } from "mods/transports/transport.js"
 export class Tls {
 
   constructor(
-    readonly transport: Transport
+    readonly transport: Transport,
+    readonly ciphers: number[]
   ) {
     transport.addEventListener("message", async (e) => {
       const message = e as MessageEvent<Buffer>
@@ -15,10 +16,18 @@ export class Tls {
     }, { passive: true })
   }
 
-  async handshake() {
-    const hello = ClientHello.default3()
+  async handshake2() {
+    const hello = ClientHello.default2(this.ciphers)
       .handshake()
-      .record(0x0304)
+      .record(0x0301)
+      .export()
+    await this.transport.send(hello.buffer)
+  }
+
+  async handshake3() {
+    const hello = ClientHello.default3(this.ciphers)
+      .handshake()
+      .record(0x0301)
       .export()
     await this.transport.send(hello.buffer)
   }

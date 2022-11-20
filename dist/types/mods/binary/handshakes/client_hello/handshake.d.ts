@@ -9,12 +9,13 @@ declare class ClientHello {
     readonly legacy_session_id: Vector<Number8>;
     readonly cipher_suites: Vector<Number16>;
     readonly legacy_compression_methods: Vector<Number8>;
-    readonly extensions: Vector<Number16>;
+    readonly extensions?: Vector<Number16> | undefined;
     readonly class: typeof ClientHello;
     static type: number;
-    constructor(legacy_version: number, random: Buffer, legacy_session_id: Vector<Number8>, cipher_suites: Vector<Number16>, legacy_compression_methods: Vector<Number8>, extensions: Vector<Number16>);
+    constructor(legacy_version: number, random: Buffer, legacy_session_id: Vector<Number8>, cipher_suites: Vector<Number16>, legacy_compression_methods: Vector<Number8>, extensions?: Vector<Number16> | undefined);
     get type(): number;
-    static default3(): ClientHello;
+    static default2(ciphers: number[]): ClientHello;
+    static default3(ciphers: number[]): ClientHello;
     size(): number;
     write(binary: Binary): void;
     handshake(): Handshake;
