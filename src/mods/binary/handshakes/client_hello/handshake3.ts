@@ -27,10 +27,10 @@ export class ClientHello3 {
     const legacy_version = 0x0303
     const random = generateRandom(32)
 
-    const legacy_session_id = new ArrayVector<Number8>([], Number8)
+    const legacy_session_id = new (ArrayVector<Number8>(Number8))([])
     const cipher_suites = new (Vector16<Number16>(Number16))(ciphers)
     const legacy_compression_methods = new (Vector8<Number8>(Number8))([0])
-    const extensions = new ArrayVector<Number16>([ClientSupportedVersions.default3().extension()], Number16)
+    const extensions = new (ArrayVector<Number16>(Number16))([ClientSupportedVersions.default3().extension()])
 
     return new this(legacy_version, random, legacy_session_id, cipher_suites, legacy_compression_methods, extensions)
   }

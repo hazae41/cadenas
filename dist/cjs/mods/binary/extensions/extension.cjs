@@ -10,7 +10,7 @@ class Extension {
         this.class = Extension;
     }
     static from(extension) {
-        const data = new vector.AnyVector(extension, number.Number16);
+        const data = new (vector.AnyVector(number.Number16))(extension);
         return new this(extension.type, data);
     }
     size() {

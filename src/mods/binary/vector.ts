@@ -40,35 +40,41 @@ export const BufferVector = <L extends NumberX>(vlength: L["class"]) => class {
   }
 }
 
-export class AnyVector<L extends NumberX = any, T extends Writable = any> {
-  readonly class = AnyVector<L>
+export const AnyVector = <L extends NumberX = any>(vlength: L["class"]) => class <T extends Writable = any> {
+  readonly class = AnyVector(vlength)
 
   constructor(
-    readonly value: T,
-    readonly vlength: L["class"],
+    readonly value: T
   ) { }
 
+  get vlength() {
+    return vlength
+  }
+
   size() {
-    return this.vlength.size + this.value.size()
+    return vlength.size + this.value.size()
   }
 
   write(binary: Binary) {
-    new this.vlength(this.value.size()).write(binary)
+    new vlength(this.value.size()).write(binary)
 
     this.value.write(binary)
   }
 }
 
-export class ArrayVector<L extends NumberX = any, T extends Writable = any> {
-  readonly class = ArrayVector<L, T>
+export const ArrayVector = <L extends NumberX>(vlength: L["class"]) => class <T extends Writable = any> {
+  readonly class = ArrayVector(vlength)
 
   constructor(
-    readonly array: T[],
-    readonly vlength: L["class"],
+    readonly array: T[]
   ) { }
 
+  get vlength() {
+    return vlength
+  }
+
   size() {
-    let size = this.vlength.size
+    let size = vlength.size
 
     for (const element of this.array)
       size += element.size()
@@ -82,13 +88,13 @@ export class ArrayVector<L extends NumberX = any, T extends Writable = any> {
     for (const element of this.array)
       size += element.size()
 
-    new this.vlength(size).write(binary)
+    new vlength(size).write(binary)
 
     for (const element of this.array)
       element.write(binary)
   }
 
-  static read<L extends NumberX = any, T extends Writable & Readable<T> = any>(binary: Binary, vlength: L["class"], type: T["class"]) {
+  static read<T extends Writable & Readable<T> = any>(binary: Binary, type: T["class"]) {
     const start = binary.offset
 
     const length = vlength.read(binary).value
@@ -98,7 +104,7 @@ export class ArrayVector<L extends NumberX = any, T extends Writable = any> {
     while (binary.offset - start < length)
       array.push(type.read(binary))
 
-    return new this(array, vlength)
+    return new this(array)
   }
 }
 

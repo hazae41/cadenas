@@ -40,6 +40,7 @@ exports.RecordHeader = record.RecordHeader;
 exports.AnyVector = vector.AnyVector;
 exports.ArrayVector = vector.ArrayVector;
 exports.BufferVector = vector.BufferVector;
+exports.SizedArrayVector = vector.SizedArrayVector;
 exports.Vector16 = vector.Vector16;
 exports.Vector8 = vector.Vector8;
 exports.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA = ciphers.TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA;

@@ -29,16 +29,31 @@ declare const BufferVector: <L extends NumberX>(vlength: L["class"]) => {
         write(binary: Binary): void;
     };
 };
-declare class AnyVector<L extends NumberX = any, T extends Writable = any> {
-    readonly value: T;
-    readonly vlength: L["class"];
-    readonly class: {
-        new (value: any, vlength: L["class"]): AnyVector<L, any>;
+declare const AnyVector: <L extends NumberX = any>(vlength: L["class"]) => {
+    new <T extends Writable = any>(value: T): {
+        readonly class: any;
+        readonly value: T;
+        readonly vlength: L["class"];
+        size(): number;
+        write(binary: Binary): void;
     };
-    constructor(value: T, vlength: L["class"]);
-    size(): number;
-    write(binary: Binary): void;
-}
+};
+declare const SizedArrayVector: <L extends NumberX>(vlength: L["class"]) => {
+    new <T extends Writable = any>(array: T[]): {
+        readonly class: any;
+        readonly array: T[];
+        readonly vlength: L["class"];
+        size(): 2 | 3 | 1;
+        write(binary: Binary): void;
+    };
+    read<T_1 extends Writable & Readable<T_1> = any>(binary: Binary, type: T_1["class"]): {
+        readonly class: any;
+        readonly array: T_1[];
+        readonly vlength: L["class"];
+        size(): 2 | 3 | 1;
+        write(binary: Binary): void;
+    };
+};
 declare class ArrayVector<L extends NumberX = any, T extends Writable = any> {
     readonly array: T[];
     readonly vlength: L["class"];
@@ -70,4 +85,4 @@ declare const Vector16: <L extends NumberX>(vlength: L["class"]) => {
     };
 };
 
-export { AnyVector, ArrayVector, BufferVector, Vector, Vector16, Vector8 };
+export { AnyVector, ArrayVector, BufferVector, SizedArrayVector, Vector, Vector16, Vector8 };

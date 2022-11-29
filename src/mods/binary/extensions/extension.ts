@@ -16,7 +16,7 @@ export class Extension {
   ) { }
 
   static from(extension: IExtension) {
-    const data = new AnyVector(extension, Number16)
+    const data = new (AnyVector<Number16>(Number16))(extension)
 
     return new this(extension.type, data)
   }

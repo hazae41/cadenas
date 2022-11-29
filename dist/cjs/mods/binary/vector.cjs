@@ -24,20 +24,53 @@ const BufferVector = (vlength) => class {
         return new this(buffer);
     }
 };
-class AnyVector {
-    constructor(value, vlength) {
+const AnyVector = (vlength) => class {
+    constructor(value) {
         this.value = value;
-        this.vlength = vlength;
-        this.class = (AnyVector);
+        this.class = AnyVector(vlength);
+    }
+    get vlength() {
+        return vlength;
     }
     size() {
-        return this.vlength.size + this.value.size();
+        return vlength.size + this.value.size();
     }
     write(binary) {
-        new this.vlength(this.value.size()).write(binary);
+        new vlength(this.value.size()).write(binary);
         this.value.write(binary);
     }
-}
+};
+const SizedArrayVector = (vlength) => class {
+    constructor(array) {
+        this.array = array;
+        this.class = SizedArrayVector(vlength);
+    }
+    get vlength() {
+        return vlength;
+    }
+    size() {
+        let size = vlength.size;
+        for (const element of this.array)
+            size += element.size();
+        return size;
+    }
+    write(binary) {
+        let size = 0;
+        for (const element of this.array)
+            size += element.size();
+        new vlength(size).write(binary);
+        for (const element of this.array)
+            element.write(binary);
+    }
+    static read(binary, type) {
+        const start = binary.offset;
+        const length = vlength.read(binary).value;
+        const array = new Array();
+        while (binary.offset - start < length)
+            array.push(type.read(binary));
+        return new this(array);
+    }
+};
 class ArrayVector {
     constructor(array, vlength) {
         this.array = array;
@@ -105,6 +138,7 @@ const Vector16 = (vlength) => class {
 exports.AnyVector = AnyVector;
 exports.ArrayVector = ArrayVector;
 exports.BufferVector = BufferVector;
+exports.SizedArrayVector = SizedArrayVector;
 exports.Vector16 = Vector16;
 exports.Vector8 = Vector8;
 //# sourceMappingURL=vector.cjs.map
