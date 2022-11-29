@@ -98,14 +98,16 @@ export const ArrayVector = <L extends NumberX, W extends Writable = any>(vlength
   }
 
   static read<R extends W & Readable<W> = any>(binary: Binary, type: R["class"]) {
-    const start = binary.offset
-
     const length = vlength.read(binary).value
 
+    const start = binary.offset
     const array = new Array<W>()
 
     while (binary.offset - start < length)
       array.push(type.read(binary))
+
+    if (binary.offset - start > length)
+      throw new Error(`Invalid vector length`)
 
     return new this(array)
   }

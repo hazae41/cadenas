@@ -139,12 +139,12 @@ export class Tls {
       return this.onServerHelloDone(binary, handshake.length)
     if (handshake.type === ServerKeyExchange2DHE.type)
       return this.onServerKeyExchange(binary, handshake.length)
-    // if (handshake.type === CertificateRequest2.type)
-    //   return this.onCertificateRequest(binary, handshake.length)
+    if (handshake.type === CertificateRequest2.type)
+      return this.onCertificateRequest(binary, handshake.length)
 
     binary.offset += handshake.length
 
-    console.warn(handshake, binary.remaining)
+    console.warn(handshake)
   }
 
   private async onServerHello(binary: Binary, length: number) {

@@ -128,10 +128,10 @@ class Tls {
                 return this.onServerHelloDone(binary, handshake$1.length);
             if (handshake$1.type === handshake2$4.ServerKeyExchange2DHE.type)
                 return this.onServerKeyExchange(binary, handshake$1.length);
-            // if (handshake.type === CertificateRequest2.type)
-            //   return this.onCertificateRequest(binary, handshake.length)
+            if (handshake$1.type === handshake2$5.CertificateRequest2.type)
+                return this.onCertificateRequest(binary, handshake$1.length);
             binary.offset += handshake$1.length;
-            console.warn(handshake$1, binary.remaining);
+            console.warn(handshake$1);
         });
     }
     onServerHello(binary, length) {

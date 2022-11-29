@@ -63,11 +63,13 @@ const ArrayVector = (vlength) => class {
             element.write(binary);
     }
     static read(binary, type) {
-        const start = binary.offset;
         const length = vlength.read(binary).value;
+        const start = binary.offset;
         const array = new Array();
         while (binary.offset - start < length)
             array.push(type.read(binary));
+        if (binary.offset - start > length)
+            throw new Error(`Invalid vector length`);
         return new this(array);
     }
 };

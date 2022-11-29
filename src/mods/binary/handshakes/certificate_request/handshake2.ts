@@ -49,7 +49,6 @@ export class CertificateRequest2 {
     const start = binary.offset
 
     const certificate_types = ArrayVector<Number8, ClientCertificateType>(Number8).read(binary, ClientCertificateType)
-    console.log(binary.offset, binary.remaining)
     const supported_signature_algorithms = ArrayVector<Number16, SignatureAndHashAlgorithm>(Number16).read(binary, SignatureAndHashAlgorithm)
     const certificate_authorities = BufferVector<Number16>(Number16).read(binary)
 

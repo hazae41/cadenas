@@ -39,7 +39,6 @@ class CertificateRequest2 {
     static read(binary, length) {
         const start = binary.offset;
         const certificate_types = vector.ArrayVector(number.Number8).read(binary, ClientCertificateType);
-        console.log(binary.offset, binary.remaining);
         const supported_signature_algorithms = vector.ArrayVector(number.Number16).read(binary, signature.SignatureAndHashAlgorithm);
         const certificate_authorities = vector.BufferVector(number.Number16).read(binary);
         if (binary.offset - start > length)
