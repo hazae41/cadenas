@@ -17,6 +17,7 @@ declare class Tls {
     private onAlert;
     private onHandshake;
     private onServerHello;
+    private onServerHelloDone;
 }
 
 export { Tls };

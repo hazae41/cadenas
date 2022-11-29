@@ -5,6 +5,7 @@ export { ClientHello2 } from './binary/handshakes/client_hello/handshake2.js';
 export { ClientHello3 } from './binary/handshakes/client_hello/handshake3.js';
 export { Handshake, HandshakeHeader, IHandshake } from './binary/handshakes/handshake.js';
 export { ServerHello2 } from './binary/handshakes/server_hello/handshake2.js';
+export { ServerHelloDone } from './binary/handshakes/server_hello_done/handshake2.js';
 export { Number16, Number8, NumberX } from './binary/number.js';
 export { Opaque } from './binary/opaque.js';
 export { Random } from './binary/random.js';

@@ -7,6 +7,7 @@ export { ClientHello2 } from './mods/binary/handshakes/client_hello/handshake2.j
 export { ClientHello3 } from './mods/binary/handshakes/client_hello/handshake3.js';
 export { Handshake, HandshakeHeader, IHandshake } from './mods/binary/handshakes/handshake.js';
 export { ServerHello2 } from './mods/binary/handshakes/server_hello/handshake2.js';
+export { ServerHelloDone } from './mods/binary/handshakes/server_hello_done/handshake2.js';
 export { Number16, Number8, NumberX } from './mods/binary/number.js';
 export { Opaque } from './mods/binary/opaque.js';
 export { Random } from './mods/binary/random.js';

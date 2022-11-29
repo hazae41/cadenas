@@ -19,8 +19,16 @@ declare class Handshake {
     readonly class: typeof Handshake;
     static type: number;
     static types: {
+        hello_request: number;
         client_hello: number;
         server_hello: number;
+        certificate: number;
+        server_key_exchange: number;
+        certificate_request: number;
+        server_hello_done: number;
+        certificate_verify: number;
+        client_key_exchange: number;
+        finished: number;
     };
     constructor(subtype: number, fragment: Writable);
     get type(): number;
