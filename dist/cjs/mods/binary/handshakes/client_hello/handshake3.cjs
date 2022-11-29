@@ -22,10 +22,10 @@ class ClientHello3 {
     static default(ciphers) {
         const legacy_version = 0x0303;
         const random$1 = random.generateRandom(32);
-        const legacy_session_id = new (vector.SizedArrayVector(number.Number8))([]);
+        const legacy_session_id = new (vector.ArrayVector(number.Number8))([]);
         const cipher_suites = new (vector.Vector16(number.Number16))(ciphers);
         const legacy_compression_methods = new (vector.Vector8(number.Number8))([0]);
-        const extensions = new (vector.SizedArrayVector(number.Number16))([extension.ClientSupportedVersions.default3().extension()]);
+        const extensions = new (vector.ArrayVector(number.Number16))([extension.ClientSupportedVersions.default3().extension()]);
         return new this(legacy_version, random$1, legacy_session_id, cipher_suites, legacy_compression_methods, extensions);
     }
     size() {

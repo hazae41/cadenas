@@ -5,6 +5,7 @@ import { ClientHello2 } from "mods/binary/handshakes/client_hello/handshake2.js"
 import { Handshake, HandshakeHeader } from "mods/binary/handshakes/handshake.js"
 import { ServerHello2 } from "mods/binary/handshakes/server_hello/handshake2.js"
 import { ServerHelloDone2 } from "mods/binary/handshakes/server_hello_done/handshake2.js"
+import { ServerKeyExchange2DHE } from "mods/binary/handshakes/server_key_exchange/handshake2.js"
 import { RecordHeader } from "mods/binary/record/record.js"
 import { Transport } from "mods/transports/transport.js"
 
@@ -135,6 +136,8 @@ export class Tls {
       return this.onCertificate(binary, handshake.length)
     if (handshake.type === ServerHelloDone2.type)
       return this.onServerHelloDone(binary, handshake.length)
+    if (handshake.type === ServerKeyExchange2DHE.type)
+      return this.onServerKeyExchange(binary, handshake.length)
 
     binary.offset += handshake.length
 
@@ -153,6 +156,11 @@ export class Tls {
     console.log(hello)
   }
 
+  private async onServerKeyExchange(binary: Binary, length: number) {
+    const hello = ServerKeyExchange2DHE.read(binary, length)
+
+    console.log(hello)
+  }
 
   private async onServerHelloDone(binary: Binary, length: number) {
     const hello = ServerHelloDone2.read(binary, length)

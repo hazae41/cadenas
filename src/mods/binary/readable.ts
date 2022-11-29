@@ -5,3 +5,9 @@ export interface Readable<T> {
     read(binary: Binary): T
   }
 }
+
+export interface ReadableChecked<T> {
+  class: {
+    read(binary: Binary, length: number): T
+  }
+}

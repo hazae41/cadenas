@@ -18,6 +18,7 @@ declare class Tls {
     private onHandshake;
     private onServerHello;
     private onCertificate;
+    private onServerKeyExchange;
     private onServerHelloDone;
 }
 
