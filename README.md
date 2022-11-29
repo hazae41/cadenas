@@ -1,6 +1,6 @@
 # TLS in the browser
 
-### DO NOT USE: Although it works well, this is still very usafe to use, even for MVP
+#### DO NOT USE: Although it works well, this is still very usafe to use, even for MVP
 
 ### Current features
 - 100% TypeScript and ESM
