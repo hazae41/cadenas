@@ -4,6 +4,7 @@ var tslib = require('tslib');
 var binary = require('../libs/binary.cjs');
 var alert = require('./binary/alerts/alert.cjs');
 var handshake2$2 = require('./binary/handshakes/certificate/handshake2.cjs');
+var handshake2$5 = require('./binary/handshakes/certificate_request/handshake2.cjs');
 var handshake2 = require('./binary/handshakes/client_hello/handshake2.cjs');
 var handshake = require('./binary/handshakes/handshake.cjs');
 var handshake2$1 = require('./binary/handshakes/server_hello/handshake2.cjs');
@@ -127,8 +128,10 @@ class Tls {
                 return this.onServerHelloDone(binary, handshake$1.length);
             if (handshake$1.type === handshake2$4.ServerKeyExchange2DHE.type)
                 return this.onServerKeyExchange(binary, handshake$1.length);
+            // if (handshake.type === CertificateRequest2.type)
+            //   return this.onCertificateRequest(binary, handshake.length)
             binary.offset += handshake$1.length;
-            console.warn(handshake$1);
+            console.warn(handshake$1, binary.remaining);
         });
     }
     onServerHello(binary, length) {
@@ -146,6 +149,12 @@ class Tls {
     onServerKeyExchange(binary, length) {
         return tslib.__awaiter(this, void 0, void 0, function* () {
             const hello = handshake2$4.ServerKeyExchange2DHE.read(binary, length);
+            console.log(hello);
+        });
+    }
+    onCertificateRequest(binary, length) {
+        return tslib.__awaiter(this, void 0, void 0, function* () {
+            const hello = handshake2$5.CertificateRequest2.read(binary, length);
             console.log(hello);
         });
     }

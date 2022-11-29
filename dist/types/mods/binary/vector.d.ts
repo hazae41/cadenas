@@ -38,17 +38,48 @@ declare const AnyVector: <L extends NumberX = any>(vlength: L["class"]) => {
         write(binary: Binary): void;
     };
 };
-declare const ArrayVector: <L extends NumberX>(vlength: L["class"]) => {
-    new <T extends Writable = any>(array: T[]): {
-        readonly class: any;
-        readonly array: T[];
+type ArrayVector<L extends NumberX, W extends Writable = any> = InstanceType<ReturnType<typeof ArrayVector<L, W>>>;
+declare const ArrayVector: <L extends NumberX, W extends Writable = any>(vlength: L["class"]) => {
+    new (array: W[]): {
+        readonly class: {
+            new (array: any[]): {
+                readonly class: any;
+                readonly array: any[];
+                readonly vlength: L["class"];
+                size(): 2 | 3 | 1;
+                write(binary: Binary): void;
+            };
+            read<R extends any = any>(binary: Binary, type: R["class"]): {
+                readonly class: any;
+                readonly array: any[];
+                readonly vlength: L["class"];
+                size(): 2 | 3 | 1;
+                write(binary: Binary): void;
+            };
+        };
+        readonly array: W[];
         readonly vlength: L["class"];
         size(): 2 | 3 | 1;
         write(binary: Binary): void;
     };
-    read<T_1 extends Writable & Readable<T_1> = any>(binary: Binary, type: T_1["class"]): {
-        readonly class: any;
-        readonly array: T_1[];
+    read<R_1 extends W & Readable<W> = any>(binary: Binary, type: R_1["class"]): {
+        readonly class: {
+            new (array: any[]): {
+                readonly class: any;
+                readonly array: any[];
+                readonly vlength: L["class"];
+                size(): 2 | 3 | 1;
+                write(binary: Binary): void;
+            };
+            read<R extends any = any>(binary: Binary, type: R["class"]): {
+                readonly class: any;
+                readonly array: any[];
+                readonly vlength: L["class"];
+                size(): 2 | 3 | 1;
+                write(binary: Binary): void;
+            };
+        };
+        readonly array: W[];
         readonly vlength: L["class"];
         size(): 2 | 3 | 1;
         write(binary: Binary): void;

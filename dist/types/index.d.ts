@@ -4,6 +4,7 @@ export { Alert } from './mods/binary/alerts/alert.js';
 export { Extension, IExtension } from './mods/binary/extensions/extension.js';
 export { ClientSupportedVersions } from './mods/binary/extensions/supported_versions/extension.js';
 export { Certificate2 } from './mods/binary/handshakes/certificate/handshake2.js';
+export { CertificateRequest2, ClientCertificateType } from './mods/binary/handshakes/certificate_request/handshake2.js';
 export { ClientHello2 } from './mods/binary/handshakes/client_hello/handshake2.js';
 export { ClientHello3 } from './mods/binary/handshakes/client_hello/handshake3.js';
 export { Handshake, HandshakeHeader, IHandshake } from './mods/binary/handshakes/handshake.js';

@@ -2,6 +2,7 @@ export { Alert } from './binary/alerts/alert.js';
 export { Extension, IExtension } from './binary/extensions/extension.js';
 export { ClientSupportedVersions } from './binary/extensions/supported_versions/extension.js';
 export { Certificate2 } from './binary/handshakes/certificate/handshake2.js';
+export { CertificateRequest2, ClientCertificateType } from './binary/handshakes/certificate_request/handshake2.js';
 export { ClientHello2 } from './binary/handshakes/client_hello/handshake2.js';
 export { ClientHello3 } from './binary/handshakes/client_hello/handshake3.js';
 export { Handshake, HandshakeHeader, IHandshake } from './binary/handshakes/handshake.js';

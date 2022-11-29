@@ -19,6 +19,7 @@ declare class Tls {
     private onServerHello;
     private onCertificate;
     private onServerKeyExchange;
+    private onCertificateRequest;
     private onServerHelloDone;
 }
 
