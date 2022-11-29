@@ -22,6 +22,16 @@ export class RecordHeader {
     binary.writeUint16(this.length)
   }
 
+  static tryRead(binary: Binary) {
+    const start = binary.offset
+
+    try {
+      return this.read(binary)
+    } catch (e: unknown) {
+      binary.offset = start
+    }
+  }
+
   static read(binary: Binary) {
     const type = binary.readUint8()
     const version = binary.readUint16()

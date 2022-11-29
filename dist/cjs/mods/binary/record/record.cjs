@@ -16,6 +16,15 @@ class RecordHeader {
         binary.writeUint16(this.version);
         binary.writeUint16(this.length);
     }
+    static tryRead(binary) {
+        const start = binary.offset;
+        try {
+            return this.read(binary);
+        }
+        catch (e) {
+            binary.offset = start;
+        }
+    }
     static read(binary) {
         const type = binary.readUint8();
         const version = binary.readUint16();

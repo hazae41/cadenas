@@ -11,6 +11,7 @@ declare class RecordHeader {
     constructor(type: number, version: number, length: number);
     size(): number;
     write(binary: Binary): void;
+    static tryRead(binary: Binary): RecordHeader | undefined;
     static read(binary: Binary): RecordHeader;
 }
 declare class Record {

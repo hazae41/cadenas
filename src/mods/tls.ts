@@ -7,15 +7,25 @@ import { RecordHeader } from "mods/binary/record/record.js"
 import { Transport } from "mods/transports/transport.js"
 
 export class Tls {
+  readonly streams = new TransformStream<Buffer, Buffer>()
+
+  private buffer = Buffer.allocUnsafe(4 * 4096)
+  private wbinary = new Binary(this.buffer)
+  private rbinary = new Binary(this.buffer)
 
   constructor(
     readonly transport: Transport,
     readonly ciphers: number[]
   ) {
-    transport.addEventListener("message", async (e) => {
-      const message = e as MessageEvent<Buffer>
-      this.onData(message.data)
-    }, { passive: true })
+    this.tryRead()
+
+    const onMessage = this.onMessage.bind(this)
+
+    transport.addEventListener("message", onMessage, { passive: true })
+
+    new FinalizationRegistry(() => {
+      transport.removeEventListener("message", onMessage)
+    }).register(this, undefined)
   }
 
   async handshake() {
@@ -27,18 +37,83 @@ export class Tls {
     await this.transport.send(hello.buffer)
   }
 
-  private async onData(data: Buffer) {
-    console.log("<-", data)
-    this.onRecord(new Binary(data))
+  private async onMessage(event: Event) {
+    const message = event as MessageEvent<Buffer>
+
+    const writer = this.streams.writable.getWriter()
+    writer.write(message.data).catch(console.warn)
+    writer.releaseLock()
   }
 
-  private async onRecord(binary: Binary) {
-    const record = RecordHeader.read(binary)
+  private async tryRead() {
+    const reader = this.streams.readable.getReader()
 
+    try {
+      await this.read(reader)
+    } finally {
+      reader.releaseLock()
+    }
+  }
+
+  private async read(reader: ReadableStreamDefaultReader<Buffer>) {
+    while (true) {
+      const { done, value } = await reader.read()
+
+      if (done) break
+
+      this.wbinary.write(value)
+      await this.onRead()
+    }
+  }
+
+  private async onRead() {
+    this.rbinary.buffer = this.buffer.subarray(0, this.wbinary.offset)
+
+    while (this.rbinary.remaining) {
+      try {
+        const header = RecordHeader.tryRead(this.rbinary)
+
+        if (!header) break
+
+        await this.onRecord(this.rbinary, header)
+      } catch (e: unknown) {
+        console.error(e)
+      }
+    }
+
+    if (!this.rbinary.offset)
+      return
+
+    if (this.rbinary.offset === this.wbinary.offset) {
+      this.rbinary.offset = 0
+      this.wbinary.offset = 0
+      return
+    }
+
+    if (this.rbinary.remaining && this.wbinary.remaining < 4096) {
+      console.debug(`Reallocating buffer`)
+
+      const remaining = this.buffer.subarray(this.rbinary.offset, this.wbinary.offset)
+
+      this.rbinary.offset = 0
+      this.wbinary.offset = 0
+
+      this.buffer = Buffer.allocUnsafe(4 * 4096)
+      this.rbinary.buffer = this.buffer
+      this.wbinary.buffer = this.buffer
+
+      this.wbinary.write(remaining)
+      return
+    }
+  }
+
+  private async onRecord(binary: Binary, record: RecordHeader) {
     if (record.type === Alert.type)
       return this.onAlert(binary, record.length)
     if (record.type === Handshake.type)
       return this.onHandshake(binary, record.length)
+
+    binary.offset += record.length
 
     console.warn(record)
   }
@@ -54,6 +129,8 @@ export class Tls {
 
     if (handshake.type === ServerHello2.type)
       return this.onServerHello(binary, handshake.length)
+
+    binary.offset += handshake.length
 
     console.warn(handshake)
   }
