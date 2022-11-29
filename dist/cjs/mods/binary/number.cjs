@@ -32,7 +32,24 @@ class Number16 {
     }
 }
 Number16.size = 2;
+class Number24 {
+    constructor(value) {
+        this.value = value;
+        this.class = Number24;
+    }
+    size() {
+        return this.class.size;
+    }
+    write(binary) {
+        binary.writeUint24(this.value);
+    }
+    static read(binary) {
+        return new this(binary.readUint24());
+    }
+}
+Number24.size = 3;
 
 exports.Number16 = Number16;
+exports.Number24 = Number24;
 exports.Number8 = Number8;
 //# sourceMappingURL=number.cjs.map

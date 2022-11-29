@@ -1,6 +1,6 @@
 import { Binary } from '../../libs/binary.js';
 
-type NumberX = Number8 | Number16;
+type NumberX = Number8 | Number16 | Number24;
 declare class Number8 {
     readonly value: number;
     readonly class: typeof Number8;
@@ -19,5 +19,14 @@ declare class Number16 {
     write(binary: Binary): void;
     static read(binary: Binary): Number16;
 }
+declare class Number24 {
+    readonly value: number;
+    readonly class: typeof Number24;
+    static size: 3;
+    constructor(value: number);
+    size(): 3;
+    write(binary: Binary): void;
+    static read(binary: Binary): Number24;
+}
 
-export { Number16, Number8, NumberX };
+export { Number16, Number24, Number8, NumberX };

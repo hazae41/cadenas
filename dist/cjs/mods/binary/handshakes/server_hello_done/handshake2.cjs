@@ -2,9 +2,9 @@
 
 var handshake = require('../handshake.cjs');
 
-class ServerHelloDone {
+class ServerHelloDone2 {
     constructor() {
-        this.class = ServerHelloDone;
+        this.class = ServerHelloDone2;
     }
     static read(binary, length) {
         const start = binary.offset;
@@ -16,7 +16,7 @@ class ServerHelloDone {
         return new this();
     }
 }
-ServerHelloDone.type = handshake.Handshake.types.server_hello_done;
+ServerHelloDone2.type = handshake.Handshake.types.server_hello_done;
 
-exports.ServerHelloDone = ServerHelloDone;
+exports.ServerHelloDone2 = ServerHelloDone2;
 //# sourceMappingURL=handshake2.cjs.map

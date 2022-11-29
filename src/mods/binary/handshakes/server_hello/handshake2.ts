@@ -23,15 +23,15 @@ export class ServerHello2 {
 
     const server_version = binary.readUint16()
     const random = Random.read(binary)
-    const session_id = BufferVector.read<Number8>(binary, Number8)
+    const session_id = BufferVector(Number8).read(binary)
     const cipher_suite = binary.readUint16()
-    const compression_methods = BufferVector.read<Number8>(binary, Number8)
+    const compression_methods = BufferVector(Number8).read(binary)
 
     if (binary.offset - start > length)
       throw new Error(`Invalid ${this.name} length`)
 
     const extensions = binary.offset - start < length
-      ? BufferVector.read<Number16>(binary, Number16)
+      ? BufferVector(Number16).read(binary)
       : undefined
 
     return new this(server_version, random, session_id, cipher_suite, compression_methods, extensions)

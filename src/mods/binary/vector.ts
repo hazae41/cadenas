@@ -1,38 +1,42 @@
 import { Binary } from "libs/binary.js";
 import { NumberX } from "mods/binary/number.js";
+import { Readable } from "mods/binary/readable.js";
 import { Writable } from "mods/binary/writable.js";
 
 export interface Vector<L extends NumberX = any> extends Writable {
   readonly vlength: L["class"]
 }
 
-export class BufferVector<L extends NumberX = any> {
-  readonly class = BufferVector<L>
+export const BufferVector = <L extends NumberX = any>(vlength: L["class"]) => class {
+  readonly class = BufferVector(vlength)
 
   constructor(
-    readonly buffer: Buffer,
-    readonly vlength: L["class"],
+    readonly buffer: Buffer
   ) { }
 
-  static empty<L extends NumberX = any>(length: L["class"]) {
-    return new this(Buffer.allocUnsafe(0), length)
+  get vlength() {
+    return vlength
+  }
+
+  static empty() {
+    return new this(Buffer.allocUnsafe(0))
   }
 
   size() {
-    return this.vlength.size + this.buffer.length
+    return vlength.size + this.buffer.length
   }
 
   write(binary: Binary) {
-    new this.vlength(this.buffer.length).write(binary)
+    new vlength(this.buffer.length).write(binary)
 
     binary.write(this.buffer)
   }
 
-  static read<L extends NumberX = any>(binary: Binary, vlength: L["class"]) {
+  static read(binary: Binary) {
     const length = vlength.read(binary).value
     const buffer = binary.read(length)
 
-    return new this(buffer, vlength)
+    return new this(buffer)
   }
 }
 
@@ -82,6 +86,19 @@ export class ArrayVector<L extends NumberX = any, T extends Writable = any> {
 
     for (const element of this.array)
       element.write(binary)
+  }
+
+  static read<L extends NumberX = any, T extends Writable & Readable<T> = any>(binary: Binary, vlength: L["class"], type: T["class"]) {
+    const start = binary.offset
+
+    const length = vlength.read(binary).value
+
+    const array = new Array<T>()
+
+    while (binary.offset - start < length)
+      array.push(type.read(binary))
+
+    return new this(array, vlength)
   }
 }
 

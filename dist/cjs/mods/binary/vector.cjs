@@ -1,5 +1,29 @@
 'use strict';
 
+const SizedBufferVector = (vlength) => class {
+    constructor(buffer) {
+        this.buffer = buffer;
+        this.class = SizedBufferVector(vlength);
+    }
+    get vlength() {
+        return vlength;
+    }
+    static empty() {
+        return new this(Buffer.allocUnsafe(0));
+    }
+    size() {
+        return vlength.size + this.buffer.length;
+    }
+    write(binary) {
+        new vlength(this.buffer.length).write(binary);
+        binary.write(this.buffer);
+    }
+    static read(binary) {
+        const length = vlength.read(binary).value;
+        const buffer = binary.read(length);
+        return new this(buffer);
+    }
+};
 class BufferVector {
     constructor(buffer, vlength) {
         this.buffer = buffer;
@@ -56,6 +80,14 @@ class ArrayVector {
         for (const element of this.array)
             element.write(binary);
     }
+    static read(binary, vlength, type) {
+        const start = binary.offset;
+        const length = vlength.read(binary).value;
+        const array = new Array();
+        while (binary.offset - start < length)
+            array.push(type.read(binary));
+        return new this(array, vlength);
+    }
 }
 class Vector8 {
     constructor(array, vlength) {
@@ -91,6 +123,7 @@ class Vector16 {
 exports.AnyVector = AnyVector;
 exports.ArrayVector = ArrayVector;
 exports.BufferVector = BufferVector;
+exports.SizedBufferVector = SizedBufferVector;
 exports.Vector16 = Vector16;
 exports.Vector8 = Vector8;
 //# sourceMappingURL=vector.cjs.map

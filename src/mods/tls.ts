@@ -1,5 +1,6 @@
 import { Binary } from "libs/binary.js"
 import { Alert } from "mods/binary/alerts/alert.js"
+import { Certificate2 } from "mods/binary/handshakes/certificate/handshake2.js"
 import { ClientHello2 } from "mods/binary/handshakes/client_hello/handshake2.js"
 import { Handshake, HandshakeHeader } from "mods/binary/handshakes/handshake.js"
 import { ServerHello2 } from "mods/binary/handshakes/server_hello/handshake2.js"
@@ -130,6 +131,8 @@ export class Tls {
 
     if (handshake.type === ServerHello2.type)
       return this.onServerHello(binary, handshake.length)
+    if (handshake.type === Certificate2.type)
+      return this.onCertificate(binary, handshake.length)
     if (handshake.type === ServerHelloDone2.type)
       return this.onServerHelloDone(binary, handshake.length)
 
@@ -143,6 +146,13 @@ export class Tls {
 
     console.log(hello)
   }
+
+  private async onCertificate(binary: Binary, length: number) {
+    const hello = Certificate2.read(binary, length)
+
+    console.log(hello)
+  }
+
 
   private async onServerHelloDone(binary: Binary, length: number) {
     const hello = ServerHelloDone2.read(binary, length)
