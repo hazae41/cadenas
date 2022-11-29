@@ -28,7 +28,7 @@ export class ClientHello3 {
     const random = generateRandom(32)
 
     const legacy_session_id = new ArrayVector<Number8>([], Number8)
-    const cipher_suites = new Vector16<Number16>(ciphers, Number16)
+    const cipher_suites = new (Vector16<Number16>(Number16))(ciphers)
     const legacy_compression_methods = new Vector8<Number8>([0], Number8)
     const extensions = new ArrayVector<Number16>([ClientSupportedVersions.default3().extension()], Number16)
 

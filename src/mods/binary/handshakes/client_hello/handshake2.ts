@@ -27,7 +27,7 @@ export class ClientHello2 {
     const random = Random.default()
 
     const session_id = new ArrayVector<Number8>([], Number8)
-    const cipher_suites = new Vector16<Number16>(ciphers, Number16)
+    const cipher_suites = new (Vector16<Number16>(Number16))(ciphers)
     const compression_methods = new Vector8<Number8>([0], Number8)
 
     return new this(version, random, session_id, cipher_suites, compression_methods)

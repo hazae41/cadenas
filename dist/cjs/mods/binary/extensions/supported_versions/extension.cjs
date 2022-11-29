@@ -10,7 +10,7 @@ class ClientSupportedVersions {
         this.class = ClientSupportedVersions;
     }
     static default3() {
-        const versions = new vector.Vector16([0x0304], number.Number8);
+        const versions = new (vector.Vector16(number.Number8))([0x0304]);
         return new this(versions);
     }
     get type() {

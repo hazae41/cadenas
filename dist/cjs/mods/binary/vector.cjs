@@ -1,9 +1,9 @@
 'use strict';
 
-const SizedBufferVector = (vlength) => class {
+const BufferVector = (vlength) => class {
     constructor(buffer) {
         this.buffer = buffer;
-        this.class = SizedBufferVector(vlength);
+        this.class = BufferVector(vlength);
     }
     get vlength() {
         return vlength;
@@ -24,28 +24,6 @@ const SizedBufferVector = (vlength) => class {
         return new this(buffer);
     }
 };
-class BufferVector {
-    constructor(buffer, vlength) {
-        this.buffer = buffer;
-        this.vlength = vlength;
-        this.class = (BufferVector);
-    }
-    static empty(length) {
-        return new this(Buffer.allocUnsafe(0), length);
-    }
-    size() {
-        return this.vlength.size + this.buffer.length;
-    }
-    write(binary) {
-        new this.vlength(this.buffer.length).write(binary);
-        binary.write(this.buffer);
-    }
-    static read(binary, vlength) {
-        const length = vlength.read(binary).value;
-        const buffer = binary.read(length);
-        return new this(buffer, vlength);
-    }
-}
 class AnyVector {
     constructor(value, vlength) {
         this.value = value;
@@ -104,26 +82,27 @@ class Vector8 {
             binary.writeUint8(element);
     }
 }
-class Vector16 {
-    constructor(array, vlength) {
+const Vector16 = (vlength) => class {
+    constructor(array) {
         this.array = array;
-        this.vlength = vlength;
-        this.class = (Vector16);
+        this.class = Vector16(vlength);
+    }
+    get vlength() {
+        return vlength;
     }
     size() {
-        return this.vlength.size + (this.array.length * 2);
+        return vlength.size + (this.array.length * 2);
     }
     write(binary) {
-        new this.vlength(this.array.length * 2).write(binary);
+        new vlength(this.array.length * 2).write(binary);
         for (const element of this.array)
             binary.writeUint16(element);
     }
-}
+};
 
 exports.AnyVector = AnyVector;
 exports.ArrayVector = ArrayVector;
 exports.BufferVector = BufferVector;
-exports.SizedBufferVector = SizedBufferVector;
 exports.Vector16 = Vector16;
 exports.Vector8 = Vector8;
 //# sourceMappingURL=vector.cjs.map

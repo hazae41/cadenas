@@ -3,11 +3,11 @@ import { NumberX } from "mods/binary/number.js";
 import { Readable } from "mods/binary/readable.js";
 import { Writable } from "mods/binary/writable.js";
 
-export interface Vector<L extends NumberX = any> extends Writable {
+export interface Vector<L extends NumberX> extends Writable {
   readonly vlength: L["class"]
 }
 
-export const BufferVector = <L extends NumberX = any>(vlength: L["class"]) => class {
+export const BufferVector = <L extends NumberX>(vlength: L["class"]) => class {
   readonly class = BufferVector(vlength)
 
   constructor(
@@ -122,20 +122,23 @@ export class Vector8<L extends NumberX = any> {
   }
 }
 
-export class Vector16<L extends NumberX = any> {
-  readonly class = Vector16<L>
+export const Vector16 = <L extends NumberX>(vlength: L["class"]) => class {
+  readonly class = Vector16(vlength)
 
   constructor(
-    readonly array: number[],
-    readonly vlength: L["class"],
+    readonly array: number[]
   ) { }
 
+  get vlength() {
+    return vlength
+  }
+
   size() {
-    return this.vlength.size + (this.array.length * 2)
+    return vlength.size + (this.array.length * 2)
   }
 
   write(binary: Binary) {
-    new this.vlength(this.array.length * 2).write(binary)
+    new vlength(this.array.length * 2).write(binary)
 
     for (const element of this.array)
       binary.writeUint16(element)

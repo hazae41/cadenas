@@ -19,13 +19,13 @@ class ServerHello2 {
         const start = binary.offset;
         const server_version = binary.readUint16();
         const random$1 = random.Random.read(binary);
-        const session_id = vector.SizedBufferVector(number.Number8).read(binary);
+        const session_id = vector.BufferVector(number.Number8).read(binary);
         const cipher_suite = binary.readUint16();
-        const compression_methods = vector.SizedBufferVector(number.Number8).read(binary);
+        const compression_methods = vector.BufferVector(number.Number8).read(binary);
         if (binary.offset - start > length)
             throw new Error(`Invalid ${this.name} length`);
         const extensions = binary.offset - start < length
-            ? vector.SizedBufferVector(number.Number16).read(binary)
+            ? vector.BufferVector(number.Number16).read(binary)
             : undefined;
         return new this(server_version, random$1, session_id, cipher_suite, compression_methods, extensions);
     }
