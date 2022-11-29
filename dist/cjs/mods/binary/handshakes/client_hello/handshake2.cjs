@@ -23,7 +23,7 @@ class ClientHello2 {
         const random$1 = random.Random.default();
         const session_id = new vector.ArrayVector([], number.Number8);
         const cipher_suites = new (vector.Vector16(number.Number16))(ciphers);
-        const compression_methods = new vector.Vector8([0], number.Number8);
+        const compression_methods = new (vector.Vector8(number.Number8))([0]);
         return new this(version, random$1, session_id, cipher_suites, compression_methods);
     }
     size() {

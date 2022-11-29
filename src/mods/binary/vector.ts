@@ -102,20 +102,23 @@ export class ArrayVector<L extends NumberX = any, T extends Writable = any> {
   }
 }
 
-export class Vector8<L extends NumberX = any> {
-  readonly class = Vector8<L>
+export const Vector8 = <L extends NumberX>(vlength: L["class"]) => class {
+  readonly class = Vector8(vlength)
 
   constructor(
-    readonly array: number[],
-    readonly vlength: L["class"],
+    readonly array: number[]
   ) { }
 
+  get vlength() {
+    return vlength
+  }
+
   size() {
-    return this.vlength.size + this.array.length
+    return vlength.size + this.array.length
   }
 
   write(binary: Binary) {
-    new this.vlength(this.array.length).write(binary)
+    new vlength(this.array.length).write(binary)
 
     for (const element of this.array)
       binary.writeUint8(element)

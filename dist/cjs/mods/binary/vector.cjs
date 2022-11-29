@@ -67,21 +67,23 @@ class ArrayVector {
         return new this(array, vlength);
     }
 }
-class Vector8 {
-    constructor(array, vlength) {
+const Vector8 = (vlength) => class {
+    constructor(array) {
         this.array = array;
-        this.vlength = vlength;
-        this.class = (Vector8);
+        this.class = Vector8(vlength);
+    }
+    get vlength() {
+        return vlength;
     }
     size() {
-        return this.vlength.size + this.array.length;
+        return vlength.size + this.array.length;
     }
     write(binary) {
-        new this.vlength(this.array.length).write(binary);
+        new vlength(this.array.length).write(binary);
         for (const element of this.array)
             binary.writeUint8(element);
     }
-}
+};
 const Vector16 = (vlength) => class {
     constructor(array) {
         this.array = array;

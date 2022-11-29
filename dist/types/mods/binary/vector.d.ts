@@ -51,16 +51,15 @@ declare class ArrayVector<L extends NumberX = any, T extends Writable = any> {
     write(binary: Binary): void;
     static read<L extends NumberX = any, T extends Writable & Readable<T> = any>(binary: Binary, vlength: L["class"], type: T["class"]): ArrayVector<L, T>;
 }
-declare class Vector8<L extends NumberX = any> {
-    readonly array: number[];
-    readonly vlength: L["class"];
-    readonly class: {
-        new (array: number[], vlength: L["class"]): Vector8<L>;
+declare const Vector8: <L extends NumberX>(vlength: L["class"]) => {
+    new (array: number[]): {
+        readonly class: any;
+        readonly array: number[];
+        readonly vlength: L["class"];
+        size(): number;
+        write(binary: Binary): void;
     };
-    constructor(array: number[], vlength: L["class"]);
-    size(): number;
-    write(binary: Binary): void;
-}
+};
 declare const Vector16: <L extends NumberX>(vlength: L["class"]) => {
     new (array: number[]): {
         readonly class: any;
