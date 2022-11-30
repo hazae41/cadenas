@@ -7,6 +7,9 @@ export interface Vector<L extends NumberX> extends Writable {
   readonly vlength: L["class"]
 }
 
+export type BufferVector<L extends NumberX,> =
+  InstanceType<ReturnType<typeof BufferVector<L>>>
+
 export const BufferVector = <L extends NumberX>(vlength: L["class"]) => class {
   readonly class = BufferVector(vlength)
 

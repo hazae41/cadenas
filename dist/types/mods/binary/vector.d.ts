@@ -6,6 +6,7 @@ import { Writable } from './writable.js';
 interface Vector<L extends NumberX> extends Writable {
     readonly vlength: L["class"];
 }
+type BufferVector<L extends NumberX> = InstanceType<ReturnType<typeof BufferVector<L>>>;
 declare const BufferVector: <L extends NumberX>(vlength: L["class"]) => {
     new (buffer: Buffer): {
         readonly class: any;
