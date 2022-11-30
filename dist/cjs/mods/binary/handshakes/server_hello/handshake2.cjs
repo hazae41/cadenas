@@ -22,7 +22,7 @@ class ServerHello2 {
         const session_id = vector.BufferVector(number.Number8).read(binary);
         const cipher_suite = binary.readUint16();
         const compression_methods = vector.BufferVector(number.Number8).read(binary);
-        if (binary.offset - start > length)
+        if (binary.offset - start !== length)
             throw new Error(`Invalid ${this.name} length`);
         const extensions = binary.offset - start < length
             ? vector.BufferVector(number.Number16).read(binary)

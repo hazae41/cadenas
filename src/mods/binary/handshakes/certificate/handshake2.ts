@@ -17,7 +17,7 @@ export class Certificate2 {
 
     const certificate_list = ArrayVector<Number24, BufferVector<Number24>>(Number24, BufferVector(Number24)).read(binary)
 
-    if (binary.offset - start > length)
+    if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(certificate_list)

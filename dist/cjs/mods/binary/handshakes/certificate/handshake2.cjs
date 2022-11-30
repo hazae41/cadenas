@@ -12,7 +12,7 @@ class Certificate2 {
     static read(binary, length) {
         const start = binary.offset;
         const certificate_list = vector.ArrayVector(number.Number24, vector.BufferVector(number.Number24)).read(binary);
-        if (binary.offset - start > length)
+        if (binary.offset - start !== length)
             throw new Error(`Invalid ${this.name} length`);
         return new this(certificate_list);
     }

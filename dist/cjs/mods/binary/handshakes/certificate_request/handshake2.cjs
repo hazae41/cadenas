@@ -41,7 +41,7 @@ class CertificateRequest2 {
         const certificate_types = vector.ArrayVector(number.Number8, ClientCertificateType).read(binary);
         const supported_signature_algorithms = vector.ArrayVector(number.Number16, signature.SignatureAndHashAlgorithm).read(binary);
         const certificate_authorities = vector.BufferVector(number.Number16).read(binary);
-        if (binary.offset - start > length)
+        if (binary.offset - start !== length)
             throw new Error(`Invalid ${this.name} length`);
         return new this(certificate_types, supported_signature_algorithms, certificate_authorities);
     }

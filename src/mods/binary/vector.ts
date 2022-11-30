@@ -109,7 +109,7 @@ export const ArrayVector = <L extends NumberX, T extends Writable & Readable<T>>
     while (binary.offset - start < length)
       array.push(type.read(binary))
 
-    if (binary.offset - start > length)
+    if (binary.offset - start !== length)
       throw new Error(`Invalid vector length`)
 
     return new this(array)

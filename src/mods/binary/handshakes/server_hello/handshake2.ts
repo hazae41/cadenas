@@ -27,7 +27,7 @@ export class ServerHello2 {
     const cipher_suite = binary.readUint16()
     const compression_methods = BufferVector<Number8>(Number8).read(binary)
 
-    if (binary.offset - start > length)
+    if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     const extensions = binary.offset - start < length

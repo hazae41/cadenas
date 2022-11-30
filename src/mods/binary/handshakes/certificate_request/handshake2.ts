@@ -52,7 +52,7 @@ export class CertificateRequest2 {
     const supported_signature_algorithms = ArrayVector<Number16, SignatureAndHashAlgorithm>(Number16, SignatureAndHashAlgorithm).read(binary)
     const certificate_authorities = BufferVector<Number16>(Number16).read(binary)
 
-    if (binary.offset - start > length)
+    if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(certificate_types, supported_signature_algorithms, certificate_authorities)

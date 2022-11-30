@@ -27,7 +27,7 @@ class ServerKeyExchange2Anonymous {
     static read(binary, length) {
         const start = binary.offset;
         const params = ServerDHParams.read(binary);
-        if (binary.offset - start > length)
+        if (binary.offset - start !== length)
             throw new Error(`Invalid ${this.name} length`);
         return new this(params);
     }
@@ -43,7 +43,7 @@ class ServerKeyExchange2Ephemeral {
         const start = binary.offset;
         const params = ServerDHParams.read(binary);
         const signed_params = signature.DigitallySigned.read(binary);
-        if (binary.offset - start > length)
+        if (binary.offset - start !== length)
             throw new Error(`Invalid ${this.name} length`);
         return new this(params, signed_params);
     }
@@ -58,7 +58,7 @@ class ServerKeyExchange2 {
         /**
          * Nothing to read
          */
-        if (binary.offset - start > length)
+        if (binary.offset - start !== length)
             throw new Error(`Invalid ${this.name} length`);
         return new this();
     }

@@ -15,7 +15,7 @@ export class ServerHelloDone2 {
      * Nothing to read
      */
 
-    if (binary.offset - start > length)
+    if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this()
