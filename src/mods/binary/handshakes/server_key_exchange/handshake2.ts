@@ -22,8 +22,8 @@ export class ServerDHParams {
   }
 }
 
-export class ServerKeyExchange2DHA {
-  readonly class = ServerKeyExchange2DHA
+export class ServerKeyExchange2Anonymous {
+  readonly class = ServerKeyExchange2Anonymous
 
   static type = Handshake.types.server_key_exchange
 
@@ -43,8 +43,8 @@ export class ServerKeyExchange2DHA {
   }
 }
 
-export class ServerKeyExchange2DHE {
-  readonly class = ServerKeyExchange2DHE
+export class ServerKeyExchange2Ephemeral {
+  readonly class = ServerKeyExchange2Ephemeral
 
   static type = Handshake.types.server_key_exchange
 
@@ -63,5 +63,26 @@ export class ServerKeyExchange2DHE {
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(params, signed_params)
+  }
+}
+
+export class ServerKeyExchange2 {
+  readonly class = ServerKeyExchange2
+
+  static type = Handshake.types.server_key_exchange
+
+  constructor() { }
+
+  static read(binary: Binary, length: number) {
+    const start = binary.offset
+
+    /**
+     * Nothing to read
+     */
+
+    if (binary.offset - start > length)
+      throw new Error(`Invalid ${this.name} length`)
+
+    return new this()
   }
 }

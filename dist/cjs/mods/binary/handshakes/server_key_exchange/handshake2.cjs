@@ -19,10 +19,10 @@ class ServerDHParams {
         return new this(dh_p, dh_g, dh_Ys);
     }
 }
-class ServerKeyExchange2DHA {
+class ServerKeyExchange2Anonymous {
     constructor(params) {
         this.params = params;
-        this.class = ServerKeyExchange2DHA;
+        this.class = ServerKeyExchange2Anonymous;
     }
     static read(binary, length) {
         const start = binary.offset;
@@ -32,12 +32,12 @@ class ServerKeyExchange2DHA {
         return new this(params);
     }
 }
-ServerKeyExchange2DHA.type = handshake.Handshake.types.server_key_exchange;
-class ServerKeyExchange2DHE {
+ServerKeyExchange2Anonymous.type = handshake.Handshake.types.server_key_exchange;
+class ServerKeyExchange2Ephemeral {
     constructor(params, signed_params) {
         this.params = params;
         this.signed_params = signed_params;
-        this.class = ServerKeyExchange2DHE;
+        this.class = ServerKeyExchange2Ephemeral;
     }
     static read(binary, length) {
         const start = binary.offset;
@@ -48,9 +48,25 @@ class ServerKeyExchange2DHE {
         return new this(params, signed_params);
     }
 }
-ServerKeyExchange2DHE.type = handshake.Handshake.types.server_key_exchange;
+ServerKeyExchange2Ephemeral.type = handshake.Handshake.types.server_key_exchange;
+class ServerKeyExchange2 {
+    constructor() {
+        this.class = ServerKeyExchange2;
+    }
+    static read(binary, length) {
+        const start = binary.offset;
+        /**
+         * Nothing to read
+         */
+        if (binary.offset - start > length)
+            throw new Error(`Invalid ${this.name} length`);
+        return new this();
+    }
+}
+ServerKeyExchange2.type = handshake.Handshake.types.server_key_exchange;
 
 exports.ServerDHParams = ServerDHParams;
-exports.ServerKeyExchange2DHA = ServerKeyExchange2DHA;
-exports.ServerKeyExchange2DHE = ServerKeyExchange2DHE;
+exports.ServerKeyExchange2 = ServerKeyExchange2;
+exports.ServerKeyExchange2Anonymous = ServerKeyExchange2Anonymous;
+exports.ServerKeyExchange2Ephemeral = ServerKeyExchange2Ephemeral;
 //# sourceMappingURL=handshake2.cjs.map

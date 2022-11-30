@@ -3,6 +3,7 @@ import { Handshake } from "mods/binary/handshakes/handshake.js"
 import { Number16, Number8 } from "mods/binary/number.js"
 import { Random } from "mods/binary/random.js"
 import { ArrayVector, Vector, Vector16, Vector8 } from "mods/binary/vector.js"
+import { CipherSuite } from "mods/ciphers/cipher.js"
 
 export class ClientHello2 {
   readonly class = ClientHello2
@@ -22,12 +23,12 @@ export class ClientHello2 {
     return this.class.type
   }
 
-  static default(ciphers: number[]) {
+  static default(ciphers: CipherSuite[]) {
     const version = 0x0303
     const random = Random.default()
 
     const session_id = new (ArrayVector<Number8>(Number8))([])
-    const cipher_suites = new (Vector16<Number16>(Number16))(ciphers)
+    const cipher_suites = new (Vector16<Number16>(Number16))(ciphers.map(it => it.id))
     const compression_methods = new (Vector8<Number8>(Number8))([0])
 
     return new this(version, random, session_id, cipher_suites, compression_methods)

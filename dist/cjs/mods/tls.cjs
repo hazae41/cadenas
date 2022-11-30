@@ -16,6 +16,7 @@ class Tls {
     constructor(transport, ciphers) {
         this.transport = transport;
         this.ciphers = ciphers;
+        this.state = { type: "none" };
         this.streams = new TransformStream();
         this.buffer = Buffer.allocUnsafe(4 * 4096);
         this.wbinary = new binary.Binary(this.buffer);
@@ -126,7 +127,7 @@ class Tls {
                 return this.onCertificate(binary, handshake$1.length);
             if (handshake$1.type === handshake2$3.ServerHelloDone2.type)
                 return this.onServerHelloDone(binary, handshake$1.length);
-            if (handshake$1.type === handshake2$4.ServerKeyExchange2DHE.type)
+            if (handshake$1.type === handshake2$4.ServerKeyExchange2.type)
                 return this.onServerKeyExchange(binary, handshake$1.length);
             if (handshake$1.type === handshake2$5.CertificateRequest2.type)
                 return this.onCertificateRequest(binary, handshake$1.length);
@@ -138,6 +139,14 @@ class Tls {
         return tslib.__awaiter(this, void 0, void 0, function* () {
             const hello = handshake2$1.ServerHello2.read(binary, length);
             console.log(hello);
+            const version = hello.server_version;
+            if (version !== 0x0303)
+                throw new Error(`Unsupported ${version} version`);
+            const cipher = this.ciphers.find(it => it.id === hello.cipher_suite);
+            if (cipher === undefined)
+                throw new Error(`Unsupported ${hello.cipher_suite} cipher suite`);
+            this.state = { type: "ciphered", version, cipher };
+            console.log(cipher, version);
         });
     }
     onCertificate(binary, length) {
@@ -148,7 +157,15 @@ class Tls {
     }
     onServerKeyExchange(binary, length) {
         return tslib.__awaiter(this, void 0, void 0, function* () {
-            const hello = handshake2$4.ServerKeyExchange2DHE.read(binary, length);
+            if (this.state.type !== "ciphered")
+                throw new Error(`Invalid state for onServerKeyExchange`);
+            const hello = (() => {
+                if (this.state.cipher.anonymous)
+                    return handshake2$4.ServerKeyExchange2Anonymous;
+                if (this.state.cipher.ephemeral)
+                    return handshake2$4.ServerKeyExchange2Ephemeral;
+                return handshake2$4.ServerKeyExchange2;
+            })().read(binary, length);
             console.log(hello);
         });
     }

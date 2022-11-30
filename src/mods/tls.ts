@@ -6,11 +6,28 @@ import { ClientHello2 } from "mods/binary/handshakes/client_hello/handshake2.js"
 import { Handshake, HandshakeHeader } from "mods/binary/handshakes/handshake.js"
 import { ServerHello2 } from "mods/binary/handshakes/server_hello/handshake2.js"
 import { ServerHelloDone2 } from "mods/binary/handshakes/server_hello_done/handshake2.js"
-import { ServerKeyExchange2DHE } from "mods/binary/handshakes/server_key_exchange/handshake2.js"
+import { ServerKeyExchange2, ServerKeyExchange2Anonymous, ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_exchange/handshake2.js"
 import { RecordHeader } from "mods/binary/record/record.js"
+import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Transport } from "mods/transports/transport.js"
 
+export type State =
+  | NoneState
+  | CipheredState
+
+export interface NoneState {
+  type: "none"
+}
+
+export interface CipheredState {
+  type: "ciphered"
+  version: number
+  cipher: CipherSuite
+}
+
 export class Tls {
+  private state: State = { type: "none" }
+
   readonly streams = new TransformStream<Buffer, Buffer>()
 
   private buffer = Buffer.allocUnsafe(4 * 4096)
@@ -19,7 +36,7 @@ export class Tls {
 
   constructor(
     readonly transport: Transport,
-    readonly ciphers: number[]
+    readonly ciphers: CipherSuite[]
   ) {
     this.tryRead()
 
@@ -137,7 +154,7 @@ export class Tls {
       return this.onCertificate(binary, handshake.length)
     if (handshake.type === ServerHelloDone2.type)
       return this.onServerHelloDone(binary, handshake.length)
-    if (handshake.type === ServerKeyExchange2DHE.type)
+    if (handshake.type === ServerKeyExchange2.type)
       return this.onServerKeyExchange(binary, handshake.length)
     if (handshake.type === CertificateRequest2.type)
       return this.onCertificateRequest(binary, handshake.length)
@@ -151,6 +168,18 @@ export class Tls {
     const hello = ServerHello2.read(binary, length)
 
     console.log(hello)
+
+    const version = hello.server_version
+
+    if (version !== 0x0303)
+      throw new Error(`Unsupported ${version} version`)
+
+    const cipher = this.ciphers.find(it => it.id === hello.cipher_suite)
+
+    if (cipher === undefined)
+      throw new Error(`Unsupported ${hello.cipher_suite} cipher suite`)
+
+    this.state = { type: "ciphered", version, cipher }
   }
 
   private async onCertificate(binary: Binary, length: number) {
@@ -160,7 +189,16 @@ export class Tls {
   }
 
   private async onServerKeyExchange(binary: Binary, length: number) {
-    const hello = ServerKeyExchange2DHE.read(binary, length)
+    if (this.state.type !== "ciphered")
+      throw new Error(`Invalid state for onServerKeyExchange`)
+
+    const hello = (() => {
+      if (this.state.cipher.anonymous)
+        return ServerKeyExchange2Anonymous
+      if (this.state.cipher.ephemeral)
+        return ServerKeyExchange2Ephemeral
+      return ServerKeyExchange2
+    })().read(binary, length)
 
     console.log(hello)
   }
