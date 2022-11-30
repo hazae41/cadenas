@@ -1,6 +1,7 @@
 'use strict';
 
 var tslib = require('tslib');
+var x509 = require('@peculiar/x509');
 var binary = require('../libs/binary.cjs');
 var alert = require('./binary/alerts/alert.cjs');
 var handshake2$2 = require('./binary/handshakes/certificate/handshake2.cjs');
@@ -151,6 +152,9 @@ class Tls {
     onCertificate(binary, length) {
         return tslib.__awaiter(this, void 0, void 0, function* () {
             const hello = handshake2$2.Certificate2.read(binary, length);
+            const certificates = hello.certificate_list.array
+                .map(it => new x509.X509Certificate(it.buffer));
+            console.log(certificates);
             console.log(hello);
         });
     }

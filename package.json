@@ -32,5 +32,8 @@
       "import": "./dist/cjs/index.cjs",
       "require": "./dist/cjs/index.cjs"
     }
+  },
+  "peerDependencies": {
+    "@peculiar/x509": "^1.9.2"
   }
 }

@@ -1,3 +1,4 @@
+import { X509Certificate } from "@peculiar/x509"
 import { Binary } from "libs/binary.js"
 import { Alert } from "mods/binary/alerts/alert.js"
 import { Certificate2 } from "mods/binary/handshakes/certificate/handshake2.js"
@@ -184,6 +185,10 @@ export class Tls {
 
   private async onCertificate(binary: Binary, length: number) {
     const hello = Certificate2.read(binary, length)
+
+    const certificates = hello.certificate_list.array
+      .map(it => new X509Certificate(it.buffer))
+    console.log(certificates)
 
     console.log(hello)
   }
