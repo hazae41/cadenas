@@ -40,10 +40,10 @@ const AnyVector = (vlength) => class {
         this.value.write(binary);
     }
 };
-const ArrayVector = (vlength) => class {
+const ArrayVector = (vlength, type) => class {
     constructor(array) {
         this.array = array;
-        this.class = ArrayVector(vlength);
+        this.class = ArrayVector(vlength, type);
     }
     get vlength() {
         return vlength;
@@ -62,7 +62,7 @@ const ArrayVector = (vlength) => class {
         for (const element of this.array)
             element.write(binary);
     }
-    static read(binary, type) {
+    static read(binary) {
         const length = vlength.read(binary).value;
         const start = binary.offset;
         const array = new Array();

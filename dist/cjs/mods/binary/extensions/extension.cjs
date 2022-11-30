@@ -20,6 +20,9 @@ class Extension {
         binary.writeUint16(this.type);
         this.data.write(binary);
     }
+    static read(binary) {
+        throw new Error(`Unimplemented`);
+    }
 }
 
 exports.Extension = Extension;

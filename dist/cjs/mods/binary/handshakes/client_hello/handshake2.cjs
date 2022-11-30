@@ -21,7 +21,7 @@ class ClientHello2 {
     static default(ciphers) {
         const version = 0x0303;
         const random$1 = random.Random.default();
-        const session_id = new (vector.ArrayVector(number.Number8))([]);
+        const session_id = new (vector.ArrayVector(number.Number8, number.Number8))([]);
         const cipher_suites = new (vector.Vector16(number.Number16))(ciphers.map(it => it.id));
         const compression_methods = new (vector.Vector8(number.Number8))([0]);
         return new this(version, random$1, session_id, cipher_suites, compression_methods);

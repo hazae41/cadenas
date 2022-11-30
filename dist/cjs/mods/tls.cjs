@@ -146,7 +146,6 @@ class Tls {
             if (cipher === undefined)
                 throw new Error(`Unsupported ${hello.cipher_suite} cipher suite`);
             this.state = { type: "ciphered", version, cipher };
-            console.log(cipher, version);
         });
     }
     onCertificate(binary, length) {

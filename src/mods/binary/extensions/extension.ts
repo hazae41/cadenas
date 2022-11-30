@@ -29,4 +29,8 @@ export class Extension {
     binary.writeUint16(this.type)
     this.data.write(binary)
   }
+
+  static read(binary: Binary): Extension {
+    throw new Error(`Unimplemented`)
+  }
 }

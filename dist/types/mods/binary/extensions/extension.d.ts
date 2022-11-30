@@ -14,6 +14,7 @@ declare class Extension {
     static from(extension: IExtension): Extension;
     size(): number;
     write(binary: Binary): void;
+    static read(binary: Binary): Extension;
 }
 
 export { Extension, IExtension };

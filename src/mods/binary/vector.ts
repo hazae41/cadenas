@@ -62,14 +62,14 @@ export const AnyVector = <L extends NumberX = any>(vlength: L["class"]) => class
   }
 }
 
-export type ArrayVector<L extends NumberX, W extends Writable = any> =
-  InstanceType<ReturnType<typeof ArrayVector<L, W>>>
+export type ArrayVector<L extends NumberX, T extends Writable & Readable<T>> =
+  InstanceType<ReturnType<typeof ArrayVector<L, T>>>
 
-export const ArrayVector = <L extends NumberX, W extends Writable = any>(vlength: L["class"]) => class {
-  readonly class = ArrayVector(vlength)
+export const ArrayVector = <L extends NumberX, T extends Writable & Readable<T>>(vlength: L["class"], type: T["class"]) => class {
+  readonly class = ArrayVector(vlength, type)
 
   constructor(
-    readonly array: W[]
+    readonly array: T[]
   ) { }
 
   get vlength() {
@@ -97,11 +97,11 @@ export const ArrayVector = <L extends NumberX, W extends Writable = any>(vlength
       element.write(binary)
   }
 
-  static read<R extends W & Readable<W> = any>(binary: Binary, type: R["class"]) {
+  static read(binary: Binary) {
     const length = vlength.read(binary).value
 
     const start = binary.offset
-    const array = new Array<W>()
+    const array = new Array<T>()
 
     while (binary.offset - start < length)
       array.push(type.read(binary))

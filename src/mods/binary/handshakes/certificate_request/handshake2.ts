@@ -48,8 +48,8 @@ export class CertificateRequest2 {
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
-    const certificate_types = ArrayVector<Number8, ClientCertificateType>(Number8).read(binary, ClientCertificateType)
-    const supported_signature_algorithms = ArrayVector<Number16, SignatureAndHashAlgorithm>(Number16).read(binary, SignatureAndHashAlgorithm)
+    const certificate_types = ArrayVector<Number8, ClientCertificateType>(Number8, ClientCertificateType).read(binary)
+    const supported_signature_algorithms = ArrayVector<Number16, SignatureAndHashAlgorithm>(Number16, SignatureAndHashAlgorithm).read(binary)
     const certificate_authorities = BufferVector<Number16>(Number16).read(binary)
 
     if (binary.offset - start > length)
