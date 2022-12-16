@@ -12,6 +12,11 @@
     "build": "rimraf dist && rollup -c",
     "prepare": "npm run build"
   },
+  "peerDependencies": {
+    "@hazae41/asn1": "^1.0.6",
+    "@hazae41/binary": "^1.0.0",
+    "@hazae41/x509": "^1.0.2"
+  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^23.0.2",
     "@rollup/plugin-node-resolve": "^15.0.1",
@@ -33,7 +38,7 @@
       "require": "./dist/cjs/index.cjs"
     }
   },
-  "peerDependencies": {
-    "@peculiar/x509": "^1.9.2"
-  }
+  "files": [
+    "/dist"
+  ]
 }

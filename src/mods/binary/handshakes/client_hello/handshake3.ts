@@ -1,4 +1,4 @@
-import { Binary } from "libs/binary.js"
+import { Binary } from "@hazae41/binary"
 import { generateRandom } from "libs/random.js"
 import { Extension } from "mods/binary/extensions/extension.js"
 import { ClientSupportedVersions } from "mods/binary/extensions/supported_versions/extension.js"

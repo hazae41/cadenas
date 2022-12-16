@@ -1,4 +1,4 @@
-import { Binary } from "libs/binary.js"
+import { Binary } from "@hazae41/binary"
 import { Record } from "mods/binary/record/record.js"
 import { Writable } from "mods/binary/writable.js"
 

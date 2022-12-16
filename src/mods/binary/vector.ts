@@ -1,4 +1,4 @@
-import { Binary } from "libs/binary.js";
+import { Binary } from "@hazae41/binary";
 import { NumberX } from "mods/binary/number.js";
 import { Readable } from "mods/binary/readable.js";
 import { Writable } from "mods/binary/writable.js";

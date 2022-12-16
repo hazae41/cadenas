@@ -1,4 +1,4 @@
-import { Binary } from "libs/binary.js"
+import { Binary } from "@hazae41/binary"
 import { Handshake } from "mods/binary/handshakes/handshake.js"
 import { Number16 } from "mods/binary/number.js"
 import { DigitallySigned } from "mods/binary/signature.js"

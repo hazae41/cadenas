@@ -1,4 +1,4 @@
-import { Binary } from "libs/binary.js"
+import { Binary } from "@hazae41/binary"
 import { Writable } from "mods/binary/writable.js"
 
 export interface IRecord extends Writable {

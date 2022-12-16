@@ -1,4 +1,4 @@
-import { Binary } from "libs/binary.js"
+import { Binary } from "@hazae41/binary"
 import { Number16 } from "mods/binary/number.js"
 import { AnyVector, Vector } from "mods/binary/vector.js"
 import { Writable } from "mods/binary/writable.js"
