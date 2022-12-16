@@ -6,7 +6,7 @@ import { ArrayVector, Vector, Vector16, Vector8 } from "mods/binary/vector.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 
 export class ClientHello2 {
-  readonly class = ClientHello2
+  readonly #class = ClientHello2
 
   static type = Handshake.types.client_hello
 
@@ -19,8 +19,12 @@ export class ClientHello2 {
     readonly extensions?: Vector<Number16>
   ) { }
 
+  get class() {
+    return this.#class
+  }
+
   get type() {
-    return this.class.type
+    return this.#class.type
   }
 
   static default(ciphers: CipherSuite[]) {

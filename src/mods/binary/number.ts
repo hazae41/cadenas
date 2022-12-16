@@ -6,7 +6,7 @@ export type NumberX =
   | Number24
 
 export class Number8 {
-  readonly class = Number8
+  readonly #class = Number8
 
   static size: 1 = 1
 
@@ -14,8 +14,12 @@ export class Number8 {
     readonly value: number
   ) { }
 
+  get class() {
+    return this.#class
+  }
+
   size() {
-    return this.class.size
+    return this.#class.size
   }
 
   write(binary: Binary) {
@@ -28,7 +32,7 @@ export class Number8 {
 }
 
 export class Number16 {
-  readonly class = Number16
+  readonly #class = Number16
 
   static size: 2 = 2
 
@@ -36,8 +40,12 @@ export class Number16 {
     readonly value: number
   ) { }
 
+  get class() {
+    return this.#class
+  }
+
   size() {
-    return this.class.size
+    return this.#class.size
   }
 
   write(binary: Binary) {
@@ -50,7 +58,7 @@ export class Number16 {
 }
 
 export class Number24 {
-  readonly class = Number24
+  readonly #class = Number24
 
   static size: 3 = 3
 
@@ -58,8 +66,12 @@ export class Number24 {
     readonly value: number
   ) { }
 
+  get class() {
+    return this.#class
+  }
+
   size() {
-    return this.class.size
+    return this.#class.size
   }
 
   write(binary: Binary) {

@@ -8,7 +8,7 @@ export interface IExtension extends Writable {
 }
 
 export class Extension {
-  readonly class = Extension
+  readonly #class = Extension
 
   constructor(
     readonly type: number,
@@ -19,6 +19,10 @@ export class Extension {
     const data = new (AnyVector<Number16>(Number16))(extension)
 
     return new this(extension.type, data)
+  }
+
+  get class() {
+    return this.#class
   }
 
   size() {

@@ -4,13 +4,17 @@ import { Number8 } from "mods/binary/number.js"
 import { Vector, Vector16 } from "mods/binary/vector.js"
 
 export class ClientSupportedVersions {
-  readonly class = ClientSupportedVersions
+  readonly #class = ClientSupportedVersions
 
   static type = 43
 
   constructor(
     readonly versions: Vector<Number8>
   ) { }
+
+  get class() {
+    return this.#class
+  }
 
   static default3() {
     const versions = new (Vector16<Number8>(Number8))([0x0304])
@@ -19,7 +23,7 @@ export class ClientSupportedVersions {
   }
 
   get type() {
-    return this.class.type
+    return this.#class.type
   }
 
   size() {

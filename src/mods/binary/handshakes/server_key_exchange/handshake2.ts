@@ -5,13 +5,17 @@ import { DigitallySigned } from "mods/binary/signature.js"
 import { BufferVector, Vector } from "mods/binary/vector.js"
 
 export class ServerDHParams {
-  readonly class = ServerDHParams
+  readonly #class = ServerDHParams
 
   constructor(
     readonly dh_p: Vector<Number16>,
     readonly dh_g: Vector<Number16>,
     readonly dh_Ys: Vector<Number16>
   ) { }
+
+  get class() {
+    return this.#class
+  }
 
   static read(binary: Binary) {
     const dh_p = BufferVector<Number16>(Number16).read(binary)
@@ -23,13 +27,17 @@ export class ServerDHParams {
 }
 
 export class ServerKeyExchange2Anonymous {
-  readonly class = ServerKeyExchange2Anonymous
+  readonly #class = ServerKeyExchange2Anonymous
 
   static type = Handshake.types.server_key_exchange
 
   constructor(
     readonly params: ServerDHParams
   ) { }
+
+  get class() {
+    return this.#class
+  }
 
   static read(binary: Binary, length: number) {
     const start = binary.offset
@@ -44,7 +52,7 @@ export class ServerKeyExchange2Anonymous {
 }
 
 export class ServerKeyExchange2Ephemeral {
-  readonly class = ServerKeyExchange2Ephemeral
+  readonly #class = ServerKeyExchange2Ephemeral
 
   static type = Handshake.types.server_key_exchange
 
@@ -67,11 +75,15 @@ export class ServerKeyExchange2Ephemeral {
 }
 
 export class ServerKeyExchange2 {
-  readonly class = ServerKeyExchange2
+  readonly #class = ServerKeyExchange2
 
   static type = Handshake.types.server_key_exchange
 
   constructor() { }
+
+  get class() {
+    return this.#class
+  }
 
   static read(binary: Binary, length: number) {
     const start = binary.offset

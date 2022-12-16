@@ -4,13 +4,17 @@ import { Number24 } from "mods/binary/number.js"
 import { ArrayVector, BufferVector } from "mods/binary/vector.js"
 
 export class Certificate2 {
-  readonly class = Certificate2
+  readonly #class = Certificate2
 
   static type = Handshake.types.certificate
 
   constructor(
     readonly certificate_list: ArrayVector<Number24, BufferVector<Number24>>
   ) { }
+
+  get class() {
+    return this.#class
+  }
 
   static read(binary: Binary, length: number) {
     const start = binary.offset

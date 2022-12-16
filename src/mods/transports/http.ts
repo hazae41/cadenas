@@ -1,6 +1,6 @@
 
 // export class TlsOverHttp extends Tls {
-//   readonly class = TlsOverHttp
+//   readonly #class = TlsOverHttp
 
 //   constructor(
 //     readonly info: RequestInfo

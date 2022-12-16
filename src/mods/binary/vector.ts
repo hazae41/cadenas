@@ -11,7 +11,7 @@ export type BufferVector<L extends NumberX,> =
   InstanceType<ReturnType<typeof BufferVector<L>>>
 
 export const BufferVector = <L extends NumberX>(vlength: L["class"]) => class {
-  readonly class = BufferVector(vlength)
+  readonly #class = BufferVector(vlength)
 
   constructor(
     readonly buffer: Buffer
@@ -23,6 +23,10 @@ export const BufferVector = <L extends NumberX>(vlength: L["class"]) => class {
 
   static empty() {
     return new this(Buffer.allocUnsafe(0))
+  }
+
+  get class() {
+    return this.#class
   }
 
   size() {
@@ -44,7 +48,7 @@ export const BufferVector = <L extends NumberX>(vlength: L["class"]) => class {
 }
 
 export const AnyVector = <L extends NumberX = any>(vlength: L["class"]) => class <T extends Writable = any> {
-  readonly class = AnyVector(vlength)
+  readonly #class = AnyVector(vlength)
 
   constructor(
     readonly value: T
@@ -52,6 +56,10 @@ export const AnyVector = <L extends NumberX = any>(vlength: L["class"]) => class
 
   get vlength() {
     return vlength
+  }
+
+  get class() {
+    return this.#class
   }
 
   size() {
@@ -69,7 +77,7 @@ export type ArrayVector<L extends NumberX, T extends Writable & Readable<T>> =
   InstanceType<ReturnType<typeof ArrayVector<L, T>>>
 
 export const ArrayVector = <L extends NumberX, T extends Writable & Readable<T>>(vlength: L["class"], type: T["class"]) => class {
-  readonly class = ArrayVector(vlength, type)
+  readonly #class = ArrayVector(vlength, type)
 
   constructor(
     readonly array: T[]
@@ -77,6 +85,10 @@ export const ArrayVector = <L extends NumberX, T extends Writable & Readable<T>>
 
   get vlength() {
     return vlength
+  }
+
+  get class() {
+    return this.#class
   }
 
   size() {
@@ -117,7 +129,7 @@ export const ArrayVector = <L extends NumberX, T extends Writable & Readable<T>>
 }
 
 export const Vector8 = <L extends NumberX>(vlength: L["class"]) => class {
-  readonly class = Vector8(vlength)
+  readonly #class = Vector8(vlength)
 
   constructor(
     readonly array: number[]
@@ -125,6 +137,10 @@ export const Vector8 = <L extends NumberX>(vlength: L["class"]) => class {
 
   get vlength() {
     return vlength
+  }
+
+  get class() {
+    return this.#class
   }
 
   size() {
@@ -140,7 +156,7 @@ export const Vector8 = <L extends NumberX>(vlength: L["class"]) => class {
 }
 
 export const Vector16 = <L extends NumberX>(vlength: L["class"]) => class {
-  readonly class = Vector16(vlength)
+  readonly #class = Vector16(vlength)
 
   constructor(
     readonly array: number[]
@@ -148,6 +164,10 @@ export const Vector16 = <L extends NumberX>(vlength: L["class"]) => class {
 
   get vlength() {
     return vlength
+  }
+
+  get class() {
+    return this.#class
   }
 
   size() {

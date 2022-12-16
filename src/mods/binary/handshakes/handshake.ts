@@ -35,7 +35,7 @@ export class HandshakeHeader {
 }
 
 export class Handshake {
-  readonly class = Handshake
+  readonly #class = Handshake
 
   static type = Record.types.handshake
 
@@ -57,8 +57,12 @@ export class Handshake {
     readonly fragment: Writable
   ) { }
 
+  get class() {
+    return this.#class
+  }
+
   get type() {
-    return this.class.type
+    return this.#class.type
   }
 
   static from(handshake: IHandshake) {

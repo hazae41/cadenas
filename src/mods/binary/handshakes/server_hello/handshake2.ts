@@ -5,7 +5,7 @@ import { BufferVector, Vector } from "mods/binary/vector.js";
 import { Handshake } from "../handshake.js";
 
 export class ServerHello2 {
-  readonly class = ServerHello2
+  readonly #class = ServerHello2
 
   static type = Handshake.types.server_hello
 
@@ -17,6 +17,10 @@ export class ServerHello2 {
     readonly compression_methods: Vector<Number8>,
     readonly extensions?: Vector<Number16>
   ) { }
+
+  get class() {
+    return this.#class
+  }
 
   static read(binary: Binary, length: number) {
     const start = binary.offset

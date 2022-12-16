@@ -5,7 +5,7 @@ import { SignatureAndHashAlgorithm } from "mods/binary/signature.js"
 import { ArrayVector, BufferVector, Vector } from "mods/binary/vector.js"
 
 export class ClientCertificateType {
-  readonly class = ClientCertificateType
+  readonly #class = ClientCertificateType
 
   static types = {
     rsa_sign: 1,
@@ -21,6 +21,10 @@ export class ClientCertificateType {
     readonly type: number
   ) { }
 
+  get class() {
+    return this.#class
+  }
+
   size() {
     return 1
   }
@@ -35,7 +39,7 @@ export class ClientCertificateType {
 }
 
 export class CertificateRequest2 {
-  readonly class = CertificateRequest2
+  readonly #class = CertificateRequest2
 
   static type = Handshake.types.certificate_request
 
@@ -44,6 +48,10 @@ export class CertificateRequest2 {
     readonly supported_signature_algorithms: ArrayVector<Number16, SignatureAndHashAlgorithm>,
     readonly certificate_authorities: Vector<Number16>
   ) { }
+
+  get class() {
+    return this.#class
+  }
 
   static read(binary: Binary, length: number) {
     const start = binary.offset

@@ -42,7 +42,7 @@ export class RecordHeader {
 }
 
 export class Record {
-  readonly class = Record
+  readonly #class = Record
 
   static types = {
     invalid: 0,
@@ -60,6 +60,10 @@ export class Record {
 
   static from(record: IRecord, version: number) {
     return new this(record.type, version, record)
+  }
+
+  get class() {
+    return this.#class
   }
 
   size() {

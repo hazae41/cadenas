@@ -3,7 +3,7 @@ import { Number16 } from "mods/binary/number.js";
 import { BufferVector, Vector } from "mods/binary/vector.js";
 
 export class HashAlgorithm {
-  readonly class = HashAlgorithm
+  readonly #class = HashAlgorithm
 
   static types = {
     none: 0,
@@ -19,6 +19,10 @@ export class HashAlgorithm {
     readonly type: number
   ) { }
 
+  get class() {
+    return this.#class
+  }
+
   size() {
     return 1
   }
@@ -33,7 +37,7 @@ export class HashAlgorithm {
 }
 
 export class SignatureAlgorithm {
-  readonly class = SignatureAlgorithm
+  readonly #class = SignatureAlgorithm
 
   static types = {
     anonymous: 0,
@@ -45,6 +49,10 @@ export class SignatureAlgorithm {
   constructor(
     readonly type: number
   ) { }
+
+  get class() {
+    return this.#class
+  }
 
   size() {
     return 1
@@ -60,12 +68,16 @@ export class SignatureAlgorithm {
 }
 
 export class SignatureAndHashAlgorithm {
-  readonly class = SignatureAndHashAlgorithm
+  readonly #class = SignatureAndHashAlgorithm
 
   constructor(
     readonly hash: HashAlgorithm,
     readonly signature: SignatureAlgorithm
   ) { }
+
+  get class() {
+    return this.#class
+  }
 
   size() {
     return this.hash.size() + this.signature.size()
@@ -85,12 +97,16 @@ export class SignatureAndHashAlgorithm {
 }
 
 export class DigitallySigned {
-  readonly class = DigitallySigned
+  readonly #class = DigitallySigned
 
   constructor(
     readonly algorithm: SignatureAndHashAlgorithm,
     readonly signature: Vector<Number16>
   ) { }
+
+  get class() {
+    return this.#class
+  }
 
   size() {
     return this.algorithm.size() + this.signature.size()

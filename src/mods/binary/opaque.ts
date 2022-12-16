@@ -1,11 +1,15 @@
 import { Binary } from "@hazae41/binary"
 
 export class Opaque {
-  readonly class = Opaque
+  readonly #class = Opaque
 
   constructor(
     readonly buffer: Buffer
   ) { }
+
+  get class() {
+    return this.#class
+  }
 
   size() {
     return this.buffer.length

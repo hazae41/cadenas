@@ -1,4 +1,5 @@
 import { Binary } from "@hazae41/binary"
+import { X509 } from "@hazae41/x509"
 import { Alert } from "mods/binary/alerts/alert.js"
 import { Certificate2 } from "mods/binary/handshakes/certificate/handshake2.js"
 import { CertificateRequest2 } from "mods/binary/handshakes/certificate_request/handshake2.js"
@@ -186,7 +187,7 @@ export class Tls {
     const hello = Certificate2.read(binary, length)
 
     const certificates = hello.certificate_list.array
-      .map(it => console.log(it.buffer.toString("base64")))
+      .map(it => X509.Certificate.fromBuffer(it.buffer))
     console.log(certificates)
 
     console.log(hello)

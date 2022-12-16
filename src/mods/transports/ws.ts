@@ -1,7 +1,7 @@
 import { Transport } from "mods/transports/transport.js"
 
 export class WebSocketTransport extends EventTarget implements Transport {
-  readonly class = WebSocketTransport
+  readonly #class = WebSocketTransport
 
   constructor(
     readonly socket: WebSocket

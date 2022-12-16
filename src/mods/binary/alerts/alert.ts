@@ -2,7 +2,7 @@ import { Binary } from "@hazae41/binary"
 import { Record } from "../record/record.js"
 
 export class Alert {
-  readonly class = Alert
+  readonly #class = Alert
 
   static type = Record.types.alert
 
@@ -46,8 +46,12 @@ export class Alert {
     readonly description: number
   ) { }
 
+  get class() {
+    return this.#class
+  }
+
   get type() {
-    return this.class.type
+    return this.#class.type
   }
 
   size() {

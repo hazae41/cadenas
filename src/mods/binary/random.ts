@@ -2,7 +2,7 @@ import { Binary } from "@hazae41/binary"
 import { generateRandom } from "libs/random.js"
 
 export class Random {
-  readonly class = Random
+  readonly #class = Random
 
   constructor(
     readonly gmt_unix_time: number,
@@ -14,6 +14,10 @@ export class Random {
     const random_bytes = generateRandom(28)
 
     return new this(gmt_unix_time, random_bytes)
+  }
+
+  get class() {
+    return this.#class
   }
 
   size() {
