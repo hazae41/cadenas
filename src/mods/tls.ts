@@ -188,7 +188,10 @@ export class Tls {
 
     const certificates = hello.certificate_list.array
       .map(it => X509.Certificate.fromBuffer(it.buffer))
+
     console.log(certificates)
+    console.log(certificates.map(it => it.tbsCertificate.issuer.toNameObject()))
+    console.log(certificates.map(it => it.tbsCertificate.subject.toNameObject()))
 
     console.log(hello)
   }

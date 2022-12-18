@@ -5,9 +5,15 @@
   "description": "TLS in the browser",
   "author": "hazae41",
   "license": "MIT",
-  "types": "./dist/types/index.d.ts",
   "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.mjs",
+  "types": "./dist/types/index.d.ts",
   "sideEffects": false,
+  "files": [
+    "./dist/esm",
+    "./dist/cjs",
+    "./dist/types"
+  ],
   "scripts": {
     "build": "rimraf dist && rollup -c",
     "prepare": "npm run build"
@@ -38,7 +44,25 @@
       "require": "./dist/cjs/index.cjs"
     }
   },
-  "files": [
-    "/dist"
-  ]
+ "keywords": [
+  "tls",
+  "protocol",
+  "browser",
+  "packets",
+  "crypto",
+  "cryptography",
+  "webassembly",
+  "security",
+  "encryption",
+  "ed25519",
+  "rsa",
+  "hashing",
+  "sha256",
+  "sha1",
+  "hmac",
+  "typescript",
+  "esmodules",
+  "tested",
+  "unit-tested"
+ ]
 }
