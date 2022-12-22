@@ -1,24 +1,26 @@
+import { Transport } from "mods/transports/transport.js"
 
-// export class TlsOverHttp extends Tls {
-//   readonly #class = TlsOverHttp
+export class HttpTransport extends EventTarget implements Transport {
+  readonly #class = HttpTransport
 
-//   constructor(
-//     readonly info: RequestInfo
-//   ) {
-//     super()
-//   }
+  constructor(
+    readonly info: RequestInfo
+  ) {
+    super()
 
-//   private async fetch(body?: Buffer) {
-//     const res = await fetch(this.info, { method: "POST", body })
-//     this.onData(Buffer.from(await res.arrayBuffer()))
-//   }
+    setTimeout(() => {
+      this.fetch()
+    }, 1000)
+  }
 
-//   protected async sendRaw(buffer: Buffer) {
-//     console.log("->", buffer)
-//     return await this.fetch(buffer)
-//   }
+  private async fetch(body?: Buffer) {
+    const res = await fetch(this.info, { method: "POST", body })
+    const data = Buffer.from(await res.arrayBuffer())
+    this.dispatchEvent(new MessageEvent("message", { data }))
+  }
 
-//   private async onData(buffer: Buffer) {
-//     console.log("<-", buffer)
-//   }
-// }
+  async send(data: Buffer) {
+    console.log("->", data)
+    await this.fetch(data)
+  }
+}

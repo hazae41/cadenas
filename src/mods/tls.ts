@@ -1,5 +1,6 @@
+import { BitString, Integer, ObjectIdentifier, UTCTime } from "@hazae41/asn1"
 import { Binary } from "@hazae41/binary"
-import { X509 } from "@hazae41/x509"
+import { AlgorithmIdentifier, Certificate, Name, OID, SubjectPublicKeyInfo, TBSCertificate, TBSCertificateVersion, Validity, X509 } from "@hazae41/x509"
 import { Alert } from "mods/binary/alerts/alert.js"
 import { Certificate2 } from "mods/binary/handshakes/certificate/handshake2.js"
 import { CertificateRequest2 } from "mods/binary/handshakes/certificate_request/handshake2.js"
@@ -14,16 +15,36 @@ import { Transport } from "mods/transports/transport.js"
 
 export type State =
   | NoneState
-  | CipheredState
+  | ServerHelloHandshakeState
+  | ServerCertificateHandshakeState
 
 export interface NoneState {
   type: "none"
 }
 
-export interface CipheredState {
-  type: "ciphered"
+export interface ServerHelloHandshakeState {
+  type: "handshake",
+  turn: "server",
+  action: "hello"
   version: number
   cipher: CipherSuite
+}
+
+export interface ServerCertificateHandshakeState {
+  type: "handshake",
+  turn: "server",
+  action: "certificate",
+  version: number
+  cipher: CipherSuite,
+  certificates: Certificate[]
+}
+
+export interface ClientHandshakeState {
+  type: "handshake",
+  turn: "client",
+  version: number
+  cipher: CipherSuite,
+  certificates: Certificate[]
 }
 
 export class Tls {
@@ -168,8 +189,6 @@ export class Tls {
   private async onServerHello(binary: Binary, length: number) {
     const hello = ServerHello2.read(binary, length)
 
-    console.log(hello)
-
     const version = hello.server_version
 
     if (version !== 0x0303)
@@ -180,7 +199,7 @@ export class Tls {
     if (cipher === undefined)
       throw new Error(`Unsupported ${hello.cipher_suite} cipher suite`)
 
-    this.state = { type: "ciphered", version, cipher }
+    this.state = { type: "handshake", turn: "server", action: "hello", version, cipher }
   }
 
   private async onCertificate(binary: Binary, length: number) {
@@ -188,6 +207,8 @@ export class Tls {
 
     const certificates = hello.certificate_list.array
       .map(it => X509.Certificate.fromBuffer(it.buffer))
+
+    this.state = { ...this.state, action: "certificate", certificates }
 
     console.log(certificates)
     console.log(certificates.map(it => it.tbsCertificate.issuer.toNameObject()))
@@ -197,7 +218,7 @@ export class Tls {
   }
 
   private async onServerKeyExchange(binary: Binary, length: number) {
-    if (this.state.type !== "ciphered")
+    if (this.state.type !== "handshake")
       throw new Error(`Invalid state for onServerKeyExchange`)
 
     const hello = (() => {
@@ -219,6 +240,45 @@ export class Tls {
 
   private async onServerHelloDone(binary: Binary, length: number) {
     const hello = ServerHelloDone2.read(binary, length)
+
+    const keypair = await crypto.subtle.generateKey({
+      name: "RSASSA-PKCS1-v1_5",
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-256",
+    }, true, ["sign"]) as CryptoKeyPair
+
+    const publicKey = Buffer.from(await crypto.subtle.exportKey("spki", keypair.publicKey))
+
+    const signatureAlgorithm = new AlgorithmIdentifier(new ObjectIdentifier(OID.keys.sha256WithRSAEncryption))
+
+    const version = TBSCertificateVersion.fromNumber(2)
+
+    const serialNumber = new Integer(BigInt(12345))
+
+    const issuer = Name.fromNameObject({ commonName: "www.fjsdinfu.com" })
+
+    const notBefore = new UTCTime(new Date())
+    const notAfter = new UTCTime(new Date())
+    notAfter.value.setFullYear(notAfter.value.getFullYear() + 1)
+    const validity = new Validity(notBefore, notAfter)
+
+    const subjetPublicKeyInfo = SubjectPublicKeyInfo.fromBuffer(publicKey)
+
+    const tbsCertificate = new TBSCertificate(
+      version,
+      serialNumber,
+      signatureAlgorithm,
+      issuer,
+      validity,
+      issuer,
+      subjetPublicKeyInfo,
+      [])
+
+    const signed = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", keypair.privateKey, tbsCertificate.toBuffer())
+    const certificate = new Certificate(tbsCertificate, signatureAlgorithm, new BitString(0, Buffer.from(signed)))
+
+    console.log(certificate)
 
     console.log(hello)
   }

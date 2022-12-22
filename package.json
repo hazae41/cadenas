@@ -21,7 +21,7 @@
   "peerDependencies": {
     "@hazae41/asn1": "^1.0.6",
     "@hazae41/binary": "^1.0.0",
-    "@hazae41/x509": "^1.0.2"
+    "@hazae41/x509": "^1.0.7"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^23.0.2",
@@ -44,25 +44,25 @@
       "require": "./dist/cjs/index.cjs"
     }
   },
- "keywords": [
-  "tls",
-  "protocol",
-  "browser",
-  "packets",
-  "crypto",
-  "cryptography",
-  "webassembly",
-  "security",
-  "encryption",
-  "ed25519",
-  "rsa",
-  "hashing",
-  "sha256",
-  "sha1",
-  "hmac",
-  "typescript",
-  "esmodules",
-  "tested",
-  "unit-tested"
- ]
+  "keywords": [
+    "tls",
+    "protocol",
+    "browser",
+    "packets",
+    "crypto",
+    "cryptography",
+    "webassembly",
+    "security",
+    "encryption",
+    "ed25519",
+    "rsa",
+    "hashing",
+    "sha256",
+    "sha1",
+    "hmac",
+    "typescript",
+    "esmodules",
+    "tested",
+    "unit-tested"
+  ]
 }
