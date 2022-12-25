@@ -1,6 +1,6 @@
 import { BitString, Integer, ObjectIdentifier, UTCTime } from "@hazae41/asn1"
 import { Binary } from "@hazae41/binary"
-import { AlgorithmIdentifier, Certificate, Name, OID, SubjectPublicKeyInfo, TBSCertificate, TBSCertificateVersion, Validity, X509 } from "@hazae41/x509"
+import { AlgorithmIdentifier, Certificate, Name, OIDs, SubjectPublicKeyInfo, TBSCertificate, TBSCertificateVersion, Validity, X509 } from "@hazae41/x509"
 import { Alert } from "mods/binary/alerts/alert.js"
 import { Certificate2 } from "mods/binary/handshakes/certificate/handshake2.js"
 import { CertificateRequest2 } from "mods/binary/handshakes/certificate_request/handshake2.js"
@@ -211,8 +211,8 @@ export class Tls {
     this.state = { ...this.state, action: "certificate", certificates }
 
     console.log(certificates)
-    console.log(certificates.map(it => it.tbsCertificate.issuer.toNameObject()))
-    console.log(certificates.map(it => it.tbsCertificate.subject.toNameObject()))
+    console.log(certificates.map(it => it.tbsCertificate.issuer.toX501()))
+    console.log(certificates.map(it => it.tbsCertificate.subject.toX501()))
 
     console.log(hello)
   }
@@ -238,9 +238,7 @@ export class Tls {
     console.log(hello)
   }
 
-  private async onServerHelloDone(binary: Binary, length: number) {
-    const hello = ServerHelloDone2.read(binary, length)
-
+  private async generateCertificate() {
     const keypair = await crypto.subtle.generateKey({
       name: "RSASSA-PKCS1-v1_5",
       modulusLength: 2048,
@@ -250,13 +248,13 @@ export class Tls {
 
     const publicKey = Buffer.from(await crypto.subtle.exportKey("spki", keypair.publicKey))
 
-    const signatureAlgorithm = new AlgorithmIdentifier(new ObjectIdentifier(OID.keys.sha256WithRSAEncryption))
+    const signatureAlgorithm = new AlgorithmIdentifier(new ObjectIdentifier(OIDs.keys.sha256WithRSAEncryption))
 
     const version = TBSCertificateVersion.fromNumber(2)
 
     const serialNumber = new Integer(BigInt(12345))
 
-    const issuer = Name.fromNameObject({ commonName: "www.fjsdinfu.com" })
+    const issuer = Name.fromX501("CN=www.fjsdinfu.com")
 
     const notBefore = new UTCTime(new Date())
     const notAfter = new UTCTime(new Date())
@@ -277,6 +275,14 @@ export class Tls {
 
     const signed = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", keypair.privateKey, tbsCertificate.toBuffer())
     const certificate = new Certificate(tbsCertificate, signatureAlgorithm, new BitString(0, Buffer.from(signed)))
+
+    return certificate
+  }
+
+  private async onServerHelloDone(binary: Binary, length: number) {
+    const hello = ServerHelloDone2.read(binary, length)
+
+    const certificate = await this.generateCertificate()
 
     console.log(certificate)
 
