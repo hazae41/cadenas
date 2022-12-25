@@ -21,7 +21,7 @@
   "peerDependencies": {
     "@hazae41/asn1": "^1.0.6",
     "@hazae41/binary": "^1.0.0",
-    "@hazae41/x509": "^1.0.9"
+    "@hazae41/x509": "^1.0.11"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^23.0.2",
