@@ -1,4 +1,4 @@
-import { BitString, Integer, ObjectIdentifier, UTCTime } from "@hazae41/asn1"
+import { BitString, Integer, ObjectIdentifier } from "@hazae41/asn1"
 import { Binary } from "@hazae41/binary"
 import { AlgorithmIdentifier, Certificate, Name, OIDs, SubjectPublicKeyInfo, TBSCertificate, TBSCertificateVersion, Validity, X509 } from "@hazae41/x509"
 import { Alert } from "mods/binary/alerts/alert.js"
@@ -256,10 +256,7 @@ export class Tls {
 
     const issuer = Name.fromX501("CN=www.fjsdinfu.com")
 
-    const notBefore = new UTCTime(new Date())
-    const notAfter = new UTCTime(new Date())
-    notAfter.value.setFullYear(notAfter.value.getFullYear() + 1)
-    const validity = new Validity(notBefore, notAfter)
+    const validity = Validity.generate(365)
 
     const subjetPublicKeyInfo = SubjectPublicKeyInfo.fromBuffer(publicKey)
 
