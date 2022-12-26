@@ -339,9 +339,11 @@ export class Tls {
     const K = BigMath.umodpow(Ys, yc, p)
 
     const dh_Yc = Buffer.from(Yc.toString(16), "hex")
-    const dh_k = Buffer.from(K.toString(16), "hex")
+    const dh_K = Buffer.from(K.toString(16), "hex")
 
-    console.log(dh_k)
+    console.log(dh_K)
+
+    const premaster_secret = dh_K
 
     const vkey = new (BufferVector<Number16>(Number16))(dh_Yc)
     const cdhpe = new ClientDiffieHellmanPublicExplicit(vkey)
