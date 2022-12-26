@@ -57,6 +57,26 @@ export class ClientHello2 {
     this.extensions?.write(binary)
   }
 
+  static read(binary: Binary, length: number) {
+    const start = binary.offset
+
+    const version = binary.readUint16()
+    const random = Random.read(binary)
+
+    const session_id = ArrayVector<Number8, Number8>(Number8, Number8).read(binary)
+    const cipher_suites = Vector16<Number16>(Number16).read(binary)
+    const compression_methods = Vector8<Number8>(Number8).read(binary)
+
+    const extensions = binary.offset - start !== length
+      ? Vector8<Number16>(Number16).read(binary)
+      : undefined
+
+    if (binary.offset - start !== length)
+      throw new Error(`Invalid ${this.name} length`)
+
+    return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
+  }
+
   handshake() {
     return Handshake.from(this)
   }

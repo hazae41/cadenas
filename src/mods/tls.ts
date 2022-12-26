@@ -8,7 +8,7 @@ import { ClientHello2 } from "mods/binary/handshakes/client_hello/handshake2.js"
 import { Handshake, HandshakeHeader } from "mods/binary/handshakes/handshake.js"
 import { ServerHello2 } from "mods/binary/handshakes/server_hello/handshake2.js"
 import { ServerHelloDone2 } from "mods/binary/handshakes/server_hello_done/handshake2.js"
-import { ServerKeyExchange2, ServerKeyExchange2Anonymous, ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_exchange/handshake2.js"
+import { getServerKeyExchange2, ServerKeyExchange2 } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2.js"
 import { RecordHeader } from "mods/binary/record/record.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Transport } from "mods/transports/transport.js"
@@ -221,13 +221,7 @@ export class Tls {
     if (this.state.type !== "handshake")
       throw new Error(`Invalid state for onServerKeyExchange`)
 
-    const hello = (() => {
-      if (this.state.cipher.anonymous)
-        return ServerKeyExchange2Anonymous
-      if (this.state.cipher.ephemeral)
-        return ServerKeyExchange2Ephemeral
-      return ServerKeyExchange2
-    })().read(binary, length)
+    const hello = getServerKeyExchange2(this.state.cipher).read(binary, length)
 
     console.log(hello)
   }

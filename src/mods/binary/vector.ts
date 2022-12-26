@@ -153,6 +153,21 @@ export const Vector8 = <L extends NumberX>(vlength: L["class"]) => class {
     for (const element of this.array)
       binary.writeUint8(element)
   }
+
+  static read(binary: Binary) {
+    const length = vlength.read(binary).value
+
+    const start = binary.offset
+    const array = new Array<number>()
+
+    while (binary.offset - start < length)
+      array.push(binary.readUint8())
+
+    if (binary.offset - start !== length)
+      throw new Error(`Invalid vector length`)
+
+    return new this(array)
+  }
 }
 
 export const Vector16 = <L extends NumberX>(vlength: L["class"]) => class {
@@ -179,5 +194,20 @@ export const Vector16 = <L extends NumberX>(vlength: L["class"]) => class {
 
     for (const element of this.array)
       binary.writeUint16(element)
+  }
+
+  static read(binary: Binary) {
+    const length = vlength.read(binary).value
+
+    const start = binary.offset
+    const array = new Array<number>()
+
+    while (binary.offset - start < length)
+      array.push(binary.readUint16())
+
+    if (binary.offset - start !== length)
+      throw new Error(`Invalid vector length`)
+
+    return new this(array)
   }
 }
