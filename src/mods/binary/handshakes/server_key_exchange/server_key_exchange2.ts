@@ -4,16 +4,21 @@ import { ServerKeyExchange2Anonymous } from "mods/binary/handshakes/server_key_e
 import { ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 
+export type ServerKeyExchange2 =
+  | ServerKeyExchange2Anonymous
+  | ServerKeyExchange2Ephemeral
+  | ServerKeyExchange2None
+
 export function getServerKeyExchange2(cipher: CipherSuite) {
   if (cipher.anonymous)
     return ServerKeyExchange2Anonymous
   if (cipher.ephemeral)
     return ServerKeyExchange2Ephemeral
-  return ServerKeyExchange2
+  return ServerKeyExchange2None
 }
 
-export class ServerKeyExchange2 {
-  readonly #class = ServerKeyExchange2
+export class ServerKeyExchange2None {
+  readonly #class = ServerKeyExchange2None
 
   static type = Handshake.types.server_key_exchange
 
