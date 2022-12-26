@@ -271,11 +271,12 @@ export class Tls {
   }
 
   private async onServerHelloDone(binary: Binary, length: number) {
+    if (this.state.type !== "handshake")
+      throw new Error(`Invalid state for onServerHelloDone`)
+
     const hello = ServerHelloDone2.read(binary, length)
 
-    const certificate = await this.generateCertificate()
-
-    console.log(certificate)
+    console.log(this.state.cipher)
 
     console.log(hello)
   }
