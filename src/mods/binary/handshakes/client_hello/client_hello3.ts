@@ -1,7 +1,7 @@
 import { Binary } from "@hazae41/binary"
 import { generateRandom } from "libs/random.js"
 import { Extension } from "mods/binary/extensions/extension.js"
-import { ClientSupportedVersions } from "mods/binary/extensions/supported_versions/extension.js"
+import { ClientSupportedVersions } from "mods/binary/extensions/supported_versions/supported_versions.js"
 import { Handshake } from "mods/binary/handshakes/handshake.js"
 import { Number16, Number8 } from "mods/binary/number.js"
 import { ArrayVector, Vector, Vector16, Vector8 } from "mods/binary/vector.js"

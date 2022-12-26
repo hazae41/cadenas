@@ -1,1 +1,1 @@
-export * from "./handshake2.js";
+export * from "./certificate2.js";
