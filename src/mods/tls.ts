@@ -13,6 +13,7 @@ import { ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_e
 import { RecordHeader } from "mods/binary/record/record.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Transport } from "mods/transports/transport.js"
+import { PRF } from "./algorithms/prf/prf.js"
 import { ClientDiffieHellmanPublicExplicit } from "./binary/handshakes/client_key_exchange/client_diffie_hellman_public.js"
 import { ClientKeyExchange2DH } from "./binary/handshakes/client_key_exchange/client_key_exchange2_dh.js"
 import { ServerDHParams } from "./binary/handshakes/server_key_exchange/server_dh_params.js"
@@ -45,28 +46,44 @@ export interface ServerHandshakeState extends HandshakeState {
 
 export interface ClientHelloHandshakeState extends ClientHandshakeState {
   action: "client_hello"
+  client_random: Buffer
 }
 
 export interface ServerHelloHandshakeState extends ServerHandshakeState {
   action: "server_hello"
   version: number
   cipher: CipherSuite
+  client_random: Buffer
+  server_random: Buffer
 }
 
-export interface ServerCertificateHandshakeState extends Omit<ServerHelloHandshakeState, "action"> {
+export interface ServerCertificateHandshakeState extends ServerHandshakeState {
   action: "certificate"
-  certificates: Certificate[]
+  version: number
+  cipher: CipherSuite
+  client_random: Buffer
+  server_random: Buffer
+  server_certificates: Certificate[]
 }
 
-export interface ServerKeyExchangeHandshakeState extends Omit<ServerCertificateHandshakeState, "action"> {
+export interface ServerKeyExchangeHandshakeState extends ServerHandshakeState {
   action: "server_key_exchange"
+  version: number
+  cipher: CipherSuite
+  client_random: Buffer
+  server_random: Buffer
+  server_certificates: Certificate[]
   server_dh_params: ServerDHParams
 }
 
 export interface ClientCertificateHandshakeState extends ClientHandshakeState {
+  action: "client_certificate"
   version: number
   cipher: CipherSuite
-  certificates: Certificate[]
+  client_random: Buffer
+  server_random: Buffer
+  server_certificates: Certificate[]
+  server_dh_params: ServerDHParams
 }
 
 export class Tls {
@@ -94,12 +111,16 @@ export class Tls {
   }
 
   async handshake() {
-    const hello = ClientHello2
-      .default(this.ciphers)
-      .handshake()
-      .record(0x0301)
-      .export()
-    await this.transport.send(hello.buffer)
+    const hello = ClientHello2.default(this.ciphers)
+
+    const record = hello.handshake().record(0x0301)
+    const precord = this.transport.send(record.export().buffer)
+
+    const client_random = hello.random.export().buffer
+
+    this.state = { ...this.state, type: "handshake", turn: "client", action: "client_hello", client_random }
+
+    await precord
   }
 
   private async onMessage(event: Event) {
@@ -209,6 +230,13 @@ export class Tls {
   }
 
   private async onServerHello(binary: Binary, length: number) {
+    if (this.state.type !== "handshake")
+      throw new Error(`Invalid state`)
+    if (this.state.turn !== "client")
+      throw new Error(`Invalid state`)
+    if (this.state.action !== "client_hello")
+      throw new Error(`Invalid state`)
+
     const hello = ServerHello2.read(binary, length)
 
     const version = hello.server_version
@@ -221,7 +249,9 @@ export class Tls {
     if (cipher === undefined)
       throw new Error(`Unsupported ${hello.cipher_suite} cipher suite`)
 
-    this.state = { type: "handshake", turn: "server", action: "server_hello", version, cipher }
+    const server_random = hello.random.export().buffer
+
+    this.state = { ...this.state, type: "handshake", turn: "server", action: "server_hello", version, cipher, server_random }
   }
 
   private async onCertificate(binary: Binary, length: number) {
@@ -234,14 +264,14 @@ export class Tls {
 
     const hello = Certificate2.read(binary, length)
 
-    const certificates = hello.certificate_list.array
+    const server_certificates = hello.certificate_list.array
       .map(it => X509.Certificate.fromBuffer(it.buffer))
 
-    this.state = { ...this.state, action: "certificate", certificates }
+    this.state = { ...this.state, type: "handshake", turn: "server", action: "certificate", server_certificates }
 
-    console.log(certificates)
-    console.log(certificates.map(it => it.tbsCertificate.issuer.toX501()))
-    console.log(certificates.map(it => it.tbsCertificate.subject.toX501()))
+    console.log(server_certificates)
+    console.log(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
+    console.log(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
 
     console.log(hello)
   }
@@ -256,13 +286,12 @@ export class Tls {
 
     const serverKeyExchange = getServerKeyExchange2(this.state.cipher).read(binary, length)
 
-    if (serverKeyExchange instanceof ServerKeyExchange2Ephemeral) {
+    if (serverKeyExchange instanceof ServerKeyExchange2Ephemeral)
       this.state = {
         ...this.state,
         action: "server_key_exchange",
         server_dh_params: serverKeyExchange.params
       }
-    }
 
     console.log(serverKeyExchange)
   }
@@ -321,9 +350,22 @@ export class Tls {
 
     const hello = ServerHelloDone2.read(binary, length)
 
-    console.log(this.state.cipher)
+    const { dh_Yc, dh_Z } = await this.computeDiffieHellman(this.state)
 
-    const { dh_g, dh_p, dh_Ys } = this.state.server_dh_params
+    const vkey = new (BufferVector<Number16>(Number16))(dh_Yc)
+    const cdhpe = new ClientDiffieHellmanPublicExplicit(vkey)
+    const ckedh = new ClientKeyExchange2DH(cdhpe)
+
+    const premaster_secret = dh_Z
+
+    const secrets = await this.computeSecrets(this.state, premaster_secret)
+
+    console.log(hello)
+    console.log(secrets)
+  }
+
+  private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {
+    const { dh_g, dh_p, dh_Ys } = state.server_dh_params
 
     const g = BigInt(`0x${dh_g.buffer.toString("hex")}`)
     const p = BigInt(`0x${dh_p.buffer.toString("hex")}`)
@@ -336,19 +378,46 @@ export class Tls {
     const yc = BigInt(`0x${dh_yc.toString("hex")}`)
 
     const Yc = BigMath.umodpow(g, yc, p)
-    const K = BigMath.umodpow(Ys, yc, p)
+    const Z = BigMath.umodpow(Ys, yc, p)
 
     const dh_Yc = Buffer.from(Yc.toString(16), "hex")
-    const dh_K = Buffer.from(K.toString(16), "hex")
+    const dh_Z = Buffer.from(Z.toString(16), "hex")
 
-    console.log(dh_K)
+    return { dh_Yc, dh_Z }
+  }
 
-    const premaster_secret = dh_K
+  private async computeSecrets(state: ServerKeyExchangeHandshakeState, premaster_secret: Buffer) {
+    const { cipher, client_random, server_random } = state
 
-    const vkey = new (BufferVector<Number16>(Number16))(dh_Yc)
-    const cdhpe = new ClientDiffieHellmanPublicExplicit(vkey)
-    const ckedh = new ClientKeyExchange2DH(cdhpe)
+    const master_secret_seed = Buffer.concat([client_random, server_random])
+    const master_secret = await PRF("SHA-1", premaster_secret, "master secret", master_secret_seed, 48)
 
-    console.log(hello)
+    const key_block_length = 0
+      + (2 * cipher.hash.mac_key_length)
+      + (2 * cipher.encryption.enc_key_length)
+      + (2 * cipher.encryption.fixed_iv_length)
+
+    const key_block_seed = Buffer.concat([server_random, client_random])
+    const key_block = await PRF("SHA-1", master_secret, "key expansion", key_block_seed, key_block_length)
+
+    const key_block_binary = new Binary(key_block)
+
+    const client_write_MAC_key = key_block_binary.read(cipher.hash.mac_key_length)
+    const server_write_MAC_key = key_block_binary.read(cipher.hash.mac_key_length)
+
+    const client_write_key = key_block_binary.read(cipher.encryption.enc_key_length)
+    const server_write_key = key_block_binary.read(cipher.encryption.enc_key_length)
+
+    const client_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
+    const server_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
+
+    return {
+      client_write_MAC_key,
+      server_write_MAC_key,
+      client_write_key,
+      server_write_key,
+      client_write_IV,
+      server_write_IV
+    }
   }
 }

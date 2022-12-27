@@ -35,4 +35,12 @@ export class Random {
 
     return new this(gmt_unix_time, random_bytes)
   }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+
+    this.write(binary)
+
+    return binary
+  }
 }

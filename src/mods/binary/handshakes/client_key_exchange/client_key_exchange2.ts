@@ -7,7 +7,7 @@ export type ClientKeyExchange2 =
   | ClientKeyExchange2DH
 
 export function getClientKeyExchange2(cipher: CipherSuite) {
-  if (cipher.key_exchange === "rsa")
-    return ClientKeyExchange2RSA
+  // if (cipher.key_exchange === "rsa")
+  //   return ClientKeyExchange2RSA
   return ClientKeyExchange2DH
 }

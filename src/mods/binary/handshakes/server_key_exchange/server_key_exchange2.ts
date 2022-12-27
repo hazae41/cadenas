@@ -10,9 +10,9 @@ export type ServerKeyExchange2 =
   | ServerKeyExchange2None
 
 export function getServerKeyExchange2(cipher: CipherSuite) {
-  if (cipher.anonymous)
+  if (cipher.key_exchange.anonymous)
     return ServerKeyExchange2Anonymous
-  if (cipher.ephemeral)
+  if (cipher.key_exchange.ephemeral)
     return ServerKeyExchange2Ephemeral
   return ServerKeyExchange2None
 }
