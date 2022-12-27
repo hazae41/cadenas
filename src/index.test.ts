@@ -1,11 +1,18 @@
+import crypto from "crypto"
+
+globalThis.crypto = crypto as any
+
+export * from "./mods/index.test.js"
+
 import { Binary } from "@hazae41/binary"
 import { test } from "@hazae41/phobos"
 import { Alert, ClientHello2, Handshake, HandshakeHeader } from "index.js"
 import { RecordHeader } from "mods/binary/record/record.js"
+import { relative, resolve } from "path"
 
-function hexToBuffer(hex: string) {
-  return Buffer.from(hex, "hex")
-}
+const directory = resolve("./dist/test/")
+const { pathname } = new URL(import.meta.url)
+console.log(relative(directory, pathname.replace(".cjs", ".ts")))
 
 function read(hex: string) {
   const buffer = Buffer.from(hex, "hex")
