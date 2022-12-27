@@ -1,4 +1,4 @@
-import { HttpTransport, Tls, TLS_DHE_RSA_WITH_AES_256_CBC_SHA, WebSocketTransport } from "@hazae41/telsa"
+import { Ciphers, HttpTransport, Tls, WebSocketTransport } from "@hazae41/telsa"
 import { useCallback } from "react"
 
 async function ws() {
@@ -25,7 +25,7 @@ export default function Home() {
     const transport = await http()
 
     const tls = new Tls(transport, [
-      TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+      Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
       // TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
       // TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA
     ])
