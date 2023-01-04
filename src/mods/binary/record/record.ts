@@ -131,10 +131,8 @@ export class GenericBlockCipher {
   }
 
   into<T extends Writable & ReadableChecked<T>>(clazz: T["class"]) {
-    const decrypted = this.content // TODO
-    const binary = new Binary(decrypted)
-
-    return clazz.read(binary, binary.buffer.length)
+    const binary = new Binary(this.content)
+    return clazz.read(binary, this.content.length)
   }
 
   size() {
