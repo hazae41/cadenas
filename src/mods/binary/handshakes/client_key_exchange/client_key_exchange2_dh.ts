@@ -28,6 +28,6 @@ export class ClientKeyExchange2DH {
   }
 
   handshake() {
-    return Handshake.from(this)
+    return new Handshake(this.type, this)
   }
 }

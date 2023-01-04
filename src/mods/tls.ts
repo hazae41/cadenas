@@ -16,8 +16,10 @@ import { Transport } from "mods/transports/transport.js"
 import { PRF } from "./algorithms/prf/prf.js"
 import { ClientDiffieHellmanPublicExplicit } from "./binary/handshakes/client_key_exchange/client_diffie_hellman_public.js"
 import { ClientKeyExchange2DH } from "./binary/handshakes/client_key_exchange/client_key_exchange2_dh.js"
+import { Finished2 } from "./binary/handshakes/finished/finished2.js"
 import { ServerDHParams } from "./binary/handshakes/server_key_exchange/server_dh_params.js"
 import { Number16 } from "./binary/number.js"
+import { ChangeCipherSpec } from "./binary/record/change_cipher_spec/change_cipher_spec.js"
 import { BufferVector } from "./binary/vector.js"
 
 export type State =
@@ -34,6 +36,7 @@ export interface NoneState {
 
 export interface HandshakeState {
   type: "handshake"
+  messages: Buffer[]
 }
 
 export interface ClientHandshakeState extends HandshakeState {
@@ -118,7 +121,7 @@ export class Tls {
 
     const client_random = hello.random.export().buffer
 
-    this.state = { ...this.state, type: "handshake", turn: "client", action: "client_hello", client_random }
+    this.state = { ...this.state, type: "handshake", messages: [], turn: "client", action: "client_hello", client_random }
 
     await precord
   }
@@ -194,39 +197,55 @@ export class Tls {
   }
 
   private async onRecord(binary: Binary, record: RecordHeader) {
-    if (record.type === Alert.type)
-      return this.onAlert(binary, record.length)
-    if (record.type === Handshake.type)
-      return this.onHandshake(binary, record.length)
+    if (record.subtype === Alert.type)
+      return this.onAlert(binary, record)
+    if (record.subtype === Handshake.type)
+      return this.onHandshake(binary, record)
+    if (record.subtype === ChangeCipherSpec.type)
+      return this.onChangeCipherSpec(binary, record)
 
     binary.offset += record.length
 
     console.warn(record)
   }
 
-  private async onAlert(binary: Binary, length: number) {
-    const alert = Alert.read(binary, length)
+  private async onAlert(binary: Binary, record: RecordHeader) {
+    const { fragment } = record.plaintext<Alert>(binary, Alert)
 
-    console.log(alert)
+    console.log(fragment)
   }
 
-  private async onHandshake(binary: Binary, length: number) {
-    const handshake = HandshakeHeader.read(binary, length)
+  private async onChangeCipherSpec(binary: Binary, record: RecordHeader) {
+    const { fragment } = record.plaintext<ChangeCipherSpec>(binary, ChangeCipherSpec)
 
-    if (handshake.type === ServerHello2.type)
-      return this.onServerHello(binary, handshake.length)
-    if (handshake.type === Certificate2.type)
-      return this.onCertificate(binary, handshake.length)
-    if (handshake.type === ServerHelloDone2.type)
-      return this.onServerHelloDone(binary, handshake.length)
-    if (handshake.type === ServerKeyExchange2None.type)
-      return this.onServerKeyExchange(binary, handshake.length)
-    if (handshake.type === CertificateRequest2.type)
-      return this.onCertificateRequest(binary, handshake.length)
+    console.log(fragment)
+  }
 
-    binary.offset += handshake.length
+  private async onHandshake(binary: Binary, record: RecordHeader) {
+    if (this.state.type !== "handshake")
+      throw new Error(`Invalid state`)
 
-    console.warn(handshake)
+    const raw = binary.get(length)
+
+    const { fragment } = record.plaintext<HandshakeHeader>(binary, HandshakeHeader)
+
+    if (fragment.subtype !== Handshake.types.hello_request)
+      this.state.messages.push(raw)
+
+    if (fragment.subtype === ServerHello2.type)
+      return this.onServerHello(binary, fragment.length)
+    if (fragment.subtype === Certificate2.type)
+      return this.onCertificate(binary, fragment.length)
+    if (fragment.subtype === ServerHelloDone2.type)
+      return this.onServerHelloDone(binary, fragment.length)
+    if (fragment.subtype === ServerKeyExchange2None.type)
+      return this.onServerKeyExchange(binary, fragment.length)
+    if (fragment.subtype === CertificateRequest2.type)
+      return this.onCertificateRequest(binary, fragment.length)
+
+    binary.offset += fragment.length
+
+    console.warn(fragment)
   }
 
   private async onServerHello(binary: Binary, length: number) {
@@ -360,8 +379,28 @@ export class Tls {
 
     const secrets = await this.computeSecrets(this.state, premaster_secret)
 
-    console.log(hello)
     console.log(secrets)
+
+    const bhckedh = ckedh.handshake().export()
+    this.state.messages.push(bhckedh.buffer)
+
+    const handshake_messages = Buffer.concat(this.state.messages)
+
+    const verify_data = await PRF("SHA-1", secrets.master_secret, "client finished", handshake_messages, 12)
+    const finished = new Finished2(verify_data)
+
+    const brckedh = ckedh.handshake().record(this.state.version).export()
+    const brccs = new ChangeCipherSpec().record(this.state.version).export()
+    const brfinished = finished.handshake().record(this.state.version).export()
+
+    const key = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-CBC", length: 256 }, false, ["encrypt"])
+
+    const iv = new Uint8Array(16)
+    crypto.getRandomValues(iv)
+
+    const ebrfinished = await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv }, key, brfinished.buffer)
+
+    this.transport.send(Buffer.concat([brckedh.buffer, brccs.buffer, Buffer.from(ebrfinished)]))
   }
 
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {
@@ -412,6 +451,7 @@ export class Tls {
     const server_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
 
     return {
+      master_secret,
       client_write_MAC_key,
       server_write_MAC_key,
       client_write_key,

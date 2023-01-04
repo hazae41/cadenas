@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Record } from "../record/record.js"
+import { PlaintextRecord, Record } from "mods/binary/record/record.js"
 
 export class Alert {
   readonly #class = Alert
@@ -76,6 +76,6 @@ export class Alert {
   }
 
   record(version: number) {
-    return Record.from(this, version)
+    return new PlaintextRecord<Alert>(this.class.type, version, this)
   }
 }

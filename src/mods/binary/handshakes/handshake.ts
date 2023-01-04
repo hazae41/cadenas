@@ -1,23 +1,31 @@
 import { Binary } from "@hazae41/binary"
-import { Record } from "mods/binary/record/record.js"
+import { PlaintextRecord, Record } from "mods/binary/record/record.js"
 import { Writable } from "mods/binary/writable.js"
 
-export interface IHandshake extends Writable {
-  type: number
-}
-
 export class HandshakeHeader {
+  readonly #class = HandshakeHeader
+
+  static type = Record.types.handshake
+
   constructor(
-    readonly type: number,
+    readonly subtype: number,
     readonly length: number
   ) { }
+
+  get class() {
+    return this.#class
+  }
+
+  get type() {
+    return this.#class.type
+  }
 
   size() {
     return 1 + 3
   }
 
   write(binary: Binary) {
-    binary.writeUint8(this.type)
+    binary.writeUint8(this.subtype)
     binary.writeUint24(this.length)
   }
 
@@ -34,7 +42,7 @@ export class HandshakeHeader {
   }
 }
 
-export class Handshake {
+export class Handshake<T extends Writable> {
   readonly #class = Handshake
 
   static type = Record.types.handshake
@@ -50,11 +58,11 @@ export class Handshake {
     certificate_verify: 15,
     client_key_exchange: 16,
     finished: 20,
-  }
+  } as const
 
   constructor(
     readonly subtype: number,
-    readonly fragment: Writable
+    readonly fragment: T
   ) { }
 
   get class() {
@@ -63,10 +71,6 @@ export class Handshake {
 
   get type() {
     return this.#class.type
-  }
-
-  static from(handshake: IHandshake) {
-    return new this(handshake.type, handshake)
   }
 
   size() {
@@ -80,6 +84,14 @@ export class Handshake {
   }
 
   record(version: number) {
-    return Record.from(this, version)
+    return new PlaintextRecord<Handshake<T>>(this.class.type, version, this)
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+
+    this.write(binary)
+
+    return binary
   }
 }

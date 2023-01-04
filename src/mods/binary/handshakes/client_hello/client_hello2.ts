@@ -78,6 +78,6 @@ export class ClientHello2 {
   }
 
   handshake() {
-    return Handshake.from(this)
+    return new Handshake(this.type, this)
   }
 }

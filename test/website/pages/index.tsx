@@ -22,7 +22,7 @@ async function http() {
 export default function Home() {
 
   const onClick = useCallback(async () => {
-    const transport = await http()
+    const transport = await ws()
 
     const tls = new Tls(transport, [
       Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
