@@ -1,6 +1,6 @@
+import { Encryption } from "mods/ciphers/encryptions/encryption.js"
 import { Hash } from "mods/ciphers/hashes/hash.js"
 import { KeyExchange } from "mods/ciphers/key_exchanges/key_exchange.js"
-import { Encryption } from "./encryptions/encryption.js"
 
 export class CipherSuite {
   constructor(

@@ -1,26 +1,27 @@
 import { Binary } from "@hazae41/binary"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
+import { PRF } from "mods/algorithms/prf/prf.js"
 import { Alert } from "mods/binary/alerts/alert.js"
 import { Certificate2 } from "mods/binary/handshakes/certificate/certificate2.js"
 import { CertificateRequest2 } from "mods/binary/handshakes/certificate_request/certificate_request2.js"
 import { ClientHello2 } from "mods/binary/handshakes/client_hello/client_hello2.js"
+import { ClientDiffieHellmanPublicExplicit } from "mods/binary/handshakes/client_key_exchange/client_diffie_hellman_public.js"
+import { ClientKeyExchange2DH } from "mods/binary/handshakes/client_key_exchange/client_key_exchange2_dh.js"
+import { Finished2 } from "mods/binary/handshakes/finished/finished2.js"
 import { Handshake, HandshakeHeader } from "mods/binary/handshakes/handshake.js"
 import { ServerHello2 } from "mods/binary/handshakes/server_hello/server_hello2.js"
 import { ServerHelloDone2 } from "mods/binary/handshakes/server_hello_done/server_hello_done2.js"
+import { ServerDHParams } from "mods/binary/handshakes/server_key_exchange/server_dh_params.js"
 import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
+import { Number16 } from "mods/binary/number.js"
+import { ChangeCipherSpec } from "mods/binary/record/change_cipher_spec/change_cipher_spec.js"
 import { RecordHeader } from "mods/binary/record/record.js"
+import { BufferVector } from "mods/binary/vector.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
+import { Secrets } from "mods/ciphers/secrets.js"
 import { Transport } from "mods/transports/transport.js"
-import { PRF } from "./algorithms/prf/prf.js"
-import { ClientDiffieHellmanPublicExplicit } from "./binary/handshakes/client_key_exchange/client_diffie_hellman_public.js"
-import { ClientKeyExchange2DH } from "./binary/handshakes/client_key_exchange/client_key_exchange2_dh.js"
-import { Finished2 } from "./binary/handshakes/finished/finished2.js"
-import { ServerDHParams } from "./binary/handshakes/server_key_exchange/server_dh_params.js"
-import { Number16 } from "./binary/number.js"
-import { ChangeCipherSpec } from "./binary/record/change_cipher_spec/change_cipher_spec.js"
-import { BufferVector } from "./binary/vector.js"
 
 export type State =
   | NoneState
@@ -458,6 +459,6 @@ export class Tls {
       server_write_key,
       client_write_IV,
       server_write_IV
-    }
+    } as Secrets
   }
 }

@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Writable } from "./writable.js"
+import { Writable } from "mods/binary/writable.js"
 
 export interface Readable<T extends Writable> {
   class: {

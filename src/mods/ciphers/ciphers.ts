@@ -1,7 +1,7 @@
 import { CipherSuite } from "mods/ciphers/cipher.js"
+import { AES_256_CBC } from "mods/ciphers/encryptions/aes_256_cbc/aes_256_cbc.js"
 import { SHA } from "mods/ciphers/hashes/sha/sha.js"
 import { DHE_RSA } from "mods/ciphers/key_exchanges/dhe_rsa/dhe_rsa.js"
-import { AES_256_CBC } from "./encryptions/aes_256_cbc/aes_256_cbc.js"
 
 /**
  * Legacy ciphers
