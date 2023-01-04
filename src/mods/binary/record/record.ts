@@ -1,5 +1,7 @@
 import { Binary } from "@hazae41/binary"
 import { Writable } from "mods/binary/writable.js"
+import { CipherSuite } from "mods/ciphers/cipher.js"
+import { Secrets } from "mods/ciphers/secrets.js"
 import { ReadableChecked } from "../readable.js"
 
 export type Record<T extends Writable> =
@@ -60,8 +62,8 @@ export class RecordHeader {
     return new PlaintextRecord<T>(this.subtype, this.version, fragment)
   }
 
-  ciphertext<T extends Writable & ReadableChecked<T>>(binary: Binary, clazz: T["class"]) {
-    const fragment = clazz.read(binary, this.length)
+  ciphertext<T extends Writable & ReadableChecked<T>>(binary: Binary, cipher: CipherSuite, clazz: T["class"]) {
+    const fragment = GenericBlockCipher.read<T>(binary, cipher, clazz)
     return new CiphertextRecord<T>(this.subtype, this.version, fragment)
   }
 }
@@ -97,6 +99,47 @@ export class PlaintextRecord<T extends Writable> {
 
     return binary
   }
+
+  async ciphertext(cipher: CipherSuite, secrets: Secrets) {
+    const fragment = await GenericBlockCipher.from<T>(this.fragment, cipher, secrets)
+    return new CiphertextRecord<T>(this.subtype, this.version, fragment)
+  }
+}
+
+export type GenericCipher<T extends Writable> =
+  | GenericBlockCipher<T>
+
+export class GenericBlockCipher<T extends Writable> {
+
+  constructor(
+    readonly content: T,
+    readonly IV: Buffer,
+    readonly MAC: Buffer,
+    readonly padding: Buffer,
+    readonly padding_length: number
+  ) { }
+
+  static async from<T extends Writable>(content: T, cipher: CipherSuite, secrets: Secrets) {
+    const IV = Buffer.allocUnsafe(16)
+    crypto.getRandomValues(IV)
+
+    const MAC = Buffer.allocUnsafe(16)
+    const padding = Buffer.allocUnsafe(0)
+
+    return new this(content, IV, MAC, padding, 0)
+  }
+
+  size() {
+    return this.IV.length + this.content.size() + this.MAC.length + this.padding.length + 1
+  }
+
+  write(binary: Binary) {
+    // TODO
+  }
+
+  static read<T extends Writable & ReadableChecked<T>>(binary: Binary, cipher: CipherSuite, clazz: T["class"]): GenericBlockCipher<T> {
+    throw new Error("Unimplemented") // TODO
+  }
 }
 
 export class CiphertextRecord<T extends Writable> {
@@ -105,7 +148,7 @@ export class CiphertextRecord<T extends Writable> {
   constructor(
     readonly subtype: number,
     readonly version: number,
-    readonly fragment: T
+    readonly fragment: GenericBlockCipher<T>
   ) { }
 
   get class() {
