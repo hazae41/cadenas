@@ -40,6 +40,12 @@ export class HandshakeHeader {
 
     return new this(type, sublength)
   }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.buffer
+  }
 }
 
 export class Handshake<T extends Writable> {
@@ -89,9 +95,7 @@ export class Handshake<T extends Writable> {
 
   export() {
     const binary = Binary.allocUnsafe(this.size())
-
     this.write(binary)
-
-    return binary
+    return binary.buffer
   }
 }

@@ -78,4 +78,10 @@ export class Alert {
   record(version: number) {
     return new PlaintextRecord<Alert>(this.class.type, version, this)
   }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.buffer
+  }
 }

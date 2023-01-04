@@ -44,4 +44,10 @@ export class ChangeCipherSpec {
   record(version: number) {
     return new PlaintextRecord<ChangeCipherSpec>(this.class.type, version, this)
   }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.buffer
+  }
 }

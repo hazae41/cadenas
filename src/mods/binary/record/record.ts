@@ -1,10 +1,10 @@
 import { Binary } from "@hazae41/binary"
-import { Writable } from "mods/binary/writable.js"
+import { Exportable, Writable } from "mods/binary/writable.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 import { ReadableChecked } from "../readable.js"
 
-export type Record<T extends Writable> =
+export type Record<T extends Writable & Exportable> =
   | PlaintextRecord<T>
   | CiphertextRecord<T>
 
@@ -57,18 +57,18 @@ export class RecordHeader {
     return new this(type, version, length)
   }
 
-  plaintext<T extends Writable & ReadableChecked<T>>(binary: Binary, clazz: T["class"]) {
+  plaintext<T extends Writable & Exportable & ReadableChecked<T>>(binary: Binary, clazz: T["class"]) {
     const fragment = clazz.read(binary, this.length)
     return new PlaintextRecord<T>(this.subtype, this.version, fragment)
   }
 
-  ciphertext<T extends Writable & ReadableChecked<T>>(binary: Binary, cipher: CipherSuite, clazz: T["class"]) {
-    const fragment = GenericBlockCipher.read<T>(binary, cipher, clazz)
+  ciphertext<T extends Writable & ReadableChecked<T>>(binary: Binary, clazz: T["class"]) {
+    const fragment = clazz.read(binary, this.length)
     return new CiphertextRecord<T>(this.subtype, this.version, fragment)
   }
 }
 
-export class PlaintextRecord<T extends Writable> {
+export class PlaintextRecord<T extends Writable & Exportable> {
   readonly #class = PlaintextRecord<T>
 
   constructor(
@@ -94,50 +94,64 @@ export class PlaintextRecord<T extends Writable> {
 
   export() {
     const binary = Binary.allocUnsafe(this.size())
-
     this.write(binary)
-
-    return binary
+    return binary.buffer
   }
 
-  async ciphertext(cipher: CipherSuite, secrets: Secrets) {
-    const fragment = await GenericBlockCipher.from<T>(this.fragment, cipher, secrets)
-    return new CiphertextRecord<T>(this.subtype, this.version, fragment)
+  ciphertext() {
+    return new CiphertextRecord<T>(this.subtype, this.version, this.fragment)
   }
 }
 
-export type GenericCipher<T extends Writable> =
-  | GenericBlockCipher<T>
+export type GenericCipher =
+  | GenericBlockCipher
 
-export class GenericBlockCipher<T extends Writable> {
+export class GenericBlockCipher {
 
   constructor(
-    readonly content: T,
-    readonly IV: Buffer,
-    readonly MAC: Buffer,
+    readonly iv: Buffer,
+    readonly content: Buffer,
+    readonly mac: Buffer,
     readonly padding: Buffer,
     readonly padding_length: number
   ) { }
 
-  static async from<T extends Writable>(content: T, cipher: CipherSuite, secrets: Secrets) {
-    const IV = Buffer.allocUnsafe(16)
-    crypto.getRandomValues(IV)
+  static async from<T extends Writable & Exportable>(type: T) {
+    const iv = Buffer.allocUnsafe(16)
+    crypto.getRandomValues(iv)
 
-    const MAC = Buffer.allocUnsafe(16)
+    const content = type.export()
+
+    const mac = Buffer.allocUnsafe(16)
+    // TODO
+
     const padding = Buffer.allocUnsafe(0)
 
-    return new this(content, IV, MAC, padding, 0)
+    return new this(content, iv, mac, padding, 0)
+  }
+
+  into<T extends Writable & ReadableChecked<T>>(clazz: T["class"]) {
+    const decrypted = this.content // TODO
+    const binary = new Binary(decrypted)
+
+    return clazz.read(binary, binary.buffer.length)
   }
 
   size() {
-    return this.IV.length + this.content.size() + this.MAC.length + this.padding.length + 1
+    return this.iv.length + this.content.length + this.mac.length + this.padding.length + 1
   }
 
-  write(binary: Binary) {
+  async write(binary: Binary, cipher: CipherSuite, secrets: Secrets) {
+    const iv = this.iv
+    const key = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-CBC", length: 256 }, false, ["encrypt"])
+
+    const decrypted = this.content // TODO add mac and padding
+    const encryped = await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv }, key, decrypted)
+
     // TODO
   }
 
-  static read<T extends Writable & ReadableChecked<T>>(binary: Binary, cipher: CipherSuite, clazz: T["class"]): GenericBlockCipher<T> {
+  static read<T extends Writable & ReadableChecked<T>>(binary: Binary, cipher: CipherSuite, clazz: T["class"]): GenericBlockCipher {
     throw new Error("Unimplemented") // TODO
   }
 }
@@ -148,7 +162,7 @@ export class CiphertextRecord<T extends Writable> {
   constructor(
     readonly subtype: number,
     readonly version: number,
-    readonly fragment: GenericBlockCipher<T>
+    readonly fragment: T
   ) { }
 
   get class() {
@@ -168,9 +182,7 @@ export class CiphertextRecord<T extends Writable> {
 
   export() {
     const binary = Binary.allocUnsafe(this.size())
-
     this.write(binary)
-
-    return binary
+    return binary.buffer
   }
 }

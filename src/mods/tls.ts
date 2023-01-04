@@ -118,7 +118,7 @@ export class Tls {
     const hello = ClientHello2.default(this.ciphers)
 
     const record = hello.handshake().record(0x0301)
-    const precord = this.transport.send(record.export().buffer)
+    const precord = this.transport.send(record.export())
 
     const client_random = hello.random.export().buffer
 
@@ -383,7 +383,7 @@ export class Tls {
     console.log(secrets)
 
     const bhckedh = ckedh.handshake().export()
-    this.state.messages.push(bhckedh.buffer)
+    this.state.messages.push(bhckedh)
 
     const handshake_messages = Buffer.concat(this.state.messages)
 
@@ -392,16 +392,9 @@ export class Tls {
 
     const brckedh = ckedh.handshake().record(this.state.version).export()
     const brccs = new ChangeCipherSpec().record(this.state.version).export()
-    const brfinished = finished.handshake().record(this.state.version).export()
+    const brfinished = finished.handshake().record(this.state.version).ciphertext().export()
 
-    const key = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-CBC", length: 256 }, false, ["encrypt"])
-
-    const iv = new Uint8Array(16)
-    crypto.getRandomValues(iv)
-
-    const ebrfinished = await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv }, key, brfinished.buffer)
-
-    this.transport.send(Buffer.concat([brckedh.buffer, brccs.buffer, Buffer.from(ebrfinished)]))
+    this.transport.send(Buffer.concat([brckedh, brccs, brfinished]))
   }
 
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {
