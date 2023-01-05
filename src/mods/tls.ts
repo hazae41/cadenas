@@ -392,9 +392,9 @@ export class Tls {
 
     const brckedh = ckedh.handshake().record(this.state.version).export()
     const brccs = new ChangeCipherSpec().record(this.state.version).export()
-    const brfinished = finished.handshake().record(this.state.version).ciphertext().export()
+    // const brfinished = finished.handshake().record(this.state.version).ciphertext().export()
 
-    this.transport.send(Buffer.concat([brckedh, brccs, brfinished]))
+    // this.transport.send(Buffer.concat([brckedh, brccs, brfinished]))
   }
 
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {
