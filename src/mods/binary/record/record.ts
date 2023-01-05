@@ -144,6 +144,12 @@ export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
   async decrypt() {
 
   }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.buffer
+  }
 }
 
 export class PlaintextGenericBlockCipher<T extends Writable & Exportable & ReadableLenghted<T>> {
@@ -175,6 +181,8 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
     plaintext.write(premac)
 
     const mac = await HMAC("SHA-1", secrets.client_write_MAC_key, premac.buffer)
+
+    console.log("MAC", mac.toString("hex"))
 
     const length = content.length + mac.length
     const padding_length = modulup(length + 1, 16)

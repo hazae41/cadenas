@@ -18,7 +18,7 @@ async function onconn(conn: Deno.Conn) {
   for await (const { request, respondWith } of http) {
     try {
       const { socket, response } = Deno.upgradeWebSocket(request);
-      const onion = await Deno.connect({ hostname: "127.0.0.1", port: 9001, transport: "tcp" })
+      const onion = await Deno.connect({ hostname: "127.0.0.1", port: 44330, transport: "tcp" })
 
       socket.onmessage = async e => {
         try {

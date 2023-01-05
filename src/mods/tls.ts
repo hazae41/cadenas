@@ -398,6 +398,12 @@ export class Tls {
     const erfinished = await drfinished.encrypt(this.state.cipher, secrets)
     const crfinished = prfinished.ciphertext(erfinished).export()
 
+    console.log("ClientKey", brckedh.toString("hex"))
+    console.log("ChangeCipherSpec", brccs.toString("hex"))
+    console.log("PlaintextRecord", prfinished.export().toString("hex"))
+    console.log("CiphertextCipher", erfinished.export().toString("hex"))
+    console.log("CiphertextRecord", crfinished.toString("hex"))
+
     this.transport.send(Buffer.concat([brckedh, brccs, crfinished]))
   }
 
@@ -427,7 +433,7 @@ export class Tls {
     const { cipher, client_random, server_random } = state
 
     const master_secret_seed = Buffer.concat([client_random, server_random])
-    const master_secret = await PRF("SHA-1", premaster_secret, "master secret", master_secret_seed, 48)
+    const master_secret = await PRF("SHA-256", premaster_secret, "master secret", master_secret_seed, 48)
 
     const key_block_length = 0
       + (2 * cipher.hash.mac_key_length)
@@ -435,7 +441,7 @@ export class Tls {
       + (2 * cipher.encryption.fixed_iv_length)
 
     const key_block_seed = Buffer.concat([server_random, client_random])
-    const key_block = await PRF("SHA-1", master_secret, "key expansion", key_block_seed, key_block_length)
+    const key_block = await PRF("SHA-256", master_secret, "key expansion", key_block_seed, key_block_length)
 
     const key_block_binary = new Binary(key_block)
 
