@@ -17,7 +17,7 @@ import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/hands
 import { ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { Number16 } from "mods/binary/number.js"
 import { ChangeCipherSpec } from "mods/binary/record/change_cipher_spec/change_cipher_spec.js"
-import { RecordHeader } from "mods/binary/record/record.js"
+import { PlaintextGenericBlockCipher, RecordHeader } from "mods/binary/record/record.js"
 import { BufferVector } from "mods/binary/vector.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
@@ -392,9 +392,13 @@ export class Tls {
 
     const brckedh = ckedh.handshake().record(this.state.version).export()
     const brccs = new ChangeCipherSpec().record(this.state.version).export()
-    // const brfinished = finished.handshake().record(this.state.version).ciphertext().export()
 
-    // this.transport.send(Buffer.concat([brckedh, brccs, brfinished]))
+    const prfinished = finished.handshake().record(this.state.version)
+    const drfinished = await PlaintextGenericBlockCipher.from(prfinished, secrets, BigInt(0))
+    const erfinished = await drfinished.encrypt(this.state.cipher, secrets)
+    const crfinished = prfinished.ciphertext(erfinished).export()
+
+    this.transport.send(Buffer.concat([brckedh, brccs, crfinished]))
   }
 
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {

@@ -80,4 +80,10 @@ export class ClientHello2 {
   handshake() {
     return new Handshake(this.type, this)
   }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.buffer
+  }
 }

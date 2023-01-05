@@ -27,6 +27,12 @@ export class Finished2 {
   }
 
   handshake() {
-    return new Handshake(this.type, this)
+    return new Handshake<Finished2>(this.type, this)
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.buffer
   }
 }

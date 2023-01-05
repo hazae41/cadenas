@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary"
 import { PlaintextRecord, Record } from "mods/binary/record/record.js"
-import { Writable } from "mods/binary/writable.js"
+import { Exportable, Writable } from "mods/binary/writable.js"
 
 export class HandshakeHeader {
   readonly #class = HandshakeHeader
@@ -48,7 +48,7 @@ export class HandshakeHeader {
   }
 }
 
-export class Handshake<T extends Writable> {
+export class Handshake<T extends Writable & Exportable> {
   readonly #class = Handshake
 
   static type = Record.types.handshake

@@ -5,9 +5,9 @@ import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 import { ReadableLenghted } from "../readable.js"
 
-export type Record =
-  | PlaintextRecord
-  | CiphertextRecord
+export type Record<T extends Writable & Exportable & ReadableLenghted<T>> =
+  | PlaintextRecord<T>
+  | CiphertextRecord<T>
 
 export namespace Record {
 
@@ -69,7 +69,7 @@ export class RecordHeader {
   // }
 }
 
-export class PlaintextRecord<T extends Writable & Exportable = any> {
+export class PlaintextRecord<T extends Writable & Exportable> {
   readonly #class = PlaintextRecord<T>
 
   constructor(
@@ -99,16 +99,16 @@ export class PlaintextRecord<T extends Writable & Exportable = any> {
     return binary.buffer
   }
 
-  // ciphertext() {
-  //   return new CiphertextRecord<T>(this.subtype, this.version, this.fragment)
-  // }
+  ciphertext(fragment: CiphertextGenericCipher<T>) {
+    return new CiphertextRecord<T>(this.subtype, this.version, fragment)
+  }
 }
 
-export type DecryptedGenericCipher =
-  | DecryptedGenericBlockCipher
+export type PlaintextGenericCipher<T extends Writable & Exportable & ReadableLenghted<T>> =
+  | PlaintextGenericBlockCipher<T>
 
-export type EncryptedGenericCipher =
-  | EncryptedGenericBlockCipher
+export type CiphertextGenericCipher<T extends Writable & Exportable> =
+  | CiphertextGenericBlockCipher<T>
 
 /**
  * (y % m) where (x + y) % m == 0
@@ -121,7 +121,7 @@ function modulup(x: number, m: number) {
   return (m - ((x + m) % m)) % m
 }
 
-export class EncryptedGenericBlockCipher {
+export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
 
   constructor(
     readonly iv: Buffer,
@@ -146,7 +146,7 @@ export class EncryptedGenericBlockCipher {
   }
 }
 
-export class DecryptedGenericBlockCipher {
+export class PlaintextGenericBlockCipher<T extends Writable & Exportable & ReadableLenghted<T>> {
 
   constructor(
     readonly iv: Buffer,
@@ -159,18 +159,18 @@ export class DecryptedGenericBlockCipher {
     return this.padding[this.padding.length - 1]
   }
 
-  into<T extends Writable & ReadableLenghted<T>>(clazz: T["class"]) {
+  into(clazz: T["class"]) {
     const binary = new Binary(this.content)
     return clazz.read(binary, this.content.length)
   }
 
-  static async from<T extends Writable & Exportable>(plaintext: PlaintextRecord, secrets: Secrets, sequence: bigint) {
+  static async from<T extends Writable & Exportable>(plaintext: PlaintextRecord<T>, secrets: Secrets, sequence: bigint) {
     const iv = Buffer.allocUnsafe(16)
     crypto.getRandomValues(iv)
 
     const content = plaintext.fragment.export()
 
-    const premac = Binary.allocUnsafe(8)
+    const premac = Binary.allocUnsafe(8 + plaintext.size())
     premac.writeUint64(sequence)
     plaintext.write(premac)
 
@@ -191,17 +191,17 @@ export class DecryptedGenericBlockCipher {
 
     const ciphertext = await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, plaintext)
 
-    return new EncryptedGenericBlockCipher(this.iv, Buffer.from(ciphertext))
+    return new CiphertextGenericBlockCipher<T>(this.iv, Buffer.from(ciphertext))
   }
 }
 
-export class CiphertextRecord<T extends EncryptedGenericCipher = any> {
+export class CiphertextRecord<T extends Writable & Exportable> {
   readonly #class = CiphertextRecord
 
   constructor(
     readonly subtype: number,
     readonly version: number,
-    readonly fragment: T
+    readonly fragment: CiphertextGenericCipher<T>
   ) { }
 
   get class() {
@@ -219,7 +219,7 @@ export class CiphertextRecord<T extends EncryptedGenericCipher = any> {
     this.fragment.write(binary)
   }
 
-  export(cipher: CipherSuite, secrets: Secrets) {
+  export() {
     const binary = Binary.allocUnsafe(this.size())
     this.write(binary)
     return binary.buffer
