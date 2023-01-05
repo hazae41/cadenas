@@ -19,6 +19,6 @@ This is experimental software in early development
 - WebStreams based backpressure
 - (WIP) TLS 1.2
 
-### Upcoming Features
+### [Upcoming Features](https://github.com/sponsors/hazae41)
 - TLS 1.3
 - Zero RTT
