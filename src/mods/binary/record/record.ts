@@ -174,6 +174,8 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
     const iv = Buffer.allocUnsafe(16)
     crypto.getRandomValues(iv)
 
+    console.log("iv", iv.toString("hex"));
+
     const content = plaintext.fragment.export()
 
     const premac = Binary.allocUnsafe(8 + plaintext.size())
@@ -189,17 +191,27 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
     const padding = Buffer.allocUnsafe(padding_length + 1)
     padding.fill(padding_length)
 
-    return new this(content, iv, mac, padding)
+    return new this(iv, content, mac, padding)
   }
 
   async encrypt(cipher: CipherSuite, secrets: Secrets) {
-    const plaintext = Buffer.concat([this.content, this.mac, this.padding])
+    const plaintext = Buffer.concat([this.iv, this.content, this.mac, this.padding])
 
     const key = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-CBC", length: 256 }, false, ["encrypt"])
 
-    const ciphertext = await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, plaintext)
+    const ciphertext = await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: secrets.client_write_IV }, key, plaintext)
 
-    return new CiphertextGenericBlockCipher<T>(this.iv, Buffer.from(ciphertext))
+    console.log("plaintext", plaintext.toString("hex"))
+    console.log("ciphertext", Buffer.from(ciphertext).toString("hex"))
+
+    const cc = Buffer.from(ciphertext)
+    const iv = cc.subarray(0, 16)
+    const rest = cc.subarray(16)
+
+    console.log("final iv", iv.toString("hex"))
+    console.log("rest", rest.toString("hex"))
+
+    return new CiphertextGenericBlockCipher<T>(iv, rest)
   }
 }
 

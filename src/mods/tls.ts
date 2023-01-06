@@ -380,14 +380,12 @@ export class Tls {
 
     const secrets = await this.computeSecrets(this.state, premaster_secret)
 
-    console.log(secrets)
-
     const bhckedh = ckedh.handshake().export()
     this.state.messages.push(bhckedh)
 
     const handshake_messages = Buffer.concat(this.state.messages)
 
-    const verify_data = await PRF("SHA-1", secrets.master_secret, "client finished", handshake_messages, 12)
+    const verify_data = await PRF("SHA-256", secrets.master_secret, "client finished", handshake_messages, 12)
     const finished = new Finished2(verify_data)
 
     const brckedh = ckedh.handshake().record(this.state.version).export()
@@ -453,6 +451,8 @@ export class Tls {
 
     const client_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
     const server_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
+
+    console.log("original_iv", client_write_IV.toString("hex"));
 
     return {
       master_secret,
