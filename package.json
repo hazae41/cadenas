@@ -1,10 +1,10 @@
 {
   "type": "module",
-  "name": "@hazae41/telsa",
+  "name": "@hazae41/aimant",
   "version": "0.0.1",
   "description": "Zero-copy TLS protocol for the web",
-  "homepage": "https://github.com/hazae41/telsa",
-  "repository": "github:hazae41/telsa",
+  "homepage": "https://github.com/hazae41/aimant",
+  "repository": "github:hazae41/aimant",
   "author": "hazae41",
   "license": "MIT",
   "main": "./dist/cjs/index.cjs",

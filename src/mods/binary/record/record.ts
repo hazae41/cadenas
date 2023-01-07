@@ -1,5 +1,4 @@
 import { Binary } from "@hazae41/binary"
-import { HMAC } from "mods/algorithms/hmac/hmac.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
@@ -182,7 +181,8 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
     premac.writeUint64(sequence)
     plaintext.write(premac)
 
-    const mac = await HMAC("SHA-1", secrets.client_write_MAC_key, premac.buffer)
+    const mac_key = await crypto.subtle.importKey("raw", secrets.client_write_MAC_key, { name: "HMAC", hash: "SHA-1" }, false, ["sign"])
+    const mac = Buffer.from(await crypto.subtle.sign("HMAC", mac_key, premac.buffer))
 
     console.log("MAC", mac.toString("hex"))
 
