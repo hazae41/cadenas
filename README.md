@@ -1,5 +1,5 @@
 <div align="center">
-<img width="500" src="https://user-images.githubusercontent.com/4405263/210266619-a825c0da-76a6-473f-b927-fee642d30619.png" />
+<img width="500" src="https://user-images.githubusercontent.com/4405263/211163938-4b8991a3-a9a6-45c8-918d-28446cef1576.png" />
 </div>
 <h3 align="center">
 Zero-copy TLS protocol for the web 🏎️
