@@ -1,10 +1,10 @@
 {
   "type": "module",
-  "name": "@hazae41/aimant",
+  "name": "@hazae41/cadenas",
   "version": "0.0.1",
   "description": "Zero-copy TLS protocol for the web",
-  "homepage": "https://github.com/hazae41/aimant",
-  "repository": "github:hazae41/aimant",
+  "homepage": "https://github.com/hazae41/cadenas",
+  "repository": "github:hazae41/cadenas",
   "author": "hazae41",
   "license": "MIT",
   "main": "./dist/cjs/index.cjs",
