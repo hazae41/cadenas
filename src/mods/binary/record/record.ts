@@ -188,7 +188,7 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
 
     const length = content.length + mac.length
     const padding_length = modulup(length + 1, 16)
-    const padding = Bytes.alloc(padding_length + 1)
+    const padding = Bytes.allocUnsafe(padding_length + 1)
     padding.fill(padding_length)
 
     return new this(iv, content, mac, padding)

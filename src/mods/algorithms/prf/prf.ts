@@ -26,7 +26,7 @@ async function A(key: CryptoKey, seed: Uint8Array, index: number): Promise<Uint8
  * @returns 
  */
 async function P(key: CryptoKey, seed: Uint8Array, length: number) {
-  let result = Bytes.alloc(0)
+  let result = Bytes.allocUnsafe(0)
 
   for (let i = 1; result.length < length; i++)
     result = Bytes.concat([result, await HMAC(key, Bytes.concat([await A(key, seed, i), seed]))])

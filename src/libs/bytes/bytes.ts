@@ -6,7 +6,7 @@ const decoder = new TextDecoder()
 
 export namespace Bytes {
 
-  export function alloc(length: number) {
+  export function allocUnsafe(length: number) {
     return fromView(Buffer.allocUnsafe(length))
   }
 

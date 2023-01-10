@@ -96,7 +96,7 @@ export class Tls {
 
   readonly streams = new TransformStream<Uint8Array, Uint8Array>()
 
-  private buffer = Bytes.alloc(4 * 4096)
+  private buffer = Bytes.allocUnsafe(4 * 4096)
   private wbinary = new Binary(this.buffer)
   private rbinary = new Binary(this.buffer)
 
@@ -189,7 +189,7 @@ export class Tls {
       this.rbinary.offset = 0
       this.wbinary.offset = 0
 
-      this.buffer = Bytes.alloc(4 * 4096)
+      this.buffer = Bytes.allocUnsafe(4 * 4096)
       this.rbinary.view = this.buffer
       this.wbinary.view = this.buffer
 
@@ -375,7 +375,7 @@ export class Tls {
     const p = BigInt(`0x${Bytes.toHex(dh_p.bytes)}`)
     const Ys = BigInt(`0x${Bytes.toHex(dh_Ys.bytes)}`)
 
-    const dh_yc = Bytes.alloc(dh_p.bytes.length)
+    const dh_yc = Bytes.allocUnsafe(dh_p.bytes.length)
 
     crypto.getRandomValues(dh_yc)
 

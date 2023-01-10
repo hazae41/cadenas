@@ -23,7 +23,7 @@ export const BytesVector = <L extends NumberX>(vlength: L["class"]) => class {
   }
 
   static empty() {
-    return new this(Bytes.alloc(0))
+    return new this(Bytes.allocUnsafe(0))
   }
 
   get class() {
