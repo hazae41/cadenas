@@ -1,5 +1,5 @@
 import { assert, test } from "@hazae41/phobos"
-import crypto from "crypto"
+import { Bytes } from "libs/bytes/bytes.js"
 import { relative, resolve } from "path"
 import { PRF } from "./prf.js"
 
@@ -8,19 +8,14 @@ const { pathname } = new URL(import.meta.url)
 console.log(relative(directory, pathname.replace(".cjs", ".ts")))
 
 test("PRF (master secret)", async ({ message }) => {
-  const premaster_secret = Buffer.allocUnsafe(128)
+  const premaster_secret = Bytes.random(128)
 
-  crypto.getRandomValues(premaster_secret)
-
-  const client_random = Buffer.allocUnsafe(32)
-  const server_random = Buffer.allocUnsafe(32)
-
-  crypto.getRandomValues(client_random)
-  crypto.getRandomValues(server_random)
+  const client_random = Bytes.random(32)
+  const server_random = Bytes.random(32)
 
   const start = Date.now()
 
-  const seed = Buffer.concat([client_random, server_random])
+  const seed = Bytes.concat([client_random, server_random])
   const result = await PRF("SHA-1", premaster_secret, "master secret", seed, 48)
 
   const end = Date.now()

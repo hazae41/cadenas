@@ -1,4 +1,5 @@
 import { Binary } from "@hazae41/binary"
+import { Bytes } from "libs/bytes/bytes.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
@@ -123,8 +124,8 @@ function modulup(x: number, m: number) {
 export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
 
   constructor(
-    readonly iv: Buffer,
-    readonly block: Buffer
+    readonly iv: Uint8Array,
+    readonly block: Uint8Array
   ) { }
 
   size() {
@@ -154,10 +155,10 @@ export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
 export class PlaintextGenericBlockCipher<T extends Writable & Exportable & ReadableLenghted<T>> {
 
   constructor(
-    readonly iv: Buffer,
-    readonly content: Buffer,
-    readonly mac: Buffer,
-    readonly padding: Buffer
+    readonly iv: Uint8Array,
+    readonly content: Uint8Array,
+    readonly mac: Uint8Array,
+    readonly padding: Uint8Array
   ) { }
 
   get padding_length() {
@@ -170,10 +171,9 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
   }
 
   static async from<T extends Writable & Exportable>(plaintext: PlaintextRecord<T>, secrets: Secrets, sequence: bigint) {
-    const iv = Buffer.allocUnsafe(16)
-    crypto.getRandomValues(iv)
+    const iv = Bytes.random(16)
 
-    console.log("iv", iv.toString("hex"));
+    console.log("iv", Bytes.toHex(iv));
 
     const content = plaintext.fragment.export()
 
@@ -182,34 +182,33 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
     plaintext.write(premac)
 
     const mac_key = await crypto.subtle.importKey("raw", secrets.client_write_MAC_key, { name: "HMAC", hash: "SHA-1" }, false, ["sign"])
-    const mac = Buffer.from(await crypto.subtle.sign("HMAC", mac_key, premac.buffer))
+    const mac = new Uint8Array(await crypto.subtle.sign("HMAC", mac_key, premac.buffer))
 
-    console.log("MAC", mac.toString("hex"))
+    console.log("MAC", Bytes.toHex(mac))
 
     const length = content.length + mac.length
     const padding_length = modulup(length + 1, 16)
-    const padding = Buffer.allocUnsafe(padding_length + 1)
+    const padding = Bytes.alloc(padding_length + 1)
     padding.fill(padding_length)
 
     return new this(iv, content, mac, padding)
   }
 
   async encrypt(cipher: CipherSuite, secrets: Secrets) {
-    const plaintext = Buffer.concat([this.iv, this.content, this.mac, this.padding])
+    const plaintext = Bytes.concat([this.iv, this.content, this.mac, this.padding])
 
     const key = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-CBC", length: 256 }, false, ["encrypt"])
 
     const ciphertext = await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: secrets.client_write_IV }, key, plaintext)
 
-    console.log("plaintext", plaintext.toString("hex"))
-    console.log("ciphertext", Buffer.from(ciphertext).toString("hex"))
-
-    const cc = Buffer.from(ciphertext)
+    const cc = new Uint8Array(ciphertext)
     const iv = cc.subarray(0, 16)
     const rest = cc.subarray(16)
 
-    console.log("final iv", iv.toString("hex"))
-    console.log("rest", rest.toString("hex"))
+    console.log("plaintext", Bytes.toHex(plaintext))
+    console.log("ciphertext", Bytes.toHex(cc))
+    console.log("final iv", Bytes.toHex(iv))
+    console.log("rest", Bytes.toHex(rest))
 
     return new CiphertextGenericBlockCipher<T>(iv, rest)
   }

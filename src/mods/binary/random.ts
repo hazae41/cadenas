@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { generateRandom } from "libs/random.js"
+import { Bytes } from "libs/bytes/bytes.js"
 
 export class Random {
   readonly #class = Random
@@ -11,7 +11,7 @@ export class Random {
 
   static default() {
     const gmt_unix_time = ~~(Date.now() / 1000)
-    const random_bytes = generateRandom(28)
+    const random_bytes = Bytes.random(28)
 
     return new this(gmt_unix_time, random_bytes)
   }

@@ -9,12 +9,12 @@ export class WebSocketTransport extends EventTarget implements Transport {
     super()
 
     socket.addEventListener("message", async (e: MessageEvent<Blob>) => {
-      const data = Buffer.from(await e.data.arrayBuffer())
+      const data = new Uint8Array(await e.data.arrayBuffer())
       this.dispatchEvent(new MessageEvent("message", { data }))
     }, { passive: true })
   }
 
-  send(data: Buffer) {
+  send(data: Uint8Array) {
     console.log("->", data)
     this.socket.send(data)
   }

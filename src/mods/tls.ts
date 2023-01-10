@@ -51,23 +51,23 @@ export interface ServerHandshakeState extends HandshakeState {
 
 export interface ClientHelloHandshakeState extends ClientHandshakeState {
   action: "client_hello"
-  client_random: Buffer
+  client_random: Uint8Array
 }
 
 export interface ServerHelloHandshakeState extends ServerHandshakeState {
   action: "server_hello"
   version: number
   cipher: CipherSuite
-  client_random: Buffer
-  server_random: Buffer
+  client_random: Uint8Array
+  server_random: Uint8Array
 }
 
 export interface ServerCertificateHandshakeState extends ServerHandshakeState {
   action: "certificate"
   version: number
   cipher: CipherSuite
-  client_random: Buffer
-  server_random: Buffer
+  client_random: Uint8Array
+  server_random: Uint8Array
   server_certificates: Certificate[]
 }
 
@@ -75,8 +75,8 @@ export interface ServerKeyExchangeHandshakeState extends ServerHandshakeState {
   action: "server_key_exchange"
   version: number
   cipher: CipherSuite
-  client_random: Buffer
-  server_random: Buffer
+  client_random: Uint8Array
+  server_random: Uint8Array
   server_certificates: Certificate[]
   server_dh_params: ServerDHParams
 }
@@ -85,8 +85,8 @@ export interface ClientCertificateHandshakeState extends ClientHandshakeState {
   action: "client_certificate"
   version: number
   cipher: CipherSuite
-  client_random: Buffer
-  server_random: Buffer
+  client_random: Uint8Array
+  server_random: Uint8Array
   server_certificates: Certificate[]
   server_dh_params: ServerDHParams
 }
@@ -94,9 +94,9 @@ export interface ClientCertificateHandshakeState extends ClientHandshakeState {
 export class Tls {
   private state: State = { type: "none" }
 
-  readonly streams = new TransformStream<Buffer, Buffer>()
+  readonly streams = new TransformStream<Uint8Array, Uint8Array>()
 
-  private buffer = Buffer.allocUnsafe(4 * 4096)
+  private buffer = Bytes.alloc(4 * 4096)
   private wbinary = new Binary(this.buffer)
   private rbinary = new Binary(this.buffer)
 
@@ -129,7 +129,7 @@ export class Tls {
   }
 
   private async onMessage(event: Event) {
-    const message = event as MessageEvent<Buffer>
+    const message = event as MessageEvent<Uint8Array>
 
     const writer = this.streams.writable.getWriter()
     writer.write(message.data).catch(console.warn)
@@ -146,7 +146,7 @@ export class Tls {
     }
   }
 
-  private async read(reader: ReadableStreamDefaultReader<Buffer>) {
+  private async read(reader: ReadableStreamDefaultReader<Uint8Array>) {
     while (true) {
       const { done, value } = await reader.read()
 
@@ -189,7 +189,7 @@ export class Tls {
       this.rbinary.offset = 0
       this.wbinary.offset = 0
 
-      this.buffer = Buffer.allocUnsafe(4 * 4096)
+      this.buffer = Bytes.alloc(4 * 4096)
       this.rbinary.view = this.buffer
       this.wbinary.view = this.buffer
 
@@ -323,44 +323,6 @@ export class Tls {
     console.log(hello)
   }
 
-  // private async generateCertificate() {
-  //   const keypair = await crypto.subtle.generateKey({
-  //     name: "RSASSA-PKCS1-v1_5",
-  //     modulusLength: 2048,
-  //     publicExponent: new Uint8Array([1, 0, 1]),
-  //     hash: "SHA-256",
-  //   }, true, ["sign"]) as CryptoKeyPair
-
-  //   const publicKey = Buffer.from(await crypto.subtle.exportKey("spki", keypair.publicKey))
-
-  //   const signatureAlgorithm = new AlgorithmIdentifier(new ObjectIdentifier(OIDs.keys.sha256WithRSAEncryption))
-
-  //   const version = TBSCertificateVersion.fromNumber(2)
-
-  //   const serialNumber = new Integer(BigInt(12345))
-
-  //   const issuer = Name.fromX501("CN=www.fjsdinfu.com")
-
-  //   const validity = Validity.generate(365)
-
-  //   const subjetPublicKeyInfo = SubjectPublicKeyInfo.fromBuffer(publicKey)
-
-  //   const tbsCertificate = new TBSCertificate(
-  //     version,
-  //     serialNumber,
-  //     signatureAlgorithm,
-  //     issuer,
-  //     validity,
-  //     issuer,
-  //     subjetPublicKeyInfo,
-  //     [])
-
-  //   const signed = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", keypair.privateKey, tbsCertificate.toBuffer())
-  //   const certificate = new Certificate(tbsCertificate, signatureAlgorithm, new BitString(0, Buffer.from(signed)))
-
-  //   return certificate
-  // }
-
   private async onServerHelloDone(binary: Binary, length: number) {
     if (this.state.type !== "handshake")
       throw new Error(`Invalid state`)
@@ -384,7 +346,7 @@ export class Tls {
     const bhckedh = ckedh.handshake().export()
     this.state.messages.push(bhckedh)
 
-    const handshake_messages = Buffer.concat(this.state.messages)
+    const handshake_messages = Bytes.concat(this.state.messages)
 
     const verify_data = await PRF("SHA-256", secrets.master_secret, "client finished", handshake_messages, 12)
     const finished = new Finished2(verify_data)
@@ -403,7 +365,7 @@ export class Tls {
     console.log("CiphertextCipher", erfinished.export().toString("hex"))
     console.log("CiphertextRecord", crfinished.toString("hex"))
 
-    this.transport.send(Buffer.concat([brckedh, brccs, crfinished]))
+    this.transport.send(Bytes.concat([brckedh, brccs, crfinished]))
   }
 
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {
@@ -413,25 +375,25 @@ export class Tls {
     const p = BigInt(`0x${Bytes.toHex(dh_p.bytes)}`)
     const Ys = BigInt(`0x${Bytes.toHex(dh_Ys.bytes)}`)
 
-    const dh_yc = Buffer.allocUnsafe(dh_p.bytes.length)
+    const dh_yc = Bytes.alloc(dh_p.bytes.length)
 
     crypto.getRandomValues(dh_yc)
 
-    const yc = BigInt(`0x${dh_yc.toString("hex")}`)
+    const yc = BigInt(`0x${Bytes.toHex(dh_yc)}`)
 
     const Yc = BigMath.umodpow(g, yc, p)
     const Z = BigMath.umodpow(Ys, yc, p)
 
-    const dh_Yc = Buffer.from(Yc.toString(16), "hex")
-    const dh_Z = Buffer.from(Z.toString(16), "hex")
+    const dh_Yc = Bytes.fromHex(Yc.toString(16))
+    const dh_Z = Bytes.fromHex(Z.toString(16))
 
     return { dh_Yc, dh_Z }
   }
 
-  private async computeSecrets(state: ServerKeyExchangeHandshakeState, premaster_secret: Buffer) {
+  private async computeSecrets(state: ServerKeyExchangeHandshakeState, premaster_secret: Uint8Array) {
     const { cipher, client_random, server_random } = state
 
-    const master_secret_seed = Buffer.concat([client_random, server_random])
+    const master_secret_seed = Bytes.concat([client_random, server_random])
     const master_secret = await PRF("SHA-256", premaster_secret, "master secret", master_secret_seed, 48)
 
     const key_block_length = 0
@@ -439,7 +401,7 @@ export class Tls {
       + (2 * cipher.encryption.enc_key_length)
       + (2 * cipher.encryption.fixed_iv_length)
 
-    const key_block_seed = Buffer.concat([server_random, client_random])
+    const key_block_seed = Bytes.concat([server_random, client_random])
     const key_block = await PRF("SHA-256", master_secret, "key expansion", key_block_seed, key_block_length)
 
     const key_block_binary = new Binary(key_block)

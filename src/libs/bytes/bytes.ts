@@ -1,9 +1,14 @@
+import crypto from "crypto"
 import { Buffers } from "libs/buffers/buffers.js"
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
 
 export namespace Bytes {
+
+  export function alloc(length: number) {
+    return fromView(Buffer.allocUnsafe(length))
+  }
 
   export function fromView(view: ArrayBufferView) {
     return new Uint8Array(view.buffer, view.byteOffset, view.byteLength)
@@ -39,5 +44,15 @@ export namespace Bytes {
 
   export function toAscii(bytes: Uint8Array) {
     return Buffers.fromView(bytes).toString("ascii")
+  }
+
+  export function random(length: number) {
+    const buffer = Buffer.allocUnsafe(length)
+    crypto.getRandomValues(buffer)
+    return fromView(buffer)
+  }
+
+  export function concat(list: Uint8Array[]) {
+    return fromView(Buffer.concat(list))
   }
 }

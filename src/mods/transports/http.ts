@@ -13,13 +13,13 @@ export class HttpTransport extends EventTarget implements Transport {
     }, 1000)
   }
 
-  private async fetch(body?: Buffer) {
+  private async fetch(body?: Uint8Array) {
     const res = await fetch(this.info, { method: "POST", body })
-    const data = Buffer.from(await res.arrayBuffer())
+    const data = new Uint8Array(await res.arrayBuffer())
     this.dispatchEvent(new MessageEvent("message", { data }))
   }
 
-  async send(data: Buffer) {
+  async send(data: Uint8Array) {
     console.log("->", data)
     await this.fetch(data)
   }

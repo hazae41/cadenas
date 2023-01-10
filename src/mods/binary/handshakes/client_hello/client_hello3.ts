@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { generateRandom } from "libs/random.js"
+import { Bytes } from "libs/bytes/bytes.js"
 import { Extension } from "mods/binary/extensions/extension.js"
 import { ClientSupportedVersions } from "mods/binary/extensions/supported_versions/supported_versions.js"
 import { Handshake } from "mods/binary/handshakes/handshake.js"
@@ -13,7 +13,7 @@ export class ClientHello3 {
 
   constructor(
     readonly legacy_version: number,
-    readonly random: Buffer,
+    readonly random: Uint8Array,
     readonly legacy_session_id: Vector<Number8>,
     readonly cipher_suites: Vector<Number16>,
     readonly legacy_compression_methods: Vector<Number8>,
@@ -30,7 +30,7 @@ export class ClientHello3 {
 
   static default(ciphers: number[]) {
     const legacy_version = 0x0303
-    const random = generateRandom(32)
+    const random = Bytes.random(32)
 
     const legacy_session_id = new (ArrayVector<Number8, Number8>(Number8, Number8))([])
     const cipher_suites = new (Vector16<Number16>(Number16))(ciphers)

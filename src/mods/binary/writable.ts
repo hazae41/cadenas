@@ -6,5 +6,5 @@ export interface Writable {
 }
 
 export interface Exportable {
-  export(): Buffer
+  export(): Uint8Array
 }

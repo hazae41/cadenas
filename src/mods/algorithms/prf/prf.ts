@@ -1,3 +1,4 @@
+import { Bytes } from "libs/bytes/bytes.js"
 import { HMAC } from "mods/algorithms/hmac/hmac.js"
 
 /**
@@ -9,7 +10,7 @@ import { HMAC } from "mods/algorithms/hmac/hmac.js"
  * @param index 
  * @returns 
  */
-async function A(key: CryptoKey, seed: Buffer, index: number): Promise<Buffer> {
+async function A(key: CryptoKey, seed: Uint8Array, index: number): Promise<Uint8Array> {
   if (index === 0)
     return seed
   return await HMAC(key, await A(key, seed, index - 1))
@@ -24,16 +25,16 @@ async function A(key: CryptoKey, seed: Buffer, index: number): Promise<Buffer> {
  * @param length 
  * @returns 
  */
-async function P(key: CryptoKey, seed: Buffer, length: number) {
-  let result = Buffer.allocUnsafe(0)
+async function P(key: CryptoKey, seed: Uint8Array, length: number) {
+  let result = Bytes.alloc(0)
 
   for (let i = 1; result.length < length; i++)
-    result = Buffer.concat([result, await HMAC(key, Buffer.concat([await A(key, seed, i), seed]))])
+    result = Bytes.concat([result, await HMAC(key, Bytes.concat([await A(key, seed, i), seed]))])
 
   return result.subarray(0, length)
 }
 
-export async function PRF(hash: AlgorithmIdentifier, secret: Buffer, label: string, seed: Buffer, length: number) {
+export async function PRF(hash: AlgorithmIdentifier, secret: Uint8Array, label: string, seed: Uint8Array, length: number) {
   const key = await crypto.subtle.importKey("raw", secret, { name: "HMAC", hash }, false, ["sign"])
-  return await P(key, Buffer.concat([Buffer.from(label, "ascii"), seed]), length)
+  return await P(key, Bytes.concat([Bytes.fromUtf8(label), seed]), length)
 }

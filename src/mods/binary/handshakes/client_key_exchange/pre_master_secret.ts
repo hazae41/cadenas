@@ -9,7 +9,7 @@ export class PreMasterSecret {
    */
   constructor(
     readonly client_version: number,
-    readonly random: Buffer
+    readonly random: Uint8Array
   ) { }
 
   size() {

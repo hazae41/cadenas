@@ -1,4 +1,5 @@
 import { Binary } from "@hazae41/binary";
+import { Bytes } from "libs/bytes/bytes.js";
 import { NumberX } from "mods/binary/number.js";
 import { Readable } from "mods/binary/readable.js";
 import { Writable } from "mods/binary/writable.js";
@@ -22,7 +23,7 @@ export const BytesVector = <L extends NumberX>(vlength: L["class"]) => class {
   }
 
   static empty() {
-    return new this(Buffer.allocUnsafe(0))
+    return new this(Bytes.alloc(0))
   }
 
   get class() {

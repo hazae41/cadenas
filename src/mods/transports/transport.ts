@@ -1,5 +1,4 @@
-import { Promisable } from "libs/promisable.js"
 
 export interface Transport extends EventTarget {
-  send(buffer: Buffer): Promisable<void>
+  send(buffer: Uint8Array): void | Promise<void>
 }

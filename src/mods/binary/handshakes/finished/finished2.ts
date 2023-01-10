@@ -7,7 +7,7 @@ export class Finished2 {
   static type = Handshake.types.finished
 
   constructor(
-    readonly verify_data: Buffer
+    readonly verify_data: Uint8Array
   ) { }
 
   get class() {
