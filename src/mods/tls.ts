@@ -115,23 +115,21 @@ export class Tls {
   ) {
     const { signal } = params
 
-    const output = new TransformByteStream({
-      start: this.onInputStart.bind(this),
-      transform: this.onInputTransform.bind(this),
-      flush: this.onInputFlush.bind(this),
+    const read = new TransformByteStream({
+      start: this.onReadStart.bind(this),
+      transform: this.onRead.bind(this),
     })
 
-    const input = new TransformByteStream({
-      start: this.onOutputStart.bind(this),
-      transform: this.onOutputTransform.bind(this),
-      flush: this.onOutputFlush.bind(this),
+    const write = new TransformByteStream({
+      start: this.onWriteStart.bind(this),
+      transform: this.onWrite.bind(this),
     })
 
-    this.readable = output.readable
-    this.writable = input.writable
+    this.readable = read.readable
+    this.writable = write.writable
 
-    stream.readable.pipeTo(output.writable, { signal }).catch(() => { })
-    input.readable.pipeTo(stream.writable, { signal }).catch(() => { })
+    stream.readable.pipeTo(read.writable, { signal }).catch(() => { })
+    write.readable.pipeTo(stream.writable, { signal }).catch(() => { })
   }
 
   async handshake() {
@@ -145,11 +143,11 @@ export class Tls {
     this.state = { ...this.state, type: "handshake", messages: [], turn: "client", action: "client_hello", client_random }
   }
 
-  private async onInputStart(controller: TransformByteStreamController) {
+  private async onReadStart(controller: TransformByteStreamController) {
     this.input = controller
   }
 
-  private async onInputTransform(chunk: Uint8Array) {
+  private async onRead(chunk: Uint8Array) {
     this.wbinary.write(chunk)
     this.rbinary.view = this.buffer.subarray(0, this.wbinary.offset)
 
@@ -191,19 +189,11 @@ export class Tls {
     }
   }
 
-  private async onInputFlush(controller: TransformByteStreamController) {
-
-  }
-
-  private async onOutputStart(controller: TransformByteStreamController) {
+  private async onWriteStart(controller: TransformByteStreamController) {
     this.output = controller
   }
 
-  private async onOutputTransform(chunk: Uint8Array, controller: TransformByteStreamController) {
-
-  }
-
-  private async onOutputFlush(controller: TransformByteStreamController) {
+  private async onWrite(chunk: Uint8Array, controller: TransformByteStreamController) {
 
   }
 
