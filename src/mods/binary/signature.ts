@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary";
 import { Number16 } from "mods/binary/number.js";
-import { BufferVector, Vector } from "mods/binary/vector.js";
+import { BytesVector, Vector } from "mods/binary/vector.js";
 
 export class HashAlgorithm {
   readonly #class = HashAlgorithm
@@ -119,7 +119,7 @@ export class DigitallySigned {
 
   static read(binary: Binary) {
     const algorithm = SignatureAndHashAlgorithm.read(binary)
-    const signature = BufferVector<Number16>(Number16).read(binary)
+    const signature = BytesVector<Number16>(Number16).read(binary)
 
     return new this(algorithm, signature)
   }

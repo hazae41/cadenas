@@ -6,7 +6,7 @@ export class Random {
 
   constructor(
     readonly gmt_unix_time: number,
-    readonly random_bytes: Buffer
+    readonly random_bytes: Uint8Array
   ) { }
 
   static default() {

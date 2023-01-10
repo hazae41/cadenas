@@ -1,7 +1,7 @@
 import { Binary } from "@hazae41/binary";
 import { Number16, Number8 } from "mods/binary/number.js";
 import { Random } from "mods/binary/random.js";
-import { BufferVector, Vector } from "mods/binary/vector.js";
+import { BytesVector, Vector } from "mods/binary/vector.js";
 import { Handshake } from "../handshake.js";
 
 export class ServerHello2 {
@@ -27,15 +27,15 @@ export class ServerHello2 {
 
     const server_version = binary.readUint16()
     const random = Random.read(binary)
-    const session_id = BufferVector<Number8>(Number8).read(binary)
+    const session_id = BytesVector<Number8>(Number8).read(binary)
     const cipher_suite = binary.readUint16()
-    const compression_methods = BufferVector<Number8>(Number8).read(binary)
+    const compression_methods = BytesVector<Number8>(Number8).read(binary)
 
     if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     const extensions = binary.offset - start < length
-      ? BufferVector<Number16>(Number16).read(binary)
+      ? BytesVector<Number16>(Number16).read(binary)
       : undefined
 
     return new this(server_version, random, session_id, cipher_suite, compression_methods, extensions)

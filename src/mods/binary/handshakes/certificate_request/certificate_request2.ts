@@ -2,7 +2,7 @@ import { Binary } from "@hazae41/binary"
 import { Handshake } from "mods/binary/handshakes/handshake.js"
 import { Number16, Number8 } from "mods/binary/number.js"
 import { SignatureAndHashAlgorithm } from "mods/binary/signature.js"
-import { ArrayVector, BufferVector, Vector } from "mods/binary/vector.js"
+import { ArrayVector, BytesVector, Vector } from "mods/binary/vector.js"
 
 export class ClientCertificateType {
   readonly #class = ClientCertificateType
@@ -58,7 +58,7 @@ export class CertificateRequest2 {
 
     const certificate_types = ArrayVector<Number8, ClientCertificateType>(Number8, ClientCertificateType).read(binary)
     const supported_signature_algorithms = ArrayVector<Number16, SignatureAndHashAlgorithm>(Number16, SignatureAndHashAlgorithm).read(binary)
-    const certificate_authorities = BufferVector<Number16>(Number16).read(binary)
+    const certificate_authorities = BytesVector<Number16>(Number16).read(binary)
 
     if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)

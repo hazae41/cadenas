@@ -1,6 +1,7 @@
 import { Binary } from "@hazae41/binary"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
+import { Bytes } from "libs/bytes/bytes.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { Alert } from "mods/binary/alerts/alert.js"
 import { Certificate2 } from "mods/binary/handshakes/certificate/certificate2.js"
@@ -18,7 +19,7 @@ import { ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_e
 import { Number16 } from "mods/binary/number.js"
 import { ChangeCipherSpec } from "mods/binary/record/change_cipher_spec/change_cipher_spec.js"
 import { PlaintextGenericBlockCipher, RecordHeader } from "mods/binary/record/record.js"
-import { BufferVector } from "mods/binary/vector.js"
+import { BytesVector } from "mods/binary/vector.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 import { Transport } from "mods/transports/transport.js"
@@ -37,7 +38,7 @@ export interface NoneState {
 
 export interface HandshakeState {
   type: "handshake"
-  messages: Buffer[]
+  messages: Uint8Array[]
 }
 
 export interface ClientHandshakeState extends HandshakeState {
@@ -157,7 +158,7 @@ export class Tls {
   }
 
   private async onRead() {
-    this.rbinary.buffer = this.buffer.subarray(0, this.wbinary.offset)
+    this.rbinary.view = this.buffer.subarray(0, this.wbinary.offset)
 
     while (this.rbinary.remaining) {
       try {
@@ -189,8 +190,8 @@ export class Tls {
       this.wbinary.offset = 0
 
       this.buffer = Buffer.allocUnsafe(4 * 4096)
-      this.rbinary.buffer = this.buffer
-      this.wbinary.buffer = this.buffer
+      this.rbinary.view = this.buffer
+      this.wbinary.view = this.buffer
 
       this.wbinary.write(remaining)
       return
@@ -285,7 +286,7 @@ export class Tls {
     const hello = Certificate2.read(binary, length)
 
     const server_certificates = hello.certificate_list.array
-      .map(it => X509.Certificate.fromBuffer(it.buffer))
+      .map(it => X509.Certificate.fromBytes(it.bytes))
 
     this.state = { ...this.state, type: "handshake", turn: "server", action: "certificate", server_certificates }
 
@@ -372,7 +373,7 @@ export class Tls {
 
     const { dh_Yc, dh_Z } = await this.computeDiffieHellman(this.state)
 
-    const vkey = new (BufferVector<Number16>(Number16))(dh_Yc)
+    const vkey = new (BytesVector<Number16>(Number16))(dh_Yc)
     const cdhpe = new ClientDiffieHellmanPublicExplicit(vkey)
     const ckedh = new ClientKeyExchange2DH(cdhpe)
 
@@ -408,11 +409,11 @@ export class Tls {
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {
     const { dh_g, dh_p, dh_Ys } = state.server_dh_params
 
-    const g = BigInt(`0x${dh_g.buffer.toString("hex")}`)
-    const p = BigInt(`0x${dh_p.buffer.toString("hex")}`)
-    const Ys = BigInt(`0x${dh_Ys.buffer.toString("hex")}`)
+    const g = BigInt(`0x${Bytes.toHex(dh_g.bytes)}`)
+    const p = BigInt(`0x${Bytes.toHex(dh_p.bytes)}`)
+    const Ys = BigInt(`0x${Bytes.toHex(dh_Ys.bytes)}`)
 
-    const dh_yc = Buffer.allocUnsafe(dh_p.buffer.length)
+    const dh_yc = Buffer.allocUnsafe(dh_p.bytes.length)
 
     crypto.getRandomValues(dh_yc)
 
@@ -452,7 +453,7 @@ export class Tls {
     const client_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
     const server_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
 
-    console.log("original_iv", client_write_IV.toString("hex"));
+    console.log("original_iv", Bytes.toHex(client_write_IV));
 
     return {
       master_secret,

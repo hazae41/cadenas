@@ -4,7 +4,7 @@ export class Opaque {
   readonly #class = Opaque
 
   constructor(
-    readonly buffer: Buffer
+    readonly bytes: Uint8Array
   ) { }
 
   get class() {
@@ -12,11 +12,11 @@ export class Opaque {
   }
 
   size() {
-    return this.buffer.length
+    return this.bytes.length
   }
 
   write(binary: Binary) {
-    binary.write(this.buffer)
+    binary.write(this.bytes)
   }
 
   static read(binary: Binary, length: number) {

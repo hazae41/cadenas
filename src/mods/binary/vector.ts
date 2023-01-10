@@ -7,14 +7,14 @@ export interface Vector<L extends NumberX> extends Writable {
   readonly vlength: L["class"]
 }
 
-export type BufferVector<L extends NumberX,> =
-  InstanceType<ReturnType<typeof BufferVector<L>>>
+export type BytesVector<L extends NumberX,> =
+  InstanceType<ReturnType<typeof BytesVector<L>>>
 
-export const BufferVector = <L extends NumberX>(vlength: L["class"]) => class {
-  readonly #class = BufferVector(vlength)
+export const BytesVector = <L extends NumberX>(vlength: L["class"]) => class {
+  readonly #class = BytesVector(vlength)
 
   constructor(
-    readonly buffer: Buffer
+    readonly bytes: Uint8Array
   ) { }
 
   get vlength() {
@@ -30,13 +30,13 @@ export const BufferVector = <L extends NumberX>(vlength: L["class"]) => class {
   }
 
   size() {
-    return vlength.size + this.buffer.length
+    return vlength.size + this.bytes.length
   }
 
   write(binary: Binary) {
-    new vlength(this.buffer.length).write(binary)
+    new vlength(this.bytes.length).write(binary)
 
-    binary.write(this.buffer)
+    binary.write(this.bytes)
   }
 
   static read(binary: Binary) {
