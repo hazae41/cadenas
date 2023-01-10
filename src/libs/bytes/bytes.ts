@@ -1,4 +1,3 @@
-import crypto from "crypto"
 import { Buffers } from "libs/buffers/buffers.js"
 
 const encoder = new TextEncoder()

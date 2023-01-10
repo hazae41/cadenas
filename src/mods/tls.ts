@@ -2,6 +2,7 @@ import { Binary } from "@hazae41/binary"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
 import { Bytes } from "libs/bytes/bytes.js"
+import { TransformByteStream, TransformByteStreamController } from "libs/streams/bytes.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { Alert } from "mods/binary/alerts/alert.js"
 import { Certificate2 } from "mods/binary/handshakes/certificate/certificate2.js"
@@ -22,7 +23,6 @@ import { PlaintextGenericBlockCipher, RecordHeader } from "mods/binary/record/re
 import { BytesVector } from "mods/binary/vector.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
-import { Transport } from "mods/transports/transport.js"
 
 export type State =
   | NoneState
@@ -91,73 +91,66 @@ export interface ClientCertificateHandshakeState extends ClientHandshakeState {
   server_dh_params: ServerDHParams
 }
 
-export class Tls {
-  private state: State = { type: "none" }
+export interface TlsParams {
+  ciphers: CipherSuite[]
+  signal?: AbortSignal
+}
 
-  readonly streams = new TransformStream<Uint8Array, Uint8Array>()
+export class Tls {
+  private input?: TransformByteStreamController
+  private output?: TransformByteStreamController
+
+  readonly readable: ReadableStream<Uint8Array>
+  readonly writable: WritableStream<Uint8Array>
+
+  private state: State = { type: "none" }
 
   private buffer = Bytes.allocUnsafe(4 * 4096)
   private wbinary = new Binary(this.buffer)
   private rbinary = new Binary(this.buffer)
 
   constructor(
-    readonly transport: Transport,
-    readonly ciphers: CipherSuite[]
+    readonly stream: ReadableWritablePair<Uint8Array>,
+    readonly params: TlsParams
   ) {
-    this.tryRead()
+    const { signal } = params
 
-    const onMessage = this.onMessage.bind(this)
+    const output = new TransformByteStream({
+      start: this.onInputStart.bind(this),
+      transform: this.onInputTransform.bind(this),
+      flush: this.onInputFlush.bind(this),
+    })
 
-    transport.addEventListener("message", onMessage, { passive: true })
+    const input = new TransformByteStream({
+      start: this.onOutputStart.bind(this),
+      transform: this.onOutputTransform.bind(this),
+      flush: this.onOutputFlush.bind(this),
+    })
 
-    new FinalizationRegistry(() => {
-      transport.removeEventListener("message", onMessage)
-    }).register(this, undefined)
+    this.readable = output.readable
+    this.writable = input.writable
+
+    stream.readable.pipeTo(output.writable, { signal }).catch(() => { })
+    input.readable.pipeTo(stream.writable, { signal }).catch(() => { })
   }
 
   async handshake() {
-    const hello = ClientHello2.default(this.ciphers)
+    const hello = ClientHello2.default(this.params.ciphers)
 
     const record = hello.handshake().record(0x0301)
-    const precord = this.transport.send(record.export())
+    this.output!.enqueue(record.export())
 
     const client_random = hello.random.export().buffer
 
     this.state = { ...this.state, type: "handshake", messages: [], turn: "client", action: "client_hello", client_random }
-
-    await precord
   }
 
-  private async onMessage(event: Event) {
-    const message = event as MessageEvent<Uint8Array>
-
-    const writer = this.streams.writable.getWriter()
-    writer.write(message.data).catch(console.warn)
-    writer.releaseLock()
+  private async onInputStart(controller: TransformByteStreamController) {
+    this.input = controller
   }
 
-  private async tryRead() {
-    const reader = this.streams.readable.getReader()
-
-    try {
-      await this.read(reader)
-    } finally {
-      reader.releaseLock()
-    }
-  }
-
-  private async read(reader: ReadableStreamDefaultReader<Uint8Array>) {
-    while (true) {
-      const { done, value } = await reader.read()
-
-      if (done) break
-
-      this.wbinary.write(value)
-      await this.onRead()
-    }
-  }
-
-  private async onRead() {
+  private async onInputTransform(chunk: Uint8Array) {
+    this.wbinary.write(chunk)
     this.rbinary.view = this.buffer.subarray(0, this.wbinary.offset)
 
     while (this.rbinary.remaining) {
@@ -196,6 +189,22 @@ export class Tls {
       this.wbinary.write(remaining)
       return
     }
+  }
+
+  private async onInputFlush(controller: TransformByteStreamController) {
+
+  }
+
+  private async onOutputStart(controller: TransformByteStreamController) {
+    this.output = controller
+  }
+
+  private async onOutputTransform(chunk: Uint8Array, controller: TransformByteStreamController) {
+
+  }
+
+  private async onOutputFlush(controller: TransformByteStreamController) {
+
   }
 
   private async onRecord(binary: Binary, record: RecordHeader) {
@@ -265,7 +274,7 @@ export class Tls {
     if (version !== 0x0303)
       throw new Error(`Unsupported ${version} version`)
 
-    const cipher = this.ciphers.find(it => it.id === hello.cipher_suite)
+    const cipher = this.params.ciphers.find(it => it.id === hello.cipher_suite)
 
     if (cipher === undefined)
       throw new Error(`Unsupported ${hello.cipher_suite} cipher suite`)
@@ -365,7 +374,7 @@ export class Tls {
     console.log("CiphertextCipher", erfinished.export().toString("hex"))
     console.log("CiphertextRecord", crfinished.toString("hex"))
 
-    this.transport.send(Bytes.concat([brckedh, brccs, crfinished]))
+    this.output!.enqueue(Bytes.concat([brckedh, brccs, crfinished]))
   }
 
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {

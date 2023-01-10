@@ -1,4 +1,4 @@
-import { Ciphers, HttpTransport, Tls, WebSocketTransport } from "@hazae41/telsa"
+import { Ciphers, Tls, WebSocketStream } from "@hazae41/telsa"
 import { useCallback } from "react"
 
 async function ws() {
@@ -9,26 +9,28 @@ async function ws() {
     ws.addEventListener("error", err)
   })
 
-  return new WebSocketTransport(ws)
+  return new WebSocketStream(ws)
 }
 
-async function http() {
-  const headers = { "x-session-id": crypto.randomUUID() }
-  const request = new Request("https://meek.bamsoftware.com/", { headers })
+// async function http() {
+//   const headers = { "x-session-id": crypto.randomUUID() }
+//   const request = new Request("https://meek.bamsoftware.com/", { headers })
 
-  return new HttpTransport(request)
-}
+//   return new HttpTransport(request)
+// }
 
 export default function Home() {
 
   const onClick = useCallback(async () => {
-    const transport = await ws()
+    const stream = await ws()
 
-    const tls = new Tls(transport, [
+    const ciphers = [
       Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
       // TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
       // TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA
-    ])
+    ]
+
+    const tls = new Tls(stream, { ciphers })
 
     await tls.handshake()
   }, [])
