@@ -1,11 +1,11 @@
-export * from "./mods/index.test.js"
+export * from "./mods/index.test.js";
 
-import { Binary } from "@hazae41/binary"
-import { test } from "@hazae41/phobos"
-import { Alert, ClientHello2, Handshake, HandshakeHeader } from "index.js"
-import { Bytes } from "libs/bytes/bytes.js"
-import { RecordHeader } from "mods/binary/record/record.js"
-import { relative, resolve } from "path"
+import { Binary } from "@hazae41/binary";
+import { test } from "@hazae41/phobos";
+import { Alert, ClientHello2, Handshake, HandshakeHeader } from "index.js";
+import { Bytes } from "libs/bytes/bytes.js";
+import { RecordHeader } from "mods/binary/record/record.js";
+import { relative, resolve } from "path";
 
 const directory = resolve("./dist/test/")
 const { pathname } = new URL(import.meta.url)
