@@ -128,8 +128,13 @@ export class Tls {
     this.readable = read.readable
     this.writable = write.writable
 
-    stream.readable.pipeTo(read.writable, { signal }).catch(() => { })
-    write.readable.pipeTo(stream.writable, { signal }).catch(() => { })
+    stream.readable
+      .pipeTo(read.writable, { signal })
+      .catch(() => { })
+
+    write.readable
+      .pipeTo(stream.writable, { signal })
+      .catch(() => { })
   }
 
   async handshake() {

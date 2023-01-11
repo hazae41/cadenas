@@ -1,4 +1,4 @@
-import { Ciphers, Tls, WebSocketStream } from "@hazae41/telsa"
+import { BatchedFetchStream, Ciphers, Tls, WebSocketStream } from "@hazae41/telsa"
 import { useCallback } from "react"
 
 async function ws() {
@@ -14,17 +14,17 @@ async function ws() {
   return new WebSocketStream(websocket)
 }
 
-// async function http() {
-//   const headers = { "x-session-id": crypto.randomUUID() }
-//   const request = new Request("https://meek.bamsoftware.com/", { headers })
+async function http() {
+  const headers = { "x-session-id": crypto.randomUUID() }
+  const request = new Request("https://meek.bamsoftware.com/", { headers })
 
-//   return new HttpTransport(request)
-// }
+  return new BatchedFetchStream(request)
+}
 
 export default function Home() {
 
   const onClick = useCallback(async () => {
-    const stream = await ws()
+    const stream = await http()
 
     const ciphers = [
       Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,

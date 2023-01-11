@@ -16,11 +16,11 @@ export class TransformByteStream {
   readonly writable: WritableStream<Uint8Array>
 
   constructor(params: ByteTransformer) {
-    let rcontroller: ReadableByteStreamController
+    let rcontroller: ReadableStreamController<Uint8Array>
     let wcontroller: WritableStreamDefaultController
 
     const tcontroller: TransformByteStreamController = {
-      enqueue(chunk: ArrayBufferView) {
+      enqueue(chunk: Uint8Array) {
         rcontroller.enqueue(chunk)
       },
       error(e?: any) {
@@ -33,8 +33,8 @@ export class TransformByteStream {
       }
     }
 
-    this.readable = new ReadableStream({
-      type: "bytes",
+    this.readable = new ReadableStream<Uint8Array>({
+      // type: "bytes", // Safari
 
       async start(controller) {
         rcontroller = controller
