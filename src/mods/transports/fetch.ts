@@ -24,7 +24,6 @@ export class BatchedFetchStream {
     let interval: NodeJS.Timer
 
     this.readable = new ReadableStream<Uint8Array>({
-      // type: "bytes", // Safari
       async start(controller) {
         rcontroller = controller
       },
@@ -38,10 +37,10 @@ export class BatchedFetchStream {
         wcontroller = controller
       },
       async write(chunk) {
-        batch.push(chunk)
-
         clearTimeout(timeout)
         clearInterval(interval)
+
+        batch.push(chunk)
 
         timeout = setTimeout(async () => {
 
@@ -50,8 +49,6 @@ export class BatchedFetchStream {
             const data = new Uint8Array(await res.arrayBuffer())
             rcontroller.enqueue(data)
           }, highDelay)
-
-          if (!batch.length) return
 
           const body = Bytes.concat(batch)
 

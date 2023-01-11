@@ -2,7 +2,6 @@ import { Binary } from "@hazae41/binary"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
 import { Bytes } from "libs/bytes/bytes.js"
-import { TransformByteStream, TransformByteStreamController } from "libs/streams/bytes.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { Alert } from "mods/binary/alerts/alert.js"
 import { Certificate2 } from "mods/binary/handshakes/certificate/certificate2.js"
@@ -97,8 +96,8 @@ export interface TlsParams {
 }
 
 export class Tls {
-  private input?: TransformByteStreamController
-  private output?: TransformByteStreamController
+  private input?: TransformStreamDefaultController<Uint8Array>
+  private output?: TransformStreamDefaultController<Uint8Array>
 
   readonly readable: ReadableStream<Uint8Array>
   readonly writable: WritableStream<Uint8Array>
@@ -115,17 +114,19 @@ export class Tls {
   ) {
     const { signal } = params
 
-    const read = new TransformByteStream({
+    const read = new TransformStream<Uint8Array>({
       start: this.onReadStart.bind(this),
       transform: this.onRead.bind(this),
     })
 
-    const write = new TransformByteStream({
+    const write = new TransformStream<Uint8Array>({
       start: this.onWriteStart.bind(this),
       transform: this.onWrite.bind(this),
     })
 
-    this.readable = read.readable
+    const [readable, trashable] = read.readable.tee()
+
+    this.readable = readable
     this.writable = write.writable
 
     stream.readable
@@ -134,6 +135,15 @@ export class Tls {
 
     write.readable
       .pipeTo(stream.writable, { signal })
+      .catch(() => { })
+
+    const trash = new WritableStream()
+
+    /**
+     * Force call to read.readable.transform()
+     */
+    trashable
+      .pipeTo(trash, { signal })
       .catch(() => { })
   }
 
@@ -148,7 +158,7 @@ export class Tls {
     this.state = { ...this.state, type: "handshake", messages: [], turn: "client", action: "client_hello", client_random }
   }
 
-  private async onReadStart(controller: TransformByteStreamController) {
+  private async onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
     this.input = controller
   }
 
@@ -194,12 +204,12 @@ export class Tls {
     }
   }
 
-  private async onWriteStart(controller: TransformByteStreamController) {
+  private async onWriteStart(controller: TransformStreamDefaultController<Uint8Array>) {
     this.output = controller
   }
 
-  private async onWrite(chunk: Uint8Array, controller: TransformByteStreamController) {
-
+  private async onWrite(chunk: Uint8Array) {
+    // TODO
   }
 
   private async onRecord(binary: Binary, record: RecordHeader) {
