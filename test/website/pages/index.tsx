@@ -2,14 +2,16 @@ import { Ciphers, Tls, WebSocketStream } from "@hazae41/telsa"
 import { useCallback } from "react"
 
 async function ws() {
-  const ws = new WebSocket("ws://localhost:8080")
+  const websocket = new WebSocket("ws://localhost:8080")
+
+  websocket.binaryType = "arraybuffer"
 
   await new Promise((ok, err) => {
-    ws.addEventListener("open", ok)
-    ws.addEventListener("error", err)
+    websocket.addEventListener("open", ok)
+    websocket.addEventListener("error", err)
   })
 
-  return new WebSocketStream(ws)
+  return new WebSocketStream(websocket)
 }
 
 // async function http() {
