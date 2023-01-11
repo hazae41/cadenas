@@ -3,12 +3,14 @@ import { Bytes } from "libs/bytes/bytes.js"
 export interface BatchedFetchStreamParams {
   /**
    * Minimum delay of interaction
+   * 
    * Delay between a write and a fetch (in order to wait for more packets and batch them)
    */
   lowDelay?: number
 
   /**
    * Maximum delay of interaction
+   * 
    * Delay between each fetch when the batch is empty
    */
   highDelay?: number
