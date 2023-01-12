@@ -181,13 +181,17 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
     premac.writeUint64(sequence)
     plaintext.write(premac)
 
-    const mac_key = await crypto.subtle.importKey("raw", secrets.client_write_MAC_key, { name: "HMAC", hash: "SHA-1" }, false, ["sign"])
+    const mac_key = await crypto.subtle.importKey("raw", secrets.client_write_MAC_key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
     const mac = new Uint8Array(await crypto.subtle.sign("HMAC", mac_key, premac.buffer))
 
     console.log("MAC", Bytes.toHex(mac))
 
     const length = content.length + mac.length
+    console.log("length", length)
+
     const padding_length = modulup(length + 1, 16)
+    console.log("padding_length", padding_length)
+
     const padding = Bytes.allocUnsafe(padding_length + 1)
     padding.fill(padding_length)
 
@@ -195,22 +199,16 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
   }
 
   async encrypt(cipher: CipherSuite, secrets: Secrets) {
-    const plaintext = Bytes.concat([this.iv, this.content, this.mac, this.padding])
+    const plaintext = Bytes.concat([this.content, this.mac, this.padding])
 
     const key = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-CBC", length: 256 }, false, ["encrypt"])
 
-    const ciphertext = await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: secrets.client_write_IV }, key, plaintext)
+    const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, plaintext))
 
-    const cc = new Uint8Array(ciphertext)
-    const iv = cc.subarray(0, 16)
-    const rest = cc.subarray(16)
+    console.log("plaintext", plaintext.length, Bytes.toHex(plaintext))
+    console.log("ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
 
-    console.log("plaintext", Bytes.toHex(plaintext))
-    console.log("ciphertext", Bytes.toHex(cc))
-    console.log("final iv", Bytes.toHex(iv))
-    console.log("rest", Bytes.toHex(rest))
-
-    return new CiphertextGenericBlockCipher<T>(iv, rest)
+    return new CiphertextGenericBlockCipher<T>(this.iv, ciphertext)
   }
 }
 

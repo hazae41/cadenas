@@ -24,7 +24,7 @@ async function http() {
 export default function Home() {
 
   const onClick = useCallback(async () => {
-    const stream = await http()
+    const stream = await ws()
 
     const ciphers = [
       Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,

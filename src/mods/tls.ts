@@ -429,8 +429,6 @@ export class Tls {
     const client_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
     const server_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
 
-    console.log("original_iv", Bytes.toHex(client_write_IV));
-
     return {
       master_secret,
       client_write_MAC_key,
