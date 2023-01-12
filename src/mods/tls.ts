@@ -254,8 +254,6 @@ export class Tls {
     const gcipher = CiphertextGenericBlockCipher.read(binary, header.length)
     const gplain = await gcipher.decrypt(this.state.cipher, this.state.secrets)
 
-    console.log(header, gplain)
-
     await this.onPlaintextRecord(header, new Binary(gplain.content), gplain.content.length)
   }
 
@@ -478,8 +476,6 @@ export class Tls {
     const bhckedh = ckedh.handshake().export()
     this.state.messages.push(bhckedh)
 
-    console.log(this.state.messages)
-
     const handshake_messages = Bytes.concat(this.state.messages)
     const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest("SHA-256", handshake_messages))
 
@@ -500,6 +496,6 @@ export class Tls {
   }
 
   private async onFinished(binary: Binary, length: number) {
-    console.log("yay")
+    console.log("finished")
   }
 }
