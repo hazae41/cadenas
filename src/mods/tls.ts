@@ -150,12 +150,13 @@ export class Tls {
   async handshake() {
     const hello = ClientHello2.default(this.params.ciphers)
 
-    const record = hello.handshake().record(0x0301)
+    const handshake = hello.handshake()
+    const record = handshake.record(0x0301)
     this.output!.enqueue(record.export())
 
-    const client_random = hello.random.export().buffer
+    const client_random = hello.random.export().bytes
 
-    this.state = { ...this.state, type: "handshake", messages: [], turn: "client", action: "client_hello", client_random }
+    this.state = { ...this.state, type: "handshake", messages: [handshake.export()], turn: "client", action: "client_hello", client_random }
   }
 
   private async onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
@@ -241,12 +242,14 @@ export class Tls {
     if (this.state.type !== "handshake")
       throw new Error(`Invalid state`)
 
-    const raw = binary.get(length)
+    const raw = binary.get(record.length)
 
     const { fragment } = record.plaintext<HandshakeHeader>(binary, HandshakeHeader)
 
-    if (fragment.subtype !== Handshake.types.hello_request)
+    if (fragment.subtype !== Handshake.types.hello_request) {
+      console.log(fragment.subtype)
       this.state.messages.push(raw)
+    }
 
     if (fragment.subtype === ServerHello2.type)
       return this.onServerHello(binary, fragment.length)
@@ -287,6 +290,8 @@ export class Tls {
     const server_random = hello.random.export().buffer
 
     this.state = { ...this.state, type: "handshake", turn: "server", action: "server_hello", version, cipher, server_random }
+
+    console.log(hello)
   }
 
   private async onCertificate(binary: Binary, length: number) {
@@ -304,9 +309,9 @@ export class Tls {
 
     this.state = { ...this.state, type: "handshake", turn: "server", action: "certificate", server_certificates }
 
-    console.log(server_certificates)
-    console.log(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
-    console.log(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
+    // console.log(server_certificates)
+    // console.log(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
+    // console.log(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
 
     console.log(hello)
   }
@@ -346,6 +351,8 @@ export class Tls {
       throw new Error(`Invalid state`)
 
     const hello = ServerHelloDone2.read(binary, length)
+
+    console.log(hello)
 
     const { dh_Yc, dh_Z } = await this.computeDiffieHellman(this.state)
 
