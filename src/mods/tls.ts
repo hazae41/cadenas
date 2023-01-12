@@ -154,7 +154,7 @@ export class Tls {
     const record = handshake.record(0x0301)
     this.output!.enqueue(record.export())
 
-    const client_random = hello.random.export().bytes
+    const client_random = hello.random.export()
 
     this.state = { ...this.state, type: "handshake", messages: [handshake.export()], turn: "client", action: "client_hello", client_random }
   }
@@ -287,7 +287,7 @@ export class Tls {
     if (cipher === undefined)
       throw new Error(`Unsupported ${hello.cipher_suite} cipher suite`)
 
-    const server_random = hello.random.export().buffer
+    const server_random = hello.random.export()
 
     this.state = { ...this.state, type: "handshake", turn: "server", action: "server_hello", version, cipher, server_random }
 
@@ -367,9 +367,12 @@ export class Tls {
     const bhckedh = ckedh.handshake().export()
     this.state.messages.push(bhckedh)
 
-    const handshake_messages = Bytes.concat(this.state.messages)
+    console.log(this.state.messages)
 
-    const verify_data = await PRF("SHA-256", secrets.master_secret, "client finished", handshake_messages, 12)
+    const handshake_messages = Bytes.concat(this.state.messages)
+    const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest("SHA-256", handshake_messages))
+
+    const verify_data = await PRF("SHA-256", secrets.master_secret, "client finished", handshake_messages_hash, 12)
     const finished = new Finished2(verify_data)
 
     const brckedh = ckedh.handshake().record(this.state.version).export()
