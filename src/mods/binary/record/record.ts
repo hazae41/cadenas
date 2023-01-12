@@ -181,10 +181,11 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
     premac.writeUint64(sequence)
     plaintext.write(premac)
 
-    const mac_key = await crypto.subtle.importKey("raw", secrets.client_write_MAC_key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
-    const mac = new Uint8Array(await crypto.subtle.sign("HMAC", mac_key, premac.buffer))
+    const mac_key = await crypto.subtle.importKey("raw", secrets.client_write_MAC_key, { name: "HMAC", hash: "SHA-1" }, false, ["sign"])
+    const mac = new Uint8Array(await crypto.subtle.sign("HMAC", mac_key, premac.bytes))
 
-    console.log("MAC", Bytes.toHex(mac))
+    console.log("client_write_MAC_key", secrets.client_write_MAC_key.length, Bytes.toHex(secrets.client_write_MAC_key))
+    console.log("MAC", mac.length, Bytes.toHex(mac))
 
     const length = content.length + mac.length
     console.log("length", length)
@@ -205,10 +206,13 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
 
     const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, plaintext))
 
+    const rawciphertext = ciphertext.slice(0, -16)
+
     console.log("plaintext", plaintext.length, Bytes.toHex(plaintext))
     console.log("ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
+    console.log("rawciphertext", rawciphertext.length, Bytes.toHex(rawciphertext))
 
-    return new CiphertextGenericBlockCipher<T>(this.iv, ciphertext)
+    return new CiphertextGenericBlockCipher<T>(this.iv, rawciphertext)
   }
 }
 
