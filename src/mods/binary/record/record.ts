@@ -173,8 +173,6 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
   static async from<T extends Writable & Exportable>(plaintext: PlaintextRecord<T>, secrets: Secrets, sequence: bigint) {
     const iv = Bytes.random(16)
 
-    console.log("iv", Bytes.toHex(iv));
-
     const content = plaintext.fragment.export()
 
     const premac = Binary.allocUnsafe(8 + plaintext.size())
@@ -184,15 +182,8 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
     const mac_key = await crypto.subtle.importKey("raw", secrets.client_write_MAC_key, { name: "HMAC", hash: "SHA-1" }, false, ["sign"])
     const mac = new Uint8Array(await crypto.subtle.sign("HMAC", mac_key, premac.bytes))
 
-    console.log("client_write_MAC_key", secrets.client_write_MAC_key.length, Bytes.toHex(secrets.client_write_MAC_key))
-    console.log("MAC", mac.length, Bytes.toHex(mac))
-
     const length = content.length + mac.length
-    console.log("length", length)
-
     const padding_length = modulup(length + 1, 16)
-    console.log("padding_length", padding_length)
-
     const padding = Bytes.allocUnsafe(padding_length + 1)
     padding.fill(padding_length)
 
@@ -203,16 +194,11 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
     const plaintext = Bytes.concat([this.content, this.mac, this.padding])
 
     const key = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-CBC", length: 256 }, false, ["encrypt"])
+    const pkcs7 = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, plaintext))
 
-    const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, plaintext))
+    const ciphertext = pkcs7.slice(0, -16)
 
-    const rawciphertext = ciphertext.slice(0, -16)
-
-    console.log("plaintext", plaintext.length, Bytes.toHex(plaintext))
-    console.log("ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
-    console.log("rawciphertext", rawciphertext.length, Bytes.toHex(rawciphertext))
-
-    return new CiphertextGenericBlockCipher<T>(this.iv, rawciphertext)
+    return new CiphertextGenericBlockCipher<T>(this.iv, ciphertext)
   }
 }
 
