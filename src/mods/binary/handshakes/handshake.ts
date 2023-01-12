@@ -35,6 +35,8 @@ export class HandshakeHeader {
     const type = binary.readUint8()
     const sublength = binary.readUint24()
 
+    console.log(length, sublength, binary.offset)
+
     if (binary.offset - start !== length - sublength)
       throw new Error(`Invalid ${this.name} length`)
 

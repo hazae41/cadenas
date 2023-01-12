@@ -57,16 +57,6 @@ export class RecordHeader {
 
     return new this(type, version, length)
   }
-
-  plaintext<T extends Writable & Exportable & ReadableLenghted<T>>(binary: Binary, clazz: T["class"]) {
-    const fragment = clazz.read(binary, this.length)
-    return new PlaintextRecord<T>(this.subtype, this.version, fragment)
-  }
-
-  // ciphertext<T extends Writable & ReadableChecked<T>>(binary: Binary, clazz: T["class"]) {
-  //   const fragment = clazz.read(binary, this.length)
-  //   return new CiphertextRecord<T>(this.subtype, this.version, fragment)
-  // }
 }
 
 export class PlaintextRecord<T extends Writable & Exportable> {
@@ -80,6 +70,15 @@ export class PlaintextRecord<T extends Writable & Exportable> {
 
   get class() {
     return this.#class
+  }
+
+  static body<T extends Writable & Exportable & ReadableLenghted<T>>(
+    header: RecordHeader,
+    binary: Binary,
+    clazz: T["class"]
+  ) {
+    const fragment = clazz.read(binary, this.length)
+    return new this<T>(header.subtype, header.version, fragment)
   }
 
   size() {
@@ -122,11 +121,16 @@ function modulup(x: number, m: number) {
 }
 
 export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
+  readonly #class = CiphertextGenericBlockCipher
 
   constructor(
     readonly iv: Uint8Array,
     readonly block: Uint8Array
   ) { }
+
+  get class() {
+    return this.#class
+  }
 
   size() {
     return this.iv.length + this.block.length
@@ -138,11 +142,25 @@ export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
   }
 
   static read(binary: Binary, length: number) {
+    const start = binary.offset
 
+    const iv = binary.read(16)
+    const block = binary.read(length - 16)
+
+    if (binary.offset - start !== length)
+      throw new Error(`Invalid ${this.name} length`)
+
+    return new this(iv, block)
   }
 
-  async decrypt() {
+  async decrypt(cipher: CipherSuite, secrets: Secrets) {
+    const key = await crypto.subtle.importKey("raw", secrets.server_write_key, { name: "AES-CBC", length: 256 }, false, ["decrypt"])
+    const plaintext = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, this.block))
 
+    const content = plaintext.subarray(0, -21)
+    const mac = plaintext.subarray(-21, -1)
+
+    return new PlaintextGenericBlockCipher(this.iv, content, mac)
   }
 
   export() {
@@ -153,21 +171,16 @@ export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
 }
 
 export class PlaintextGenericBlockCipher<T extends Writable & Exportable & ReadableLenghted<T>> {
+  readonly #class = PlaintextGenericBlockCipher
 
   constructor(
     readonly iv: Uint8Array,
     readonly content: Uint8Array,
-    readonly mac: Uint8Array,
-    readonly padding: Uint8Array
+    readonly mac: Uint8Array
   ) { }
 
-  get padding_length() {
-    return this.padding[this.padding.length - 1]
-  }
-
-  into(clazz: T["class"]) {
-    const binary = new Binary(this.content)
-    return clazz.read(binary, this.content.length)
+  get class() {
+    return this.#class
   }
 
   static async from<T extends Writable & Exportable>(plaintext: PlaintextRecord<T>, secrets: Secrets, sequence: bigint) {
@@ -182,21 +195,21 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
     const mac_key = await crypto.subtle.importKey("raw", secrets.client_write_MAC_key, { name: "HMAC", hash: "SHA-1" }, false, ["sign"])
     const mac = new Uint8Array(await crypto.subtle.sign("HMAC", mac_key, premac.bytes))
 
-    const length = content.length + mac.length
+    return new this(iv, content, mac)
+  }
+
+  async encrypt(cipher: CipherSuite, secrets: Secrets) {
+    const length = this.content.length + this.mac.length
     const padding_length = modulup(length + 1, 16)
     const padding = Bytes.allocUnsafe(padding_length + 1)
     padding.fill(padding_length)
 
-    return new this(iv, content, mac, padding)
-  }
-
-  async encrypt(cipher: CipherSuite, secrets: Secrets) {
-    const plaintext = Bytes.concat([this.content, this.mac, this.padding])
+    const plaintext = Bytes.concat([this.content, this.mac, padding])
 
     const key = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-CBC", length: 256 }, false, ["encrypt"])
     const pkcs7 = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, plaintext))
 
-    const ciphertext = pkcs7.slice(0, -16)
+    const ciphertext = pkcs7.subarray(0, -16)
 
     return new CiphertextGenericBlockCipher<T>(this.iv, ciphertext)
   }
@@ -215,6 +228,15 @@ export class CiphertextRecord<T extends Writable & Exportable> {
     return this.#class
   }
 
+  static body<T extends Writable & Exportable & ReadableLenghted<T>>(
+    header: RecordHeader,
+    binary: Binary,
+    clazz: CiphertextGenericCipher<T>["class"]
+  ) {
+    const fragment = clazz.read(binary, this.length)
+    return new this<T>(header.subtype, header.version, fragment)
+  }
+
   size() {
     return 1 + 2 + 2 + this.fragment.size()
   }
@@ -230,5 +252,9 @@ export class CiphertextRecord<T extends Writable & Exportable> {
     const binary = Binary.allocUnsafe(this.size())
     this.write(binary)
     return binary.buffer
+  }
+
+  decrypt(cipher: CipherSuite, secrets: Secrets) {
+
   }
 }

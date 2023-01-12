@@ -18,7 +18,7 @@ import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/hands
 import { ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { Number16 } from "mods/binary/number.js"
 import { ChangeCipherSpec } from "mods/binary/record/change_cipher_spec/change_cipher_spec.js"
-import { PlaintextGenericBlockCipher, RecordHeader } from "mods/binary/record/record.js"
+import { CiphertextGenericBlockCipher, PlaintextGenericBlockCipher, RecordHeader } from "mods/binary/record/record.js"
 import { BytesVector } from "mods/binary/vector.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
@@ -30,6 +30,8 @@ export type State =
   | ServerCertificateHandshakeState
   | ServerKeyExchangeHandshakeState
   | ClientCertificateHandshakeState
+  | ClientFinishedHandshakeState
+  | ServerChangeCipherSpecHandshakeState
 
 export interface NoneState {
   type: "none"
@@ -88,6 +90,28 @@ export interface ClientCertificateHandshakeState extends ClientHandshakeState {
   server_random: Uint8Array
   server_certificates: Certificate[]
   server_dh_params: ServerDHParams
+}
+
+export interface ClientFinishedHandshakeState extends ClientHandshakeState {
+  action: "finished"
+  version: number
+  cipher: CipherSuite
+  client_random: Uint8Array
+  server_random: Uint8Array
+  server_certificates: Certificate[]
+  server_dh_params: ServerDHParams
+  secrets: Secrets
+}
+
+export interface ServerChangeCipherSpecHandshakeState extends ServerHandshakeState {
+  action: "change_cipher_spec"
+  version: number
+  cipher: CipherSuite
+  client_random: Uint8Array
+  server_random: Uint8Array
+  server_certificates: Certificate[]
+  server_dh_params: ServerDHParams
+  secrets: Secrets
 }
 
 export interface TlsParams {
@@ -173,7 +197,7 @@ export class Tls {
 
         if (!header) break
 
-        await this.onRecord(this.rbinary, header)
+        await this.onRecord(header, this.rbinary)
       } catch (e: unknown) {
         console.error(e)
       }
@@ -213,43 +237,70 @@ export class Tls {
     // TODO
   }
 
-  private async onRecord(binary: Binary, record: RecordHeader) {
-    if (record.subtype === Alert.type)
-      return this.onAlert(binary, record)
-    if (record.subtype === Handshake.type)
-      return this.onHandshake(binary, record)
-    if (record.subtype === ChangeCipherSpec.type)
-      return this.onChangeCipherSpec(binary, record)
-
-    binary.offset += record.length
-
-    console.warn(record)
+  private async onRecord(header: RecordHeader, binary: Binary) {
+    if (this.state.type !== "handshake")
+      return await this.onPlaintextRecord(header, binary, header.length)
+    if (this.state.action !== "change_cipher_spec")
+      return await this.onPlaintextRecord(header, binary, header.length)
+    return await this.onCiphertextRecord(header, binary)
   }
 
-  private async onAlert(binary: Binary, record: RecordHeader) {
-    const { fragment } = record.plaintext<Alert>(binary, Alert)
+  private async onCiphertextRecord(header: RecordHeader, binary: Binary) {
+    if (this.state.type !== "handshake")
+      throw new Error(`Invalid state`)
+    if (this.state.action !== "change_cipher_spec")
+      throw new Error(`Invalid state`)
+
+    const gcipher = CiphertextGenericBlockCipher.read(binary, header.length)
+    const gplain = await gcipher.decrypt(this.state.cipher, this.state.secrets)
+
+    console.log(header, gplain)
+
+    await this.onPlaintextRecord(header, new Binary(gplain.content), gplain.content.length)
+  }
+
+  private async onPlaintextRecord(header: RecordHeader, binary: Binary, length: number) {
+    if (header.subtype === Alert.type)
+      return await this.onAlert(binary, length)
+    if (header.subtype === Handshake.type)
+      return await this.onHandshake(binary, length)
+    if (header.subtype === ChangeCipherSpec.type)
+      return await this.onChangeCipherSpec(binary, length)
+
+    binary.offset += length
+
+    console.warn(header)
+  }
+
+  private async onAlert(binary: Binary, length: number) {
+    const fragment = Alert.read(binary, length)
 
     console.log(fragment)
   }
 
-  private async onChangeCipherSpec(binary: Binary, record: RecordHeader) {
-    const { fragment } = record.plaintext<ChangeCipherSpec>(binary, ChangeCipherSpec)
+  private async onChangeCipherSpec(binary: Binary, length: number) {
+    if (this.state.type !== "handshake")
+      throw new Error(`Invalid state`)
+    if (this.state.action !== "finished")
+      throw new Error(`Invalid state`)
+
+    const fragment = ChangeCipherSpec.read(binary, length)
+
+    this.state = { ...this.state, turn: "server", action: "change_cipher_spec" }
 
     console.log(fragment)
   }
 
-  private async onHandshake(binary: Binary, record: RecordHeader) {
+  private async onHandshake(binary: Binary, length: number) {
     if (this.state.type !== "handshake")
       throw new Error(`Invalid state`)
 
-    const raw = binary.get(record.length)
+    const bytes = binary.get(length)
 
-    const { fragment } = record.plaintext<HandshakeHeader>(binary, HandshakeHeader)
+    const fragment = HandshakeHeader.read(binary, length)
 
-    if (fragment.subtype !== Handshake.types.hello_request) {
-      console.log(fragment.subtype)
-      this.state.messages.push(raw)
-    }
+    if (fragment.subtype !== Handshake.types.hello_request)
+      this.state.messages.push(bytes)
 
     if (fragment.subtype === ServerHello2.type)
       return this.onServerHello(binary, fragment.length)
@@ -261,6 +312,8 @@ export class Tls {
       return this.onServerKeyExchange(binary, fragment.length)
     if (fragment.subtype === CertificateRequest2.type)
       return this.onCertificateRequest(binary, fragment.length)
+    if (fragment.subtype === Finished2.type)
+      return this.onFinished(binary, fragment.length)
 
     binary.offset += fragment.length
 
@@ -342,56 +395,6 @@ export class Tls {
     console.log(hello)
   }
 
-  private async onServerHelloDone(binary: Binary, length: number) {
-    if (this.state.type !== "handshake")
-      throw new Error(`Invalid state`)
-    if (this.state.turn !== "server")
-      throw new Error(`Invalid state`)
-    if (this.state.action !== "server_key_exchange")
-      throw new Error(`Invalid state`)
-
-    const hello = ServerHelloDone2.read(binary, length)
-
-    console.log(hello)
-
-    const { dh_Yc, dh_Z } = await this.computeDiffieHellman(this.state)
-
-    const vkey = new (BytesVector<Number16>(Number16))(dh_Yc)
-    const cdhpe = new ClientDiffieHellmanPublicExplicit(vkey)
-    const ckedh = new ClientKeyExchange2DH(cdhpe)
-
-    const premaster_secret = dh_Z
-
-    const secrets = await this.computeSecrets(this.state, premaster_secret)
-
-    const bhckedh = ckedh.handshake().export()
-    this.state.messages.push(bhckedh)
-
-    console.log(this.state.messages)
-
-    const handshake_messages = Bytes.concat(this.state.messages)
-    const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest("SHA-256", handshake_messages))
-
-    const verify_data = await PRF("SHA-256", secrets.master_secret, "client finished", handshake_messages_hash, 12)
-    const finished = new Finished2(verify_data)
-
-    const brckedh = ckedh.handshake().record(this.state.version).export()
-    const brccs = new ChangeCipherSpec().record(this.state.version).export()
-
-    const prfinished = finished.handshake().record(this.state.version)
-    const drfinished = await PlaintextGenericBlockCipher.from(prfinished, secrets, BigInt(0))
-    const erfinished = await drfinished.encrypt(this.state.cipher, secrets)
-    const crfinished = prfinished.ciphertext(erfinished).export()
-
-    console.log("ClientKey", brckedh.toString("hex"))
-    console.log("ChangeCipherSpec", brccs.toString("hex"))
-    console.log("PlaintextRecord", prfinished.export().toString("hex"))
-    console.log("CiphertextCipher", erfinished.export().toString("hex"))
-    console.log("CiphertextRecord", crfinished.toString("hex"))
-
-    this.output!.enqueue(Bytes.concat([brckedh, brccs, crfinished]))
-  }
-
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {
     const { dh_g, dh_p, dh_Ys } = state.server_dh_params
 
@@ -448,5 +451,55 @@ export class Tls {
       client_write_IV,
       server_write_IV
     } as Secrets
+  }
+
+  private async onServerHelloDone(binary: Binary, length: number) {
+    if (this.state.type !== "handshake")
+      throw new Error(`Invalid state`)
+    if (this.state.turn !== "server")
+      throw new Error(`Invalid state`)
+    if (this.state.action !== "server_key_exchange")
+      throw new Error(`Invalid state`)
+
+    const hello = ServerHelloDone2.read(binary, length)
+
+    console.log(hello)
+
+    const { dh_Yc, dh_Z } = await this.computeDiffieHellman(this.state)
+
+    const vkey = new (BytesVector<Number16>(Number16))(dh_Yc)
+    const cdhpe = new ClientDiffieHellmanPublicExplicit(vkey)
+    const ckedh = new ClientKeyExchange2DH(cdhpe)
+
+    const premaster_secret = dh_Z
+
+    const secrets = await this.computeSecrets(this.state, premaster_secret)
+
+    const bhckedh = ckedh.handshake().export()
+    this.state.messages.push(bhckedh)
+
+    console.log(this.state.messages)
+
+    const handshake_messages = Bytes.concat(this.state.messages)
+    const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest("SHA-256", handshake_messages))
+
+    const verify_data = await PRF("SHA-256", secrets.master_secret, "client finished", handshake_messages_hash, 12)
+    const finished = new Finished2(verify_data)
+
+    const brckedh = ckedh.handshake().record(this.state.version).export()
+    const brccs = new ChangeCipherSpec().record(this.state.version).export()
+
+    const prfinished = finished.handshake().record(this.state.version)
+    const drfinished = await PlaintextGenericBlockCipher.from(prfinished, secrets, BigInt(0))
+    const erfinished = await drfinished.encrypt(this.state.cipher, secrets)
+    const crfinished = prfinished.ciphertext(erfinished).export()
+
+    this.state = { ...this.state, turn: "client", action: "finished", secrets }
+
+    this.output!.enqueue(Bytes.concat([brckedh, brccs, crfinished]))
+  }
+
+  private async onFinished(binary: Binary, length: number) {
+    console.log("yay")
   }
 }
