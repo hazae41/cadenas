@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary"
-import { Extension } from "mods/binary/extensions/extension.js"
 import { Number8 } from "mods/binary/number.js"
+import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
 import { Vector, Vector16 } from "mods/binary/vector.js"
 
 export class ClientSupportedVersions {

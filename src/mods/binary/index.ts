@@ -1,4 +1,3 @@
-export * from "./extensions/index.js";
 export * from "./number.js";
 export * from "./opaque.js";
 export * from "./random.js";

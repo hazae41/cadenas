@@ -1,8 +1,8 @@
 import { Binary } from "@hazae41/binary"
 import { Bytes } from "libs/bytes/bytes.js"
-import { Extension } from "mods/binary/extensions/extension.js"
-import { ClientSupportedVersions } from "mods/binary/extensions/supported_versions/supported_versions.js"
 import { Number16, Number8 } from "mods/binary/number.js"
+import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
+import { ClientSupportedVersions } from "mods/binary/records/handshakes/extensions/supported_versions/supported_versions.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ArrayVector, Vector, Vector16, Vector8 } from "mods/binary/vector.js"
 
