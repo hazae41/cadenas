@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { PlaintextRecord, Record } from "mods/binary/record/record.js"
+import { PlaintextRecord, Record } from "mods/binary/records/record.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
 
 export class HandshakeHeader {
