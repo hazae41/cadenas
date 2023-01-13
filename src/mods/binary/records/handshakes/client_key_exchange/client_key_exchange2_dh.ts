@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary";
-import { ClientDiffieHellmanPublicExplicit } from "mods/binary/handshakes/client_key_exchange/client_diffie_hellman_public.js";
-import { Handshake } from "mods/binary/handshakes/handshake.js";
+import { ClientDiffieHellmanPublicExplicit } from "mods/binary/records/handshakes/client_key_exchange/client_diffie_hellman_public.js";
+import { Handshake } from "mods/binary/records/handshakes/handshake.js";
 
 export class ClientKeyExchange2DH {
   readonly #class = ClientKeyExchange2DH

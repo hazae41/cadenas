@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Handshake } from "mods/binary/handshakes/handshake.js"
+import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 
 export class ServerHelloDone2 {
   readonly #class = ServerHelloDone2

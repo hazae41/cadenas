@@ -1,5 +1,5 @@
-import { ClientKeyExchange2DH } from "mods/binary/handshakes/client_key_exchange/client_key_exchange2_dh.js";
-import { ClientKeyExchange2RSA } from "mods/binary/handshakes/client_key_exchange/client_key_exchange2_rsa.js";
+import { ClientKeyExchange2DH } from "mods/binary/records/handshakes/client_key_exchange/client_key_exchange2_dh.js";
+import { ClientKeyExchange2RSA } from "mods/binary/records/handshakes/client_key_exchange/client_key_exchange2_rsa.js";
 import { Cipher } from "mods/ciphers/cipher.js";
 
 export type ClientKeyExchange2 =

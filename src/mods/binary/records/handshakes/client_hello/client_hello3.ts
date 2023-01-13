@@ -2,8 +2,8 @@ import { Binary } from "@hazae41/binary"
 import { Bytes } from "libs/bytes/bytes.js"
 import { Extension } from "mods/binary/extensions/extension.js"
 import { ClientSupportedVersions } from "mods/binary/extensions/supported_versions/supported_versions.js"
-import { Handshake } from "mods/binary/handshakes/handshake.js"
 import { Number16, Number8 } from "mods/binary/number.js"
+import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ArrayVector, Vector, Vector16, Vector8 } from "mods/binary/vector.js"
 
 export class ClientHello3 {

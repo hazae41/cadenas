@@ -1,7 +1,7 @@
 import { Binary } from "@hazae41/binary"
-import { Handshake } from "mods/binary/handshakes/handshake.js"
-import { ServerKeyExchange2Anonymous } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2_anonymous.js"
-import { ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
+import { Handshake } from "mods/binary/records/handshakes/handshake.js"
+import { ServerKeyExchange2Anonymous } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_anonymous.js"
+import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 
 export type ServerKeyExchange2 =

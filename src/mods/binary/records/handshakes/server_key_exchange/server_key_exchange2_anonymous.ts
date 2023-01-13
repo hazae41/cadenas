@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary"
-import { Handshake } from "mods/binary/handshakes/handshake.js"
-import { ServerDHParams } from "mods/binary/handshakes/server_key_exchange/server_dh_params.js"
+import { Handshake } from "mods/binary/records/handshakes/handshake.js"
+import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
 
 export class ServerKeyExchange2Anonymous {
   readonly #class = ServerKeyExchange2Anonymous

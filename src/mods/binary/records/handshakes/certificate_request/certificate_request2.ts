@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary"
-import { Handshake } from "mods/binary/handshakes/handshake.js"
 import { Number16, Number8 } from "mods/binary/number.js"
+import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { SignatureAndHashAlgorithm } from "mods/binary/signature.js"
 import { ArrayVector, BytesVector, Vector } from "mods/binary/vector.js"
 

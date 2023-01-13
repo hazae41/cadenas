@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary"
-import { Handshake } from "mods/binary/handshakes/handshake.js"
 import { Number24 } from "mods/binary/number.js"
+import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ArrayVector, BytesVector } from "mods/binary/vector.js"
 
 export class Certificate2 {
