@@ -3,7 +3,7 @@ import { Handshake } from "mods/binary/handshakes/handshake.js"
 import { Number16, Number8 } from "mods/binary/number.js"
 import { Random } from "mods/binary/random.js"
 import { ArrayVector, Vector, Vector16, Vector8 } from "mods/binary/vector.js"
-import { CipherSuite } from "mods/ciphers/cipher.js"
+import { Cipher } from "mods/ciphers/cipher.js"
 
 export class ClientHello2 {
   readonly #class = ClientHello2
@@ -27,7 +27,7 @@ export class ClientHello2 {
     return this.#class.type
   }
 
-  static default(ciphers: CipherSuite[]) {
+  static default(ciphers: Cipher[]) {
     const version = 0x0303
     const random = Random.default()
 

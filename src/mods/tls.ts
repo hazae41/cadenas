@@ -21,10 +21,10 @@ import { Opaque } from "mods/binary/opaque.js"
 import { ChangeCipherSpec } from "mods/binary/record/change_cipher_spec/change_cipher_spec.js"
 import { CiphertextGenericBlockCipher, CiphertextRecord, PlaintextRecord, RecordHeader } from "mods/binary/record/record.js"
 import { BytesVector } from "mods/binary/vector.js"
-import { CipherSuite } from "mods/ciphers/cipher.js"
+import { Cipher, Cipherer } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 import { AES_256_CBC } from "./ciphers/encryptions/aes_256_cbc/aes_256_cbc.js"
-import { BlockEncrypter } from "./ciphers/encryptions/encryption.js"
+import { SHA } from "./ciphers/hashes/sha/sha.js"
 
 export type State =
   | NoneState
@@ -54,7 +54,7 @@ export interface ClientHelloHandshakeState extends ClientHelloHandshakeData {
 
 export interface ServerHelloHandshakeData extends ClientHelloHandshakeData {
   version: number
-  cipher: CipherSuite
+  cipher: Cipher
   server_random: Uint8Array
 }
 
@@ -91,7 +91,7 @@ export interface ClientCertificateHandshakeState extends ServerKeyExchangeHandsh
 }
 
 export interface ClientChangeCipherSpecHandshakeData extends ServerKeyExchangeHandshakeData {
-  encrypter: BlockEncrypter
+  cipherer: Cipherer
   secrets: Secrets
 }
 
@@ -114,7 +114,7 @@ export interface ServerChangeCipherSpecHandshakeState extends ClientChangeCipher
 }
 
 export interface TlsParams {
-  ciphers: CipherSuite[]
+  ciphers: Cipher[]
   signal?: AbortSignal
 }
 
@@ -264,7 +264,7 @@ export class Tls {
 
     const gcipher = CiphertextGenericBlockCipher.read(binary, header.length)
     const cipher = CiphertextRecord.from(header, gcipher)
-    const plain = await cipher.decrypt(this.state.encrypter)
+    const plain = await cipher.decrypt(this.state.cipherer)
 
     return await this.onPlaintextRecord(plain)
   }
@@ -496,11 +496,13 @@ export class Tls {
     const brccs = new ChangeCipherSpec().record(this.state.version).export()
 
     const encrypter = await AES_256_CBC.init(secrets)
+    const hasher = await SHA.init(secrets)
+    const cipherer = new Cipherer(encrypter, hasher)
 
-    this.state = { ...this.state, turn: "client", action: "change_cipher_spec", encrypter, secrets }
+    this.state = { ...this.state, turn: "client", action: "change_cipher_spec", cipherer, secrets }
 
     const prfinished = finished.handshake().record(this.state.version)
-    const crfinished = await prfinished.encrypt(this.state.encrypter, secrets, BigInt(0))
+    const crfinished = await prfinished.encrypt(this.state.cipherer, BigInt(0))
 
     this.state = { ...this.state, turn: "client", action: "finished" }
 

@@ -2,14 +2,14 @@ import { Binary } from "@hazae41/binary"
 import { Handshake } from "mods/binary/handshakes/handshake.js"
 import { ServerKeyExchange2Anonymous } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2_anonymous.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
-import { CipherSuite } from "mods/ciphers/cipher.js"
+import { Cipher } from "mods/ciphers/cipher.js"
 
 export type ServerKeyExchange2 =
   | ServerKeyExchange2Anonymous
   | ServerKeyExchange2Ephemeral
   | ServerKeyExchange2None
 
-export function getServerKeyExchange2(cipher: CipherSuite) {
+export function getServerKeyExchange2(cipher: Cipher) {
   if (cipher.key_exchange.anonymous)
     return ServerKeyExchange2Anonymous
   if (cipher.key_exchange.ephemeral)

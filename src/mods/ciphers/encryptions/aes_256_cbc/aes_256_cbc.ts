@@ -8,8 +8,8 @@ export class AES_256_CBC {
   static block_length = 16
 
   constructor(
-    readonly encryption: CryptoKey,
-    readonly decryption: CryptoKey
+    readonly encryption_key: CryptoKey,
+    readonly decryption_key: CryptoKey
   ) { }
 
   static async init(secrets: Secrets) {
@@ -24,12 +24,12 @@ export class AES_256_CBC {
   }
 
   async encrypt(iv: Uint8Array, block: Uint8Array) {
-    const pkcs7 = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv }, this.encryption, block))
+    const pkcs7 = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv }, this.encryption_key, block))
 
     return pkcs7.subarray(0, -16)
   }
 
   async decrypt(iv: Uint8Array, block: Uint8Array) {
-    return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-CBC", length: 256, iv }, this.decryption, block))
+    return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-CBC", length: 256, iv }, this.decryption_key, block))
   }
 }

@@ -3,3 +3,7 @@ export interface Hash {
 
   readonly mac_key_length: number
 }
+
+export interface Hasher {
+  mac(seed: Uint8Array): Promise<Uint8Array>
+}
