@@ -5,6 +5,12 @@
 Zero-copy TLS protocol for the web 🏎️
 </h3>
 
+```bash
+npm i @hazae41/cadenas
+```
+
+[**Node Package 📦**](https://www.npmjs.com/package/@hazae41/cadenas)
+
 ### DO NOT USE
 
 This is experimental software in early development
