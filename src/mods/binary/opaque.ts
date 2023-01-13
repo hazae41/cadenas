@@ -1,4 +1,5 @@
 import { Binary } from "@hazae41/binary"
+import { ReadableLenghted } from "./readable.js"
 
 export class Opaque {
   readonly #class = Opaque
@@ -9,6 +10,10 @@ export class Opaque {
 
   get class() {
     return this.#class
+  }
+
+  into<T extends ReadableLenghted<T>>(clazz: T["class"]) {
+    return clazz.read(new Binary(this.bytes), this.bytes.length)
   }
 
   size() {
@@ -23,5 +28,11 @@ export class Opaque {
     const buffer = binary.read(length)
 
     return new this(buffer)
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
   }
 }

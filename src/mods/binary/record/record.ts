@@ -72,12 +72,10 @@ export class PlaintextRecord<T extends Writable & Exportable> {
     return this.#class
   }
 
-  static body<T extends Writable & Exportable & ReadableLenghted<T>>(
+  static from<T extends Writable & Exportable & ReadableLenghted<T>>(
     header: RecordHeader,
-    binary: Binary,
-    clazz: T["class"]
+    fragment: T
   ) {
-    const fragment = clazz.read(binary, this.length)
     return new this<T>(header.subtype, header.version, fragment)
   }
 

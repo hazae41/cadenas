@@ -17,8 +17,9 @@ import { ServerDHParams } from "mods/binary/handshakes/server_key_exchange/serve
 import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { Number16 } from "mods/binary/number.js"
+import { Opaque } from "mods/binary/opaque.js"
 import { ChangeCipherSpec } from "mods/binary/record/change_cipher_spec/change_cipher_spec.js"
-import { CiphertextGenericBlockCipher, PlaintextGenericBlockCipher, RecordHeader } from "mods/binary/record/record.js"
+import { CiphertextGenericBlockCipher, PlaintextGenericBlockCipher, PlaintextRecord, RecordHeader } from "mods/binary/record/record.js"
 import { BytesVector } from "mods/binary/vector.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
@@ -238,10 +239,20 @@ export class Tls {
   }
 
   private async onRecord(header: RecordHeader, binary: Binary) {
-    if (this.state.type !== "handshake")
-      return await this.onPlaintextRecord(header, binary, header.length)
-    if (this.state.action !== "change_cipher_spec")
-      return await this.onPlaintextRecord(header, binary, header.length)
+    if (this.state.type !== "handshake") {
+      const fragment = Opaque.read(binary, header.length)
+      const record = PlaintextRecord.from(header, fragment)
+
+      return await this.onPlaintextRecord(record)
+    }
+
+    if (this.state.action !== "change_cipher_spec") {
+      const fragment = Opaque.read(binary, header.length)
+      const record = PlaintextRecord.from(header, fragment)
+
+      return await this.onPlaintextRecord(record)
+    }
+
     return await this.onCiphertextRecord(header, binary)
   }
 
@@ -254,68 +265,66 @@ export class Tls {
     const gcipher = CiphertextGenericBlockCipher.read(binary, header.length)
     const gplain = await gcipher.decrypt(this.state.cipher, this.state.secrets)
 
-    await this.onPlaintextRecord(header, new Binary(gplain.content), gplain.content.length)
+    const fragment = Opaque.read(new Binary(gplain.content), gplain.content.length)
+    const record = PlaintextRecord.from(header, fragment)
+
+    return await this.onPlaintextRecord(record)
   }
 
-  private async onPlaintextRecord(header: RecordHeader, binary: Binary, length: number) {
-    if (header.subtype === Alert.type)
-      return await this.onAlert(binary, length)
-    if (header.subtype === Handshake.type)
-      return await this.onHandshake(binary, length)
-    if (header.subtype === ChangeCipherSpec.type)
-      return await this.onChangeCipherSpec(binary, length)
+  private async onPlaintextRecord(record: PlaintextRecord<Opaque>) {
+    if (record.subtype === Alert.type)
+      return await this.onAlert(record)
+    if (record.subtype === Handshake.type)
+      return await this.onHandshake(record)
+    if (record.subtype === ChangeCipherSpec.type)
+      return await this.onChangeCipherSpec(record)
 
-    binary.offset += length
-
-    console.warn(header)
+    console.warn(record)
   }
 
-  private async onAlert(binary: Binary, length: number) {
-    const fragment = Alert.read(binary, length)
+  private async onAlert(record: PlaintextRecord<Opaque>) {
+    const fragment = record.fragment.into<Alert>(Alert)
 
     console.log(fragment)
   }
 
-  private async onChangeCipherSpec(binary: Binary, length: number) {
+  private async onChangeCipherSpec(record: PlaintextRecord<Opaque>) {
     if (this.state.type !== "handshake")
       throw new Error(`Invalid state`)
     if (this.state.action !== "finished")
       throw new Error(`Invalid state`)
 
-    const fragment = ChangeCipherSpec.read(binary, length)
+    const fragment = record.fragment.into<ChangeCipherSpec>(ChangeCipherSpec)
 
     this.state = { ...this.state, turn: "server", action: "change_cipher_spec" }
 
     console.log(fragment)
   }
 
-  private async onHandshake(binary: Binary, length: number) {
+  private async onHandshake(record: PlaintextRecord<Opaque>) {
     if (this.state.type !== "handshake")
       throw new Error(`Invalid state`)
 
-    const bytes = binary.get(length)
+    const binary = new Binary(record.fragment.bytes)
+    const header = HandshakeHeader.read(binary, binary.view.length)
 
-    const fragment = HandshakeHeader.read(binary, length)
+    if (header.subtype !== Handshake.types.hello_request)
+      this.state.messages.push(record.fragment.bytes)
 
-    if (fragment.subtype !== Handshake.types.hello_request)
-      this.state.messages.push(bytes)
+    if (header.subtype === ServerHello2.type)
+      return this.onServerHello(binary, header.length)
+    if (header.subtype === Certificate2.type)
+      return this.onCertificate(binary, header.length)
+    if (header.subtype === ServerHelloDone2.type)
+      return this.onServerHelloDone(binary, header.length)
+    if (header.subtype === ServerKeyExchange2None.type)
+      return this.onServerKeyExchange(binary, header.length)
+    if (header.subtype === CertificateRequest2.type)
+      return this.onCertificateRequest(binary, header.length)
+    if (header.subtype === Finished2.type)
+      return this.onFinished(binary, header.length)
 
-    if (fragment.subtype === ServerHello2.type)
-      return this.onServerHello(binary, fragment.length)
-    if (fragment.subtype === Certificate2.type)
-      return this.onCertificate(binary, fragment.length)
-    if (fragment.subtype === ServerHelloDone2.type)
-      return this.onServerHelloDone(binary, fragment.length)
-    if (fragment.subtype === ServerKeyExchange2None.type)
-      return this.onServerKeyExchange(binary, fragment.length)
-    if (fragment.subtype === CertificateRequest2.type)
-      return this.onCertificateRequest(binary, fragment.length)
-    if (fragment.subtype === Finished2.type)
-      return this.onFinished(binary, fragment.length)
-
-    binary.offset += fragment.length
-
-    console.warn(fragment)
+    console.warn(header)
   }
 
   private async onServerHello(binary: Binary, length: number) {
@@ -377,12 +386,11 @@ export class Tls {
 
     const serverKeyExchange = getServerKeyExchange2(this.state.cipher).read(binary, length)
 
-    if (serverKeyExchange instanceof ServerKeyExchange2Ephemeral)
-      this.state = {
-        ...this.state,
-        action: "server_key_exchange",
-        server_dh_params: serverKeyExchange.params
-      }
+    if (serverKeyExchange instanceof ServerKeyExchange2Ephemeral) {
+      const server_dh_params = serverKeyExchange.params
+
+      this.state = { ...this.state, action: "server_key_exchange", server_dh_params }
+    }
 
     console.log(serverKeyExchange)
   }
