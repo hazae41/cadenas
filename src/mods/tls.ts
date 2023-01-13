@@ -339,6 +339,8 @@ export class Tls {
 
     const server_hello = handshake.fragment.into<ServerHello2>(ServerHello2)
 
+    console.log(server_hello)
+
     const version = server_hello.server_version
 
     if (version !== 0x0303)
@@ -351,9 +353,7 @@ export class Tls {
 
     const server_random = server_hello.random.export()
 
-    this.state = { ...this.state, type: "handshake", turn: "server", action: "server_hello", version, cipher, server_random }
-
-    console.log(server_hello)
+    this.state = { ...this.state, turn: "server", action: "server_hello", version, cipher, server_random }
   }
 
   private async onCertificate(handshake: Handshake<Opaque>) {
@@ -412,9 +412,7 @@ export class Tls {
     const p = BigInt(`0x${Bytes.toHex(dh_p.bytes)}`)
     const Ys = BigInt(`0x${Bytes.toHex(dh_Ys.bytes)}`)
 
-    const dh_yc = Bytes.allocUnsafe(dh_p.bytes.length)
-
-    crypto.getRandomValues(dh_yc)
+    const dh_yc = Bytes.random(dh_p.bytes.length)
 
     const yc = BigInt(`0x${Bytes.toHex(dh_yc)}`)
 
