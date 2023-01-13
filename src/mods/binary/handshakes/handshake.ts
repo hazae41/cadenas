@@ -79,6 +79,10 @@ export class Handshake<T extends Writable & Exportable> {
     return this.#class.type
   }
 
+  static from<T extends Writable & Exportable>(header: HandshakeHeader, fragment: T) {
+    return new this<T>(header.subtype, fragment)
+  }
+
   size() {
     return 1 + 3 + this.fragment.size()
   }

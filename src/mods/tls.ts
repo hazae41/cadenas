@@ -307,27 +307,29 @@ export class Tls {
 
     const binary = new Binary(record.fragment.bytes)
     const header = HandshakeHeader.read(binary, binary.view.length)
+    const fragment = Opaque.read(binary, header.length)
+    const handshake = Handshake.from(header, fragment)
 
-    if (header.subtype !== Handshake.types.hello_request)
+    if (handshake.subtype !== Handshake.types.hello_request)
       this.state.messages.push(record.fragment.bytes)
 
-    if (header.subtype === ServerHello2.type)
-      return this.onServerHello(binary, header.length)
-    if (header.subtype === Certificate2.type)
-      return this.onCertificate(binary, header.length)
-    if (header.subtype === ServerHelloDone2.type)
-      return this.onServerHelloDone(binary, header.length)
-    if (header.subtype === ServerKeyExchange2None.type)
-      return this.onServerKeyExchange(binary, header.length)
-    if (header.subtype === CertificateRequest2.type)
-      return this.onCertificateRequest(binary, header.length)
-    if (header.subtype === Finished2.type)
-      return this.onFinished(binary, header.length)
+    if (handshake.subtype === ServerHello2.type)
+      return this.onServerHello(handshake)
+    if (handshake.subtype === Certificate2.type)
+      return this.onCertificate(handshake)
+    if (handshake.subtype === ServerHelloDone2.type)
+      return this.onServerHelloDone(handshake)
+    if (handshake.subtype === ServerKeyExchange2None.type)
+      return this.onServerKeyExchange(handshake)
+    if (handshake.subtype === CertificateRequest2.type)
+      return this.onCertificateRequest(handshake)
+    if (handshake.subtype === Finished2.type)
+      return this.onFinished(handshake)
 
-    console.warn(header)
+    console.warn(handshake)
   }
 
-  private async onServerHello(binary: Binary, length: number) {
+  private async onServerHello(handshake: Handshake<Opaque>) {
     if (this.state.type !== "handshake")
       throw new Error(`Invalid state`)
     if (this.state.turn !== "client")
@@ -335,26 +337,26 @@ export class Tls {
     if (this.state.action !== "client_hello")
       throw new Error(`Invalid state`)
 
-    const hello = ServerHello2.read(binary, length)
+    const server_hello = handshake.fragment.into<ServerHello2>(ServerHello2)
 
-    const version = hello.server_version
+    const version = server_hello.server_version
 
     if (version !== 0x0303)
       throw new Error(`Unsupported ${version} version`)
 
-    const cipher = this.params.ciphers.find(it => it.id === hello.cipher_suite)
+    const cipher = this.params.ciphers.find(it => it.id === server_hello.cipher_suite)
 
     if (cipher === undefined)
-      throw new Error(`Unsupported ${hello.cipher_suite} cipher suite`)
+      throw new Error(`Unsupported ${server_hello.cipher_suite} cipher suite`)
 
-    const server_random = hello.random.export()
+    const server_random = server_hello.random.export()
 
     this.state = { ...this.state, type: "handshake", turn: "server", action: "server_hello", version, cipher, server_random }
 
-    console.log(hello)
+    console.log(server_hello)
   }
 
-  private async onCertificate(binary: Binary, length: number) {
+  private async onCertificate(handshake: Handshake<Opaque>) {
     if (this.state.type !== "handshake")
       throw new Error(`Invalid state`)
     if (this.state.turn !== "server")
@@ -362,9 +364,9 @@ export class Tls {
     if (this.state.action !== "server_hello")
       throw new Error(`Invalid state`)
 
-    const hello = Certificate2.read(binary, length)
+    const certificate = handshake.fragment.into<Certificate2>(Certificate2)
 
-    const server_certificates = hello.certificate_list.array
+    const server_certificates = certificate.certificate_list.array
       .map(it => X509.Certificate.fromBytes(it.bytes))
 
     this.state = { ...this.state, type: "handshake", turn: "server", action: "certificate", server_certificates }
@@ -373,10 +375,10 @@ export class Tls {
     // console.log(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
     // console.log(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
 
-    console.log(hello)
+    console.log(certificate)
   }
 
-  private async onServerKeyExchange(binary: Binary, length: number) {
+  private async onServerKeyExchange(handshake: Handshake<Opaque>) {
     if (this.state.type !== "handshake")
       throw new Error(`Invalid state`)
     if (this.state.turn !== "server")
@@ -384,21 +386,23 @@ export class Tls {
     if (this.state.action !== "certificate")
       throw new Error(`Invalid state`)
 
-    const serverKeyExchange = getServerKeyExchange2(this.state.cipher).read(binary, length)
+    const clazz = getServerKeyExchange2(this.state.cipher)
 
-    if (serverKeyExchange instanceof ServerKeyExchange2Ephemeral) {
-      const server_dh_params = serverKeyExchange.params
+    const server_key_exchange = handshake.fragment.into<InstanceType<typeof clazz>>(clazz)
+
+    if (server_key_exchange instanceof ServerKeyExchange2Ephemeral) {
+      const server_dh_params = server_key_exchange.params
 
       this.state = { ...this.state, action: "server_key_exchange", server_dh_params }
     }
 
-    console.log(serverKeyExchange)
+    console.log(server_key_exchange)
   }
 
-  private async onCertificateRequest(binary: Binary, length: number) {
-    const hello = CertificateRequest2.read(binary, length)
+  private async onCertificateRequest(handshake: Handshake<Opaque>) {
+    const certificate_request = handshake.fragment.into<CertificateRequest2>(CertificateRequest2)
 
-    console.log(hello)
+    console.log(certificate_request)
   }
 
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {
@@ -459,7 +463,7 @@ export class Tls {
     } as Secrets
   }
 
-  private async onServerHelloDone(binary: Binary, length: number) {
+  private async onServerHelloDone(handshake: Handshake<Opaque>) {
     if (this.state.type !== "handshake")
       throw new Error(`Invalid state`)
     if (this.state.turn !== "server")
@@ -467,9 +471,9 @@ export class Tls {
     if (this.state.action !== "server_key_exchange")
       throw new Error(`Invalid state`)
 
-    const hello = ServerHelloDone2.read(binary, length)
+    const server_hello_done = handshake.fragment.into<ServerHelloDone2>(ServerHelloDone2)
 
-    console.log(hello)
+    console.log(server_hello_done)
 
     const { dh_Yc, dh_Z } = await this.computeDiffieHellman(this.state)
 
@@ -503,7 +507,7 @@ export class Tls {
     this.output!.enqueue(Bytes.concat([brckedh, brccs, crfinished]))
   }
 
-  private async onFinished(binary: Binary, length: number) {
-    console.log("finished")
+  private async onFinished(handshake: Handshake<Opaque>) {
+    console.log("Finished", handshake)
   }
 }

@@ -13,6 +13,10 @@ export class ServerKeyExchange2Ephemeral {
     readonly signed_params: DigitallySigned
   ) { }
 
+  get class() {
+    return this.#class
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
