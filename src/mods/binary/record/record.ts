@@ -97,6 +97,13 @@ export class PlaintextRecord<T extends Writable & Exportable> {
     return binary.buffer
   }
 
+  async encrypt(cipher: CipherSuite, secrets: Secrets, sequence: bigint) {
+    const pfragment = await PlaintextGenericBlockCipher.from<T>(this, secrets, sequence)
+    const cfragment = await pfragment.encrypt(cipher, secrets)
+
+    return new CiphertextRecord<T>(this.subtype, this.version, cfragment)
+  }
+
   ciphertext(fragment: CiphertextGenericCipher<T>) {
     return new CiphertextRecord<T>(this.subtype, this.version, fragment)
   }

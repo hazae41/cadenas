@@ -19,7 +19,7 @@ import { ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_e
 import { Number16 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { ChangeCipherSpec } from "mods/binary/record/change_cipher_spec/change_cipher_spec.js"
-import { CiphertextGenericBlockCipher, CiphertextRecord, PlaintextGenericBlockCipher, PlaintextRecord, RecordHeader } from "mods/binary/record/record.js"
+import { CiphertextGenericBlockCipher, CiphertextRecord, PlaintextRecord, RecordHeader } from "mods/binary/record/record.js"
 import { BytesVector } from "mods/binary/vector.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
@@ -496,13 +496,11 @@ export class Tls {
     const brccs = new ChangeCipherSpec().record(this.state.version).export()
 
     const prfinished = finished.handshake().record(this.state.version)
-    const drfinished = await PlaintextGenericBlockCipher.from(prfinished, secrets, BigInt(0))
-    const erfinished = await drfinished.encrypt(this.state.cipher, secrets)
-    const crfinished = prfinished.ciphertext(erfinished).export()
+    const crfinished = await prfinished.encrypt(this.state.cipher, secrets, BigInt(0))
 
     this.state = { ...this.state, turn: "client", action: "finished", secrets }
 
-    this.output!.enqueue(Bytes.concat([brckedh, brccs, crfinished]))
+    this.output!.enqueue(Bytes.concat([brckedh, brccs, crfinished.export()]))
   }
 
   private async onFinished(handshake: Handshake<Opaque>) {
