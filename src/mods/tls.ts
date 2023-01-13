@@ -23,6 +23,8 @@ import { CiphertextGenericBlockCipher, CiphertextRecord, PlaintextRecord, Record
 import { BytesVector } from "mods/binary/vector.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
+import { AES_256_CBC } from "./ciphers/encryptions/aes_256_cbc/aes_256_cbc.js"
+import { BlockEncrypter } from "./ciphers/encryptions/encryption.js"
 
 export type State =
   | NoneState
@@ -31,6 +33,7 @@ export type State =
   | ServerCertificateHandshakeState
   | ServerKeyExchangeHandshakeState
   | ClientCertificateHandshakeState
+  | ClientChangeCipherSpecHandshakeState
   | ClientFinishedHandshakeState
   | ServerChangeCipherSpecHandshakeState
 
@@ -38,81 +41,76 @@ export interface NoneState {
   type: "none"
 }
 
-export interface HandshakeState {
-  type: "handshake"
+export interface ClientHelloHandshakeData {
   messages: Uint8Array[]
+  client_random: Uint8Array
 }
 
-export interface ClientHandshakeState extends HandshakeState {
+export interface ClientHelloHandshakeState extends ClientHelloHandshakeData {
+  type: "handshake"
   turn: "client"
-}
-
-export interface ServerHandshakeState extends HandshakeState {
-  turn: "server"
-}
-
-export interface ClientHelloHandshakeState extends ClientHandshakeState {
   action: "client_hello"
-  client_random: Uint8Array
 }
 
-export interface ServerHelloHandshakeState extends ServerHandshakeState {
+export interface ServerHelloHandshakeData extends ClientHelloHandshakeData {
+  version: number
+  cipher: CipherSuite
+  server_random: Uint8Array
+}
+
+export interface ServerHelloHandshakeState extends ServerHelloHandshakeData {
+  type: "handshake"
+  turn: "server",
   action: "server_hello"
-  version: number
-  cipher: CipherSuite
-  client_random: Uint8Array
-  server_random: Uint8Array
 }
 
-export interface ServerCertificateHandshakeState extends ServerHandshakeState {
+export interface ServerCertificateHandshakeData extends ServerHelloHandshakeData {
+  server_certificates: Certificate[]
+}
+
+export interface ServerCertificateHandshakeState extends ServerCertificateHandshakeData {
+  type: "handshake"
+  turn: "server"
   action: "certificate"
-  version: number
-  cipher: CipherSuite
-  client_random: Uint8Array
-  server_random: Uint8Array
-  server_certificates: Certificate[]
 }
 
-export interface ServerKeyExchangeHandshakeState extends ServerHandshakeState {
+export interface ServerKeyExchangeHandshakeData extends ServerCertificateHandshakeData {
+  server_dh_params: ServerDHParams
+}
+
+export interface ServerKeyExchangeHandshakeState extends ServerKeyExchangeHandshakeData {
+  type: "handshake"
+  turn: "server"
   action: "server_key_exchange"
-  version: number
-  cipher: CipherSuite
-  client_random: Uint8Array
-  server_random: Uint8Array
-  server_certificates: Certificate[]
-  server_dh_params: ServerDHParams
 }
 
-export interface ClientCertificateHandshakeState extends ClientHandshakeState {
-  action: "client_certificate"
-  version: number
-  cipher: CipherSuite
-  client_random: Uint8Array
-  server_random: Uint8Array
-  server_certificates: Certificate[]
-  server_dh_params: ServerDHParams
+export interface ClientCertificateHandshakeState extends ServerKeyExchangeHandshakeData {
+  type: "handshake"
+  turn: "client"
+  action: "certificate"
 }
 
-export interface ClientFinishedHandshakeState extends ClientHandshakeState {
-  action: "finished"
-  version: number
-  cipher: CipherSuite
-  client_random: Uint8Array
-  server_random: Uint8Array
-  server_certificates: Certificate[]
-  server_dh_params: ServerDHParams
+export interface ClientChangeCipherSpecHandshakeData extends ServerKeyExchangeHandshakeData {
+  encrypter: BlockEncrypter
   secrets: Secrets
 }
 
-export interface ServerChangeCipherSpecHandshakeState extends ServerHandshakeState {
+export interface ClientChangeCipherSpecHandshakeState extends ClientChangeCipherSpecHandshakeData {
+  type: "handshake"
+  turn: "client"
   action: "change_cipher_spec"
-  version: number
-  cipher: CipherSuite
-  client_random: Uint8Array
-  server_random: Uint8Array
-  server_certificates: Certificate[]
-  server_dh_params: ServerDHParams
-  secrets: Secrets
+}
+
+export interface ClientFinishedHandshakeState extends ClientChangeCipherSpecHandshakeData {
+  type: "handshake"
+  turn: "client"
+  action: "finished"
+}
+
+export interface ServerChangeCipherSpecHandshakeState extends ClientChangeCipherSpecHandshakeData {
+  type: "handshake"
+  turn: "server"
+  action: "change_cipher_spec"
 }
 
 export interface TlsParams {
@@ -264,7 +262,7 @@ export class Tls {
 
     const gcipher = CiphertextGenericBlockCipher.read(binary, header.length)
     const cipher = CiphertextRecord.from(header, gcipher)
-    const plain = await cipher.decrypt(this.state.cipher, this.state.secrets)
+    const plain = await cipher.decrypt(this.state.encrypter)
 
     return await this.onPlaintextRecord(plain)
   }
@@ -288,6 +286,8 @@ export class Tls {
 
   private async onChangeCipherSpec(record: PlaintextRecord<Opaque>) {
     if (this.state.type !== "handshake")
+      throw new Error(`Invalid state`)
+    if (this.state.turn !== "client")
       throw new Error(`Invalid state`)
     if (this.state.action !== "finished")
       throw new Error(`Invalid state`)
@@ -364,6 +364,8 @@ export class Tls {
 
     const certificate = handshake.fragment.into<Certificate2>(Certificate2)
 
+    console.log(certificate)
+
     const server_certificates = certificate.certificate_list.array
       .map(it => X509.Certificate.fromBytes(it.bytes))
 
@@ -372,8 +374,6 @@ export class Tls {
     // console.log(server_certificates)
     // console.log(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
     // console.log(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
-
-    console.log(certificate)
   }
 
   private async onServerKeyExchange(handshake: Handshake<Opaque>) {
@@ -388,13 +388,13 @@ export class Tls {
 
     const server_key_exchange = handshake.fragment.into<InstanceType<typeof clazz>>(clazz)
 
+    console.log(server_key_exchange)
+
     if (server_key_exchange instanceof ServerKeyExchange2Ephemeral) {
       const server_dh_params = server_key_exchange.params
 
       this.state = { ...this.state, action: "server_key_exchange", server_dh_params }
     }
-
-    console.log(server_key_exchange)
   }
 
   private async onCertificateRequest(handshake: Handshake<Opaque>) {
@@ -495,10 +495,14 @@ export class Tls {
     const brckedh = ckedh.handshake().record(this.state.version).export()
     const brccs = new ChangeCipherSpec().record(this.state.version).export()
 
-    const prfinished = finished.handshake().record(this.state.version)
-    const crfinished = await prfinished.encrypt(this.state.cipher, secrets, BigInt(0))
+    const encrypter = await AES_256_CBC.init(secrets)
 
-    this.state = { ...this.state, turn: "client", action: "finished", secrets }
+    this.state = { ...this.state, turn: "client", action: "change_cipher_spec", encrypter, secrets }
+
+    const prfinished = finished.handshake().record(this.state.version)
+    const crfinished = await prfinished.encrypt(this.state.encrypter, secrets, BigInt(0))
+
+    this.state = { ...this.state, turn: "client", action: "finished" }
 
     this.output!.enqueue(Bytes.concat([brckedh, brccs, crfinished.export()]))
   }

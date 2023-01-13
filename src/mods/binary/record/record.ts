@@ -3,7 +3,7 @@ import { Bytes } from "libs/bytes/bytes.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { ReadableLenghted } from "mods/binary/readable.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
-import { CipherSuite } from "mods/ciphers/cipher.js"
+import { BlockEncrypter } from "mods/ciphers/encryptions/encryption.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 
 export type Record<T extends Writable & Exportable & ReadableLenghted<T>> =
@@ -97,9 +97,9 @@ export class PlaintextRecord<T extends Writable & Exportable> {
     return binary.buffer
   }
 
-  async encrypt(cipher: CipherSuite, secrets: Secrets, sequence: bigint) {
+  async encrypt(encrypter: BlockEncrypter, secrets: Secrets, sequence: bigint) {
     const pfragment = await PlaintextGenericBlockCipher.from<T>(this, secrets, sequence)
-    const cfragment = await pfragment.encrypt(cipher, secrets)
+    const cfragment = await pfragment.encrypt(encrypter)
 
     return new CiphertextRecord<T>(this.subtype, this.version, cfragment)
   }
@@ -155,9 +155,8 @@ export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
     return new this(iv, block)
   }
 
-  async decrypt(cipher: CipherSuite, secrets: Secrets) {
-    const key = await crypto.subtle.importKey("raw", secrets.server_write_key, { name: "AES-CBC", length: 256 }, false, ["decrypt"])
-    const plaintext = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, this.block))
+  async decrypt(encrypter: BlockEncrypter) {
+    const plaintext = await encrypter.decrypt(this.iv, this.block)
 
     const raw = plaintext.subarray(0, -21)
     const mac = plaintext.subarray(-21, -1)
@@ -202,7 +201,7 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable> {
     return new this<T>(iv, content, mac)
   }
 
-  async encrypt(cipher: CipherSuite, secrets: Secrets) {
+  async encrypt(encrypter: BlockEncrypter) {
     const content = this.content.export()
 
     const length = content.length + this.mac.length
@@ -211,11 +210,7 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable> {
     padding.fill(padding_length)
 
     const plaintext = Bytes.concat([content, this.mac, padding])
-
-    const key = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-CBC", length: 256 }, false, ["encrypt"])
-    const pkcs7 = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, plaintext))
-
-    const ciphertext = pkcs7.subarray(0, -16)
+    const ciphertext = await encrypter.encrypt(this.iv, plaintext)
 
     return new CiphertextGenericBlockCipher<T>(this.iv, ciphertext)
   }
@@ -255,8 +250,8 @@ export class CiphertextRecord<T extends Writable & Exportable> {
     return binary.buffer
   }
 
-  async decrypt(cipher: CipherSuite, secrets: Secrets) {
-    const { content } = await this.fragment.decrypt(cipher, secrets)
+  async decrypt(encrypter: BlockEncrypter) {
+    const { content } = await this.fragment.decrypt(encrypter)
 
     return new PlaintextRecord(this.subtype, this.version, content)
   }
