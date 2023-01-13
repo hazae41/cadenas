@@ -16,6 +16,10 @@ export class Certificate2 {
     return this.#class
   }
 
+  get type() {
+    return this.#class.type
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
@@ -25,5 +29,23 @@ export class Certificate2 {
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(certificate_list)
+  }
+
+  size() {
+    return this.certificate_list.size()
+  }
+
+  write(binary: Binary) {
+    this.certificate_list.write(binary)
+  }
+
+  handshake() {
+    return new Handshake(this.type, this)
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.buffer
   }
 }

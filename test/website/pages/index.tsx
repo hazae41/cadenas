@@ -25,9 +25,9 @@ async function createHttpStream() {
 export default function Home() {
 
   const onClick = useCallback(async () => {
-    const ws = await createWebSocketStream()
+    const ws = await createHttpStream()
 
-    const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,]
+    const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA]
 
     const tls = new Tls(ws, { ciphers })
 

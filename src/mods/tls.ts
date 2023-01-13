@@ -4,7 +4,7 @@ import { BigMath } from "libs/bigmath/index.js"
 import { Bytes } from "libs/bytes/bytes.js"
 import { Future } from "libs/futures/future.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
-import { Number16 } from "mods/binary/number.js"
+import { Number16, Number24 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Alert } from "mods/binary/records/alerts/alert.js"
 import { ChangeCipherSpec } from "mods/binary/records/change_cipher_spec/change_cipher_spec.js"
@@ -21,7 +21,7 @@ import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchan
 import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { CiphertextGenericBlockCipher, CiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
-import { BytesVector } from "mods/binary/vector.js"
+import { ArrayVector, BytesVector } from "mods/binary/vector.js"
 import { Cipher, Cipherer } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 import { AES_256_CBC } from "./ciphers/encryptions/aes_256_cbc/aes_256_cbc.js"
@@ -43,6 +43,7 @@ export type HandshakeState =
   | ServerHelloHandshakeState
   | ServerCertificateHandshakeState
   | ServerKeyExchangeHandshakeState
+  | ServerCertificateRequestHandshakeState
   | ClientCertificateHandshakeState
   | ClientChangeCipherSpecHandshakeState
   | ClientFinishedHandshakeState
@@ -105,6 +106,18 @@ export interface ServerKeyExchangeHandshakeState extends ServerKeyExchangeHandsh
   type: "handshake"
   step: "server_hello"
   action: "server_key_exchange"
+  client_encrypted: false
+  server_encrypted: false
+}
+
+export interface ServerCertificateRequestHandshakeStateData extends ServerHelloHandshakeData {
+  certificate_request: CertificateRequest2
+}
+
+export interface ServerCertificateRequestHandshakeState extends ServerCertificateRequestHandshakeStateData {
+  type: "handshake"
+  step: "server_hello"
+  action: "server_certificate_request"
   client_encrypted: false
   server_encrypted: false
 }
@@ -465,6 +478,8 @@ export class Tls extends EventTarget {
     const certificate_request = handshake.fragment.into<CertificateRequest2>(CertificateRequest2)
 
     console.log(certificate_request)
+
+    this.state = { ...state, action: "server_certificate_request", certificate_request }
   }
 
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {
@@ -531,29 +546,46 @@ export class Tls extends EventTarget {
 
     console.log(server_hello_done)
 
+    if ("certificate_request" in state) {
+      const certificate_list = new (ArrayVector<Number24, BytesVector<Number24>>(Number24, BytesVector(Number24)))([])
+
+      const certificate = new Certificate2(certificate_list)
+      const handshake_certificate = certificate.handshake()
+      const record_certificate = handshake_certificate.record(state.version)
+
+      state.messages.push(handshake_certificate.export())
+
+      this.output!.enqueue(record_certificate.export())
+    }
+
     if (!("server_dh_params" in state))
       throw new Error(`Invalid state`)
 
     const { dh_Yc, dh_Z } = await this.computeDiffieHellman(state)
 
-    const vkey = new (BytesVector<Number16>(Number16))(dh_Yc)
-    const cdhpe = new ClientDiffieHellmanPublicExplicit(vkey)
-    const ckedh = new ClientKeyExchange2DH(cdhpe).handshake()
+    const dh_yc_vector = new (BytesVector<Number16>(Number16))(dh_Yc)
+    const dh_public = new ClientDiffieHellmanPublicExplicit(dh_yc_vector)
 
-    state.messages.push(ckedh.export())
+    const client_key_exchange = new ClientKeyExchange2DH(dh_public)
+    const handshake_client_key_exchange = client_key_exchange.handshake()
+    const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
 
-    this.output!.enqueue(ckedh.record(state.version).export())
+    state.messages.push(handshake_client_key_exchange.export())
+
+    this.output!.enqueue(record_client_key_exchange.export())
 
     const secrets = await this.computeSecrets(state, dh_Z)
 
     const encrypter = await AES_256_CBC.init(secrets)
     const hasher = await SHA.init(secrets)
     const cipherer = new Cipherer(encrypter, hasher)
-    const ccs = new ChangeCipherSpec().record(state.version)
+
+    const change_cipher_spec = new ChangeCipherSpec()
+    const record_change_cipher_spec = change_cipher_spec.record(state.version)
 
     state = { ...state, step: "client_change_cipher_spec", cipherer, client_encrypted: true, client_sequence: BigInt(0) }
 
-    this.output!.enqueue(ccs.export())
+    this.output!.enqueue(record_change_cipher_spec.export())
 
     const handshake_messages = Bytes.concat(state.messages)
     const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest("SHA-256", handshake_messages))
