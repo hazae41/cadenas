@@ -171,15 +171,17 @@ export class Tls {
   }
 
   async handshake() {
-    const hello = ClientHello2.default(this.params.ciphers)
+    const client_hello = ClientHello2.default(this.params.ciphers)
 
-    const handshake = hello.handshake()
+    const client_random = client_hello.random.export()
+
+    this.state = { ...this.state, type: "handshake", messages: [], turn: "client", action: "client_hello", client_random }
+
+    const handshake = client_hello.handshake()
+    this.state.messages.push(handshake.export())
+
     const record = handshake.record(0x0301)
     this.output!.enqueue(record.export())
-
-    const client_random = hello.random.export()
-
-    this.state = { ...this.state, type: "handshake", messages: [handshake.export()], turn: "client", action: "client_hello", client_random }
   }
 
   private async onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
