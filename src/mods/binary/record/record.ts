@@ -1,9 +1,10 @@
 import { Binary } from "@hazae41/binary"
 import { Bytes } from "libs/bytes/bytes.js"
+import { Opaque } from "mods/binary/opaque.js"
+import { ReadableLenghted } from "mods/binary/readable.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
-import { ReadableLenghted } from "../readable.js"
 
 export type Record<T extends Writable & Exportable & ReadableLenghted<T>> =
   | PlaintextRecord<T>
@@ -155,8 +156,10 @@ export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
     const key = await crypto.subtle.importKey("raw", secrets.server_write_key, { name: "AES-CBC", length: 256 }, false, ["decrypt"])
     const plaintext = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, this.block))
 
-    const content = plaintext.subarray(0, -21)
+    const raw = plaintext.subarray(0, -21)
     const mac = plaintext.subarray(-21, -1)
+
+    const content = new Opaque(raw)
 
     return new PlaintextGenericBlockCipher(this.iv, content, mac)
   }
@@ -168,12 +171,12 @@ export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
   }
 }
 
-export class PlaintextGenericBlockCipher<T extends Writable & Exportable & ReadableLenghted<T>> {
+export class PlaintextGenericBlockCipher<T extends Writable & Exportable> {
   readonly #class = PlaintextGenericBlockCipher
 
   constructor(
     readonly iv: Uint8Array,
-    readonly content: Uint8Array,
+    readonly content: T,
     readonly mac: Uint8Array
   ) { }
 
@@ -184,7 +187,7 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
   static async from<T extends Writable & Exportable>(plaintext: PlaintextRecord<T>, secrets: Secrets, sequence: bigint) {
     const iv = Bytes.random(16)
 
-    const content = plaintext.fragment.export()
+    const content = plaintext.fragment
 
     const premac = Binary.allocUnsafe(8 + plaintext.size())
     premac.writeUint64(sequence)
@@ -193,16 +196,18 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable & Reada
     const mac_key = await crypto.subtle.importKey("raw", secrets.client_write_MAC_key, { name: "HMAC", hash: "SHA-1" }, false, ["sign"])
     const mac = new Uint8Array(await crypto.subtle.sign("HMAC", mac_key, premac.bytes))
 
-    return new this(iv, content, mac)
+    return new this<T>(iv, content, mac)
   }
 
   async encrypt(cipher: CipherSuite, secrets: Secrets) {
-    const length = this.content.length + this.mac.length
+    const content = this.content.export()
+
+    const length = content.length + this.mac.length
     const padding_length = modulup(length + 1, 16)
     const padding = Bytes.allocUnsafe(padding_length + 1)
     padding.fill(padding_length)
 
-    const plaintext = Bytes.concat([this.content, this.mac, padding])
+    const plaintext = Bytes.concat([content, this.mac, padding])
 
     const key = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-CBC", length: 256 }, false, ["encrypt"])
     const pkcs7 = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", length: 256, iv: this.iv }, key, plaintext))
@@ -226,12 +231,7 @@ export class CiphertextRecord<T extends Writable & Exportable> {
     return this.#class
   }
 
-  static body<T extends Writable & Exportable & ReadableLenghted<T>>(
-    header: RecordHeader,
-    binary: Binary,
-    clazz: CiphertextGenericCipher<T>["class"]
-  ) {
-    const fragment = clazz.read(binary, this.length)
+  static from<T extends Writable & Exportable>(header: RecordHeader, fragment: CiphertextGenericCipher<T>) {
     return new this<T>(header.subtype, header.version, fragment)
   }
 
@@ -252,7 +252,9 @@ export class CiphertextRecord<T extends Writable & Exportable> {
     return binary.buffer
   }
 
-  decrypt(cipher: CipherSuite, secrets: Secrets) {
+  async decrypt(cipher: CipherSuite, secrets: Secrets) {
+    const { content } = await this.fragment.decrypt(cipher, secrets)
 
+    return new PlaintextRecord(this.subtype, this.version, content)
   }
 }

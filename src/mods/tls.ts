@@ -19,7 +19,7 @@ import { ServerKeyExchange2Ephemeral } from "mods/binary/handshakes/server_key_e
 import { Number16 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { ChangeCipherSpec } from "mods/binary/record/change_cipher_spec/change_cipher_spec.js"
-import { CiphertextGenericBlockCipher, PlaintextGenericBlockCipher, PlaintextRecord, RecordHeader } from "mods/binary/record/record.js"
+import { CiphertextGenericBlockCipher, CiphertextRecord, PlaintextGenericBlockCipher, PlaintextRecord, RecordHeader } from "mods/binary/record/record.js"
 import { BytesVector } from "mods/binary/vector.js"
 import { CipherSuite } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
@@ -263,12 +263,10 @@ export class Tls {
       throw new Error(`Invalid state`)
 
     const gcipher = CiphertextGenericBlockCipher.read(binary, header.length)
-    const gplain = await gcipher.decrypt(this.state.cipher, this.state.secrets)
+    const cipher = CiphertextRecord.from(header, gcipher)
+    const plain = await cipher.decrypt(this.state.cipher, this.state.secrets)
 
-    const fragment = Opaque.read(new Binary(gplain.content), gplain.content.length)
-    const record = PlaintextRecord.from(header, fragment)
-
-    return await this.onPlaintextRecord(record)
+    return await this.onPlaintextRecord(plain)
   }
 
   private async onPlaintextRecord(record: PlaintextRecord<Opaque>) {
