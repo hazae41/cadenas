@@ -103,10 +103,6 @@ export class PlaintextRecord<T extends Writable & Exportable> {
 
     return new CiphertextRecord<T>(this.subtype, this.version, cfragment)
   }
-
-  ciphertext(fragment: CiphertextGenericCipher<T>) {
-    return new CiphertextRecord<T>(this.subtype, this.version, fragment)
-  }
 }
 
 export type PlaintextGenericCipher<T extends Writable & Exportable & ReadableLenghted<T>> =
