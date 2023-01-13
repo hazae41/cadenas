@@ -210,6 +210,9 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable> {
     const plaintext = Bytes.concat([content, this.mac, padding])
     const ciphertext = await cipherer.encrypter.encrypt(this.iv, plaintext)
 
+    console.log("content", content.length, Bytes.toHex(content))
+    console.log("mac", this.mac.length, Bytes.toHex(this.mac))
+
     return new CiphertextGenericBlockCipher<T>(this.iv, ciphertext)
   }
 }

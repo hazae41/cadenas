@@ -2,6 +2,7 @@ import { Binary } from "@hazae41/binary"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
 import { Bytes } from "libs/bytes/bytes.js"
+import { Future } from "libs/futures/future.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { Number16 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
@@ -19,7 +20,7 @@ import { ServerHelloDone2 } from "mods/binary/records/handshakes/server_hello_do
 import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
 import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
-import { CiphertextGenericBlockCipher, CiphertextRecord, PlaintextRecord, RecordHeader } from "mods/binary/records/record.js"
+import { CiphertextGenericBlockCipher, CiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
 import { BytesVector } from "mods/binary/vector.js"
 import { Cipher, Cipherer } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
@@ -28,6 +29,16 @@ import { SHA } from "./ciphers/hashes/sha/sha.js"
 
 export type State =
   | NoneState
+  | HandshakeState
+  | DataState
+
+export interface NoneState {
+  type: "none"
+  client_encrypted: false
+  server_encrypted: false
+}
+
+export type HandshakeState =
   | ClientHelloHandshakeState
   | ServerHelloHandshakeState
   | ServerCertificateHandshakeState
@@ -37,8 +48,16 @@ export type State =
   | ClientFinishedHandshakeState
   | ServerChangeCipherSpecHandshakeState
 
-export interface NoneState {
-  type: "none"
+export const HandshakeSteps = {
+  client_hello: 0,
+  server_hello: 1,
+  server_certificate: 2,
+  server_key_exchange: 3,
+  client_certificate: 4,
+  client_change_cipher_spec: 5,
+  client_finished: 6,
+  server_change_cipher_spec: 7,
+  server_finished: 8
 }
 
 export interface ClientHelloHandshakeData {
@@ -48,8 +67,9 @@ export interface ClientHelloHandshakeData {
 
 export interface ClientHelloHandshakeState extends ClientHelloHandshakeData {
   type: "handshake"
-  turn: "client"
-  action: "client_hello"
+  step: "client_hello"
+  client_encrypted: false
+  server_encrypted: false
 }
 
 export interface ServerHelloHandshakeData extends ClientHelloHandshakeData {
@@ -60,8 +80,9 @@ export interface ServerHelloHandshakeData extends ClientHelloHandshakeData {
 
 export interface ServerHelloHandshakeState extends ServerHelloHandshakeData {
   type: "handshake"
-  turn: "server",
-  action: "server_hello"
+  step: "server_hello"
+  client_encrypted: false
+  server_encrypted: false
 }
 
 export interface ServerCertificateHandshakeData extends ServerHelloHandshakeData {
@@ -70,47 +91,72 @@ export interface ServerCertificateHandshakeData extends ServerHelloHandshakeData
 
 export interface ServerCertificateHandshakeState extends ServerCertificateHandshakeData {
   type: "handshake"
-  turn: "server"
-  action: "certificate"
+  step: "server_hello"
+  action: "server_certificate"
+  client_encrypted: false
+  server_encrypted: false
 }
 
-export interface ServerKeyExchangeHandshakeData extends ServerCertificateHandshakeData {
+export interface ServerKeyExchangeHandshakeData extends ServerHelloHandshakeData {
   server_dh_params: ServerDHParams
 }
 
 export interface ServerKeyExchangeHandshakeState extends ServerKeyExchangeHandshakeData {
   type: "handshake"
-  turn: "server"
+  step: "server_hello"
   action: "server_key_exchange"
+  client_encrypted: false
+  server_encrypted: false
 }
 
-export interface ClientCertificateHandshakeState extends ServerKeyExchangeHandshakeData {
+export interface ClientCertificateHandshakeStateData extends ServerKeyExchangeHandshakeData { }
+
+export interface ClientCertificateHandshakeState extends ClientCertificateHandshakeStateData {
   type: "handshake"
-  turn: "client"
-  action: "certificate"
+  step: "client_finish"
+  action: "client_certificate"
+  client_encrypted: false
+  server_encrypted: false
 }
 
-export interface ClientChangeCipherSpecHandshakeData extends ServerKeyExchangeHandshakeData {
+export interface ClientChangeCipherSpecHandshakeData extends ServerHelloHandshakeData {
   cipherer: Cipherer
-  secrets: Secrets
+  client_sequence: bigint
 }
 
 export interface ClientChangeCipherSpecHandshakeState extends ClientChangeCipherSpecHandshakeData {
   type: "handshake"
-  turn: "client"
-  action: "change_cipher_spec"
+  step: "client_change_cipher_spec"
+  client_encrypted: true
+  server_encrypted: false
 }
 
-export interface ClientFinishedHandshakeState extends ClientChangeCipherSpecHandshakeData {
+export interface ClientFinishedHandshakeData extends ClientChangeCipherSpecHandshakeData { }
+
+export interface ClientFinishedHandshakeState extends ClientFinishedHandshakeData {
   type: "handshake"
-  turn: "client"
-  action: "finished"
+  step: "client_finished"
+  client_encrypted: true
+  server_encrypted: false
 }
 
-export interface ServerChangeCipherSpecHandshakeState extends ClientChangeCipherSpecHandshakeData {
+export interface ServerChangeCipherSpecHandshakeData extends ClientFinishedHandshakeData {
+  server_sequence: bigint
+}
+
+export interface ServerChangeCipherSpecHandshakeState extends ServerChangeCipherSpecHandshakeData {
   type: "handshake"
-  turn: "server"
-  action: "change_cipher_spec"
+  step: "server_change_cipher_spec"
+  client_encrypted: true
+  server_encrypted: true
+}
+
+export interface DataStateData extends ServerChangeCipherSpecHandshakeData { }
+
+export interface DataState extends DataStateData {
+  type: "data"
+  client_encrypted: true
+  server_encrypted: true
 }
 
 export interface TlsParams {
@@ -118,14 +164,14 @@ export interface TlsParams {
   signal?: AbortSignal
 }
 
-export class Tls {
+export class Tls extends EventTarget {
   private input?: TransformStreamDefaultController<Uint8Array>
   private output?: TransformStreamDefaultController<Uint8Array>
 
   readonly readable: ReadableStream<Uint8Array>
   readonly writable: WritableStream<Uint8Array>
 
-  private state: State = { type: "none" }
+  private state: State = { type: "none", client_encrypted: false, server_encrypted: false }
 
   private buffer = Bytes.allocUnsafe(4 * 4096)
   private wbinary = new Binary(this.buffer)
@@ -135,6 +181,8 @@ export class Tls {
     readonly stream: ReadableWritablePair<Uint8Array>,
     readonly params: TlsParams
   ) {
+    super()
+
     const { signal } = params
 
     const read = new TransformStream<Uint8Array>({
@@ -175,13 +223,23 @@ export class Tls {
 
     const client_random = client_hello.random.export()
 
-    this.state = { ...this.state, type: "handshake", messages: [], turn: "client", action: "client_hello", client_random }
+    this.state = { ...this.state, type: "handshake", messages: [], step: "client_hello", client_random, client_encrypted: false, server_encrypted: false }
 
     const handshake = client_hello.handshake()
     this.state.messages.push(handshake.export())
 
     const record = handshake.record(0x0301)
     this.output!.enqueue(record.export())
+
+    const finished = new Future<Event>()
+
+    try {
+      this.addEventListener("finished", finished.ok, { passive: true })
+
+      await finished.promise
+    } finally {
+      this.removeEventListener("finished", finished.ok)
+    }
   }
 
   private async onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
@@ -235,31 +293,33 @@ export class Tls {
   }
 
   private async onWrite(chunk: Uint8Array) {
-    // TODO
+    if (this.state.type !== "data")
+      throw new Error(`Invalid state`)
+
+    this.state.client_sequence++
+
+    const { version, cipherer } = this.state
+    const type = Record.types.application_data
+    const fragment = new Opaque(chunk)
+
+    const plaintext = new PlaintextRecord(type, version, fragment)
+    const ciphertext = await plaintext.encrypt(cipherer, this.state.client_sequence)
+
+    this.output!.enqueue(ciphertext.export())
   }
 
   private async onRecord(header: RecordHeader, binary: Binary) {
-    if (this.state.type !== "handshake") {
-      const fragment = Opaque.read(binary, header.length)
-      const record = PlaintextRecord.from(header, fragment)
+    if (this.state.server_encrypted)
+      return await this.onCiphertextRecord(header, binary)
 
-      return await this.onPlaintextRecord(record)
-    }
+    const fragment = Opaque.read(binary, header.length)
+    const record = PlaintextRecord.from(header, fragment)
 
-    if (this.state.action !== "change_cipher_spec") {
-      const fragment = Opaque.read(binary, header.length)
-      const record = PlaintextRecord.from(header, fragment)
-
-      return await this.onPlaintextRecord(record)
-    }
-
-    return await this.onCiphertextRecord(header, binary)
+    return await this.onPlaintextRecord(record)
   }
 
   private async onCiphertextRecord(header: RecordHeader, binary: Binary) {
-    if (this.state.type !== "handshake")
-      throw new Error(`Invalid state`)
-    if (this.state.action !== "change_cipher_spec")
+    if (!this.state.server_encrypted)
       throw new Error(`Invalid state`)
 
     const gcipher = CiphertextGenericBlockCipher.read(binary, header.length)
@@ -276,6 +336,8 @@ export class Tls {
       return await this.onHandshake(record)
     if (record.subtype === ChangeCipherSpec.type)
       return await this.onChangeCipherSpec(record)
+    if (record.subtype === Record.types.application_data)
+      return await this.onApplicationData(record)
 
     console.warn(record)
   }
@@ -289,16 +351,21 @@ export class Tls {
   private async onChangeCipherSpec(record: PlaintextRecord<Opaque>) {
     if (this.state.type !== "handshake")
       throw new Error(`Invalid state`)
-    if (this.state.turn !== "client")
-      throw new Error(`Invalid state`)
-    if (this.state.action !== "finished")
+    if (this.state.step !== "client_finished")
       throw new Error(`Invalid state`)
 
     const fragment = record.fragment.into<ChangeCipherSpec>(ChangeCipherSpec)
 
-    this.state = { ...this.state, turn: "server", action: "change_cipher_spec" }
+    this.state = { ...this.state, step: "server_change_cipher_spec", server_encrypted: true, server_sequence: BigInt(0) }
 
     console.log(fragment)
+  }
+
+  private async onApplicationData(record: PlaintextRecord<Opaque>) {
+    if (this.state.type !== "data")
+      throw new Error(`Invalid state`)
+
+    this.input!.enqueue(record.fragment.bytes)
   }
 
   private async onHandshake(record: PlaintextRecord<Opaque>) {
@@ -314,27 +381,23 @@ export class Tls {
       this.state.messages.push(record.fragment.bytes)
 
     if (handshake.subtype === ServerHello2.type)
-      return this.onServerHello(handshake)
+      return this.onServerHello(handshake, this.state)
     if (handshake.subtype === Certificate2.type)
-      return this.onCertificate(handshake)
+      return this.onCertificate(handshake, this.state)
     if (handshake.subtype === ServerHelloDone2.type)
-      return this.onServerHelloDone(handshake)
+      return this.onServerHelloDone(handshake, this.state)
     if (handshake.subtype === ServerKeyExchange2None.type)
-      return this.onServerKeyExchange(handshake)
+      return this.onServerKeyExchange(handshake, this.state)
     if (handshake.subtype === CertificateRequest2.type)
-      return this.onCertificateRequest(handshake)
+      return this.onCertificateRequest(handshake, this.state)
     if (handshake.subtype === Finished2.type)
-      return this.onFinished(handshake)
+      return this.onFinished(handshake, this.state)
 
     console.warn(handshake)
   }
 
-  private async onServerHello(handshake: Handshake<Opaque>) {
-    if (this.state.type !== "handshake")
-      throw new Error(`Invalid state`)
-    if (this.state.turn !== "client")
-      throw new Error(`Invalid state`)
-    if (this.state.action !== "client_hello")
+  private async onServerHello(handshake: Handshake<Opaque>, state: HandshakeState) {
+    if (state.step !== "client_hello")
       throw new Error(`Invalid state`)
 
     const server_hello = handshake.fragment.into<ServerHello2>(ServerHello2)
@@ -353,15 +416,11 @@ export class Tls {
 
     const server_random = server_hello.random.export()
 
-    this.state = { ...this.state, turn: "server", action: "server_hello", version, cipher, server_random }
+    this.state = { ...state, step: "server_hello", version, cipher, server_random }
   }
 
-  private async onCertificate(handshake: Handshake<Opaque>) {
-    if (this.state.type !== "handshake")
-      throw new Error(`Invalid state`)
-    if (this.state.turn !== "server")
-      throw new Error(`Invalid state`)
-    if (this.state.action !== "server_hello")
+  private async onCertificate(handshake: Handshake<Opaque>, state: HandshakeState) {
+    if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
     const certificate = handshake.fragment.into<Certificate2>(Certificate2)
@@ -371,35 +430,38 @@ export class Tls {
     const server_certificates = certificate.certificate_list.array
       .map(it => X509.Certificate.fromBytes(it.bytes))
 
-    this.state = { ...this.state, type: "handshake", turn: "server", action: "certificate", server_certificates }
+    this.state = { ...state, action: "server_certificate", server_certificates }
 
     // console.log(server_certificates)
     // console.log(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
     // console.log(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
   }
 
-  private async onServerKeyExchange(handshake: Handshake<Opaque>) {
-    if (this.state.type !== "handshake")
-      throw new Error(`Invalid state`)
-    if (this.state.turn !== "server")
-      throw new Error(`Invalid state`)
-    if (this.state.action !== "certificate")
+  private async onServerKeyExchange(handshake: Handshake<Opaque>, state: HandshakeState) {
+    if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
-    const clazz = getServerKeyExchange2(this.state.cipher)
+    const clazz = getServerKeyExchange2(state.cipher)
 
     const server_key_exchange = handshake.fragment.into<InstanceType<typeof clazz>>(clazz)
 
-    console.log(server_key_exchange)
-
     if (server_key_exchange instanceof ServerKeyExchange2Ephemeral) {
+      console.log(server_key_exchange)
+
       const server_dh_params = server_key_exchange.params
 
-      this.state = { ...this.state, action: "server_key_exchange", server_dh_params }
+      this.state = { ...state, action: "server_key_exchange", server_dh_params } as ServerKeyExchangeHandshakeState
+
+      return
     }
+
+    console.warn(server_key_exchange)
   }
 
-  private async onCertificateRequest(handshake: Handshake<Opaque>) {
+  private async onCertificateRequest(handshake: Handshake<Opaque>, state: HandshakeState) {
+    if (state.step !== "server_hello")
+      throw new Error(`Invalid state`)
+
     const certificate_request = handshake.fragment.into<CertificateRequest2>(CertificateRequest2)
 
     console.log(certificate_request)
@@ -461,55 +523,60 @@ export class Tls {
     } as Secrets
   }
 
-  private async onServerHelloDone(handshake: Handshake<Opaque>) {
-    if (this.state.type !== "handshake")
-      throw new Error(`Invalid state`)
-    if (this.state.turn !== "server")
-      throw new Error(`Invalid state`)
-    if (this.state.action !== "server_key_exchange")
+  private async onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState) {
+    if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
     const server_hello_done = handshake.fragment.into<ServerHelloDone2>(ServerHelloDone2)
 
     console.log(server_hello_done)
 
-    const { dh_Yc, dh_Z } = await this.computeDiffieHellman(this.state)
+    if (!("server_dh_params" in state))
+      throw new Error(`Invalid state`)
+
+    const { dh_Yc, dh_Z } = await this.computeDiffieHellman(state)
 
     const vkey = new (BytesVector<Number16>(Number16))(dh_Yc)
     const cdhpe = new ClientDiffieHellmanPublicExplicit(vkey)
-    const ckedh = new ClientKeyExchange2DH(cdhpe)
+    const ckedh = new ClientKeyExchange2DH(cdhpe).handshake()
 
-    const premaster_secret = dh_Z
+    state.messages.push(ckedh.export())
 
-    const secrets = await this.computeSecrets(this.state, premaster_secret)
+    this.output!.enqueue(ckedh.record(state.version).export())
 
-    const bhckedh = ckedh.handshake().export()
-    this.state.messages.push(bhckedh)
-
-    const handshake_messages = Bytes.concat(this.state.messages)
-    const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest("SHA-256", handshake_messages))
-
-    const verify_data = await PRF("SHA-256", secrets.master_secret, "client finished", handshake_messages_hash, 12)
-    const finished = new Finished2(verify_data)
-
-    const brckedh = ckedh.handshake().record(this.state.version).export()
-    const brccs = new ChangeCipherSpec().record(this.state.version).export()
+    const secrets = await this.computeSecrets(state, dh_Z)
 
     const encrypter = await AES_256_CBC.init(secrets)
     const hasher = await SHA.init(secrets)
     const cipherer = new Cipherer(encrypter, hasher)
+    const ccs = new ChangeCipherSpec().record(state.version)
 
-    this.state = { ...this.state, turn: "client", action: "change_cipher_spec", cipherer, secrets }
+    state = { ...state, step: "client_change_cipher_spec", cipherer, client_encrypted: true, client_sequence: BigInt(0) }
 
-    const prfinished = finished.handshake().record(this.state.version)
-    const crfinished = await prfinished.encrypt(this.state.cipherer, BigInt(0))
+    this.output!.enqueue(ccs.export())
 
-    this.state = { ...this.state, turn: "client", action: "finished" }
+    const handshake_messages = Bytes.concat(state.messages)
+    const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest("SHA-256", handshake_messages))
 
-    this.output!.enqueue(Bytes.concat([brckedh, brccs, crfinished.export()]))
+    const verify_data = await PRF("SHA-256", secrets.master_secret, "client finished", handshake_messages_hash, 12)
+    const finished = new Finished2(verify_data).handshake().record(state.version)
+    const cfinished = await finished.encrypt(state.cipherer, state.client_sequence)
+
+    state = { ...state, step: "client_finished" }
+
+    this.output!.enqueue(cfinished.export())
+
+    this.state = state
   }
 
-  private async onFinished(handshake: Handshake<Opaque>) {
+  private async onFinished(handshake: Handshake<Opaque>, state: HandshakeState) {
+    if (state.step !== "server_change_cipher_spec")
+      throw new Error(`Invalid state`)
+
     console.log("Finished", handshake)
+
+    this.state = { ...state, type: "data" }
+
+    this.dispatchEvent(new Event("finished"))
   }
 }

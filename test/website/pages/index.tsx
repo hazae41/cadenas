@@ -1,7 +1,8 @@
-import { BatchedFetchStream, Ciphers, Tls, WebSocketStream } from "@hazae41/telsa"
+import { BatchedFetchStream, Ciphers, Tls, WebSocketStream } from "@hazae41/cadenas"
+import { fetch } from "@hazae41/fleche"
 import { useCallback } from "react"
 
-async function ws() {
+async function createWebSocketStream() {
   const websocket = new WebSocket("ws://localhost:8080")
 
   websocket.binaryType = "arraybuffer"
@@ -14,7 +15,7 @@ async function ws() {
   return new WebSocketStream(websocket)
 }
 
-async function http() {
+async function createHttpStream() {
   const headers = { "x-session-id": crypto.randomUUID() }
   const request = new Request("https://meek.bamsoftware.com/", { headers })
 
@@ -24,17 +25,18 @@ async function http() {
 export default function Home() {
 
   const onClick = useCallback(async () => {
-    const stream = await ws()
+    const ws = await createWebSocketStream()
 
-    const ciphers = [
-      Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
-      // TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-      // TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA
-    ]
+    const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,]
 
-    const tls = new Tls(stream, { ciphers })
+    const tls = new Tls(ws, { ciphers })
 
     await tls.handshake()
+
+    const res = await fetch("http://localhost/", { stream: tls })
+
+    console.log(res)
+    console.log(await res.text())
   }, [])
 
   return <button onClick={onClick}>
