@@ -177,14 +177,14 @@ export interface TlsParams {
   signal?: AbortSignal
 }
 
-export class Tls extends EventTarget {
-  private input?: TransformStreamDefaultController<Uint8Array>
-  private output?: TransformStreamDefaultController<Uint8Array>
-
+export class TlsStream extends EventTarget {
   readonly readable: ReadableStream<Uint8Array>
   readonly writable: WritableStream<Uint8Array>
 
   private state: State = { type: "none", client_encrypted: false, server_encrypted: false }
+
+  private _input?: TransformStreamDefaultController<Uint8Array>
+  private _output?: TransformStreamDefaultController<Uint8Array>
 
   private buffer = Bytes.allocUnsafe(4 * 4096)
   private wbinary = new Binary(this.buffer)
@@ -208,7 +208,7 @@ export class Tls extends EventTarget {
       transform: this.onWrite.bind(this),
     })
 
-    const [readable, trashable] = read.readable.tee()
+    const [readable, rtrashable] = read.readable.tee()
 
     this.readable = readable
     this.writable = write.writable
@@ -226,9 +226,17 @@ export class Tls extends EventTarget {
     /**
      * Force call to read.readable.transform()
      */
-    trashable
+    rtrashable
       .pipeTo(trash, { signal })
       .catch(() => { })
+  }
+
+  get input() {
+    return this._input!
+  }
+
+  get output() {
+    return this._output!
   }
 
   async handshake() {
@@ -242,7 +250,7 @@ export class Tls extends EventTarget {
     this.state.messages.push(handshake.export())
 
     const record = handshake.record(0x0301)
-    this.output!.enqueue(record.export())
+    this.output.enqueue(record.export())
 
     const finished = new Future<Event>()
 
@@ -256,7 +264,11 @@ export class Tls extends EventTarget {
   }
 
   private async onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
-    this.input = controller
+    this._input = controller
+  }
+
+  private async onWriteStart(controller: TransformStreamDefaultController<Uint8Array>) {
+    this._output = controller
   }
 
   private async onRead(chunk: Uint8Array) {
@@ -301,10 +313,6 @@ export class Tls extends EventTarget {
     }
   }
 
-  private async onWriteStart(controller: TransformStreamDefaultController<Uint8Array>) {
-    this.output = controller
-  }
-
   private async onWrite(chunk: Uint8Array) {
     if (this.state.type !== "data")
       throw new Error(`Invalid state`)
@@ -318,7 +326,7 @@ export class Tls extends EventTarget {
     const plaintext = new PlaintextRecord(type, version, fragment)
     const ciphertext = await plaintext.encrypt(cipherer, this.state.client_sequence)
 
-    this.output!.enqueue(ciphertext.export())
+    this.output.enqueue(ciphertext.export())
   }
 
   private async onRecord(header: RecordHeader, binary: Binary) {
@@ -378,7 +386,7 @@ export class Tls extends EventTarget {
     if (this.state.type !== "data")
       throw new Error(`Invalid state`)
 
-    this.input!.enqueue(record.fragment.bytes)
+    this.input.enqueue(record.fragment.bytes)
   }
 
   private async onHandshake(record: PlaintextRecord<Opaque>) {
@@ -555,7 +563,7 @@ export class Tls extends EventTarget {
 
       state.messages.push(handshake_certificate.export())
 
-      this.output!.enqueue(record_certificate.export())
+      this.output.enqueue(record_certificate.export())
     }
 
     if (!("server_dh_params" in state))
@@ -572,7 +580,7 @@ export class Tls extends EventTarget {
 
     state.messages.push(handshake_client_key_exchange.export())
 
-    this.output!.enqueue(record_client_key_exchange.export())
+    this.output.enqueue(record_client_key_exchange.export())
 
     const secrets = await this.computeSecrets(state, dh_Z)
 
@@ -585,7 +593,7 @@ export class Tls extends EventTarget {
 
     state = { ...state, step: "client_change_cipher_spec", cipherer, client_encrypted: true, client_sequence: BigInt(0) }
 
-    this.output!.enqueue(record_change_cipher_spec.export())
+    this.output.enqueue(record_change_cipher_spec.export())
 
     const handshake_messages = Bytes.concat(state.messages)
     const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest("SHA-256", handshake_messages))
@@ -596,7 +604,7 @@ export class Tls extends EventTarget {
 
     state = { ...state, step: "client_finished" }
 
-    this.output!.enqueue(cfinished.export())
+    this.output.enqueue(cfinished.export())
 
     this.state = state
   }
