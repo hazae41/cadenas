@@ -160,8 +160,8 @@ export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
     const raw = plaintext.subarray(0, -21)
     const mac = plaintext.subarray(-21, -1)
 
-    console.log("<- content", raw.length, Bytes.toHex(raw))
-    console.log("<- mac", mac.length, Bytes.toHex(mac))
+    // console.log("<- content", raw.length, Bytes.toHex(raw))
+    // console.log("<- mac", mac.length, Bytes.toHex(mac))
 
     const content = new Opaque(raw)
 
@@ -213,8 +213,8 @@ export class PlaintextGenericBlockCipher<T extends Writable & Exportable> {
     const plaintext = Bytes.concat([content, this.mac, padding])
     const ciphertext = await cipherer.encrypter.encrypt(this.iv, plaintext)
 
-    console.log("-> content", content.length, Bytes.toHex(content))
-    console.log("-> mac", this.mac.length, Bytes.toHex(this.mac))
+    // console.log("-> content", content.length, Bytes.toHex(content))
+    // console.log("-> mac", this.mac.length, Bytes.toHex(this.mac))
 
     return new CiphertextGenericBlockCipher<T>(this.iv, ciphertext)
   }

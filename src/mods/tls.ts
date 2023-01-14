@@ -275,8 +275,6 @@ export class TlsStream extends EventTarget {
   }
 
   private async onRead(chunk: Uint8Array) {
-    console.log("<-", Bytes.toHex(chunk))
-
     this.wbinary.write(chunk)
     this.rbinary.view = this.buffer.subarray(0, this.wbinary.offset)
 

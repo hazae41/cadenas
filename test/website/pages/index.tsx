@@ -1,4 +1,4 @@
-import { BatchedFetchStream, Ciphers, Tls, WebSocketStream } from "@hazae41/cadenas"
+import { BatchedFetchStream, Ciphers, TlsStream, WebSocketStream } from "@hazae41/cadenas"
 import { fetch } from "@hazae41/fleche"
 import { useCallback } from "react"
 
@@ -29,7 +29,7 @@ export default function Home() {
 
     const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA]
 
-    const tls = new Tls(ws, { ciphers })
+    const tls = new TlsStream(ws, { ciphers })
 
     await tls.handshake()
 
