@@ -240,11 +240,14 @@ export class TlsStream extends EventTarget {
   }
 
   async handshake() {
+    if (this.state.type !== "none")
+      throw new Error(`Invalid state`)
+
     const client_hello = ClientHello2.default(this.params.ciphers)
 
     const client_random = client_hello.random.export()
 
-    this.state = { ...this.state, type: "handshake", messages: [], step: "client_hello", client_random, client_encrypted: false, server_encrypted: false }
+    this.state = { ...this.state, type: "handshake", messages: [], step: "client_hello", client_random }
 
     const handshake = client_hello.handshake()
     this.state.messages.push(handshake.export())
@@ -272,19 +275,17 @@ export class TlsStream extends EventTarget {
   }
 
   private async onRead(chunk: Uint8Array) {
+    console.log("<-", Bytes.toHex(chunk))
+
     this.wbinary.write(chunk)
     this.rbinary.view = this.buffer.subarray(0, this.wbinary.offset)
 
     while (this.rbinary.remaining) {
-      try {
-        const header = RecordHeader.tryRead(this.rbinary)
+      const header = RecordHeader.tryRead(this.rbinary)
 
-        if (!header) break
+      if (!header) break
 
-        await this.onRecord(header, this.rbinary)
-      } catch (e: unknown) {
-        console.error(e)
-      }
+      await this.onRecord(header, this.rbinary)
     }
 
     if (!this.rbinary.offset)
