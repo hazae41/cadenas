@@ -44,7 +44,12 @@ export class RecordHeader {
     const start = binary.offset
 
     try {
-      return this.read(binary)
+      const header = this.read(binary)
+
+      if (binary.remaining < header.length)
+        throw new Error(`Partial record`)
+
+      return header
     } catch (e: unknown) {
       binary.offset = start
     }
