@@ -226,9 +226,6 @@ export class TlsStream extends EventTarget {
 
     const trash = new WritableStream()
 
-    /**
-     * Force call to read.readable.transform()
-     */
     rtrashable
       .pipeTo(trash, { signal })
       .catch(this.onError.bind(this))
