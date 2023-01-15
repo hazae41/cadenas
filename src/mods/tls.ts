@@ -215,11 +215,13 @@ export class TlsStream extends EventTarget {
 
     stream.readable
       .pipeTo(read.writable, { signal })
-      .catch(this.error.bind(this))
+      .then(this.onClose.bind(this))
+      .catch(this.onError.bind(this))
 
     write.readable
       .pipeTo(stream.writable, { signal })
-      .catch(this.error.bind(this))
+      .then(this.onClose.bind(this))
+      .catch(this.onError.bind(this))
 
     const trash = new WritableStream()
 
@@ -228,7 +230,7 @@ export class TlsStream extends EventTarget {
      */
     rtrashable
       .pipeTo(trash, { signal })
-      .catch(this.error.bind(this))
+      .catch(this.onError.bind(this))
   }
 
   get input() {
@@ -239,18 +241,17 @@ export class TlsStream extends EventTarget {
     return this._output!
   }
 
-  close() {
-    try { this.input.terminate() } catch (e: unknown) { }
-    try { this.output.terminate() } catch (e: unknown) { }
-
-    this.dispatchEvent(new CloseEvent("close"))
+  private async onClose() {
+    const event = new CloseEvent("close", {})
+    if (!this.dispatchEvent(event)) return
   }
 
-  error(error?: unknown) {
+  private async onError(error?: unknown) {
+    const event = new ErrorEvent("error", { error })
+    if (!this.dispatchEvent(event)) return
+
     try { this.input.error(error) } catch (e: unknown) { }
     try { this.output.error(error) } catch (e: unknown) { }
-
-    this.dispatchEvent(new ErrorEvent("error", { error }))
   }
 
   async handshake() {
