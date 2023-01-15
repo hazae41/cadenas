@@ -174,7 +174,8 @@ export interface DataState extends DataStateData {
 
 export interface TlsParams {
   ciphers: Cipher[]
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  debug?: boolean
 }
 
 export class TlsStream extends EventTarget {
@@ -254,6 +255,14 @@ export class TlsStream extends EventTarget {
     try { this.output.error(error) } catch (e: unknown) { }
   }
 
+  private async onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
+    this._input = controller
+  }
+
+  private async onWriteStart(controller: TransformStreamDefaultController<Uint8Array>) {
+    this._output = controller
+  }
+
   async handshake() {
     if (this.state.type !== "none")
       throw new Error(`Invalid state`)
@@ -273,20 +282,16 @@ export class TlsStream extends EventTarget {
     const finished = new Future<Event>()
 
     try {
+      this.addEventListener("error", finished.err, { passive: true })
+      this.addEventListener("close", finished.err, { passive: true })
       this.addEventListener("finished", finished.ok, { passive: true })
 
       await finished.promise
     } finally {
+      this.removeEventListener("error", finished.err)
+      this.removeEventListener("close", finished.err)
       this.removeEventListener("finished", finished.ok)
     }
-  }
-
-  private async onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
-    this._input = controller
-  }
-
-  private async onWriteStart(controller: TransformStreamDefaultController<Uint8Array>) {
-    this._output = controller
   }
 
   private async onRead(chunk: Uint8Array) {
