@@ -8,6 +8,7 @@ import { Number16, Number24 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Alert } from "mods/binary/records/alerts/alert.js"
 import { ChangeCipherSpec } from "mods/binary/records/change_cipher_spec/change_cipher_spec.js"
+import { CiphertextGenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { Certificate2 } from "mods/binary/records/handshakes/certificate/certificate2.js"
 import { CertificateRequest2 } from "mods/binary/records/handshakes/certificate_request/certificate_request2.js"
 import { ClientHello2 } from "mods/binary/records/handshakes/client_hello/client_hello2.js"
@@ -20,12 +21,12 @@ import { ServerHelloDone2 } from "mods/binary/records/handshakes/server_hello_do
 import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
 import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
-import { CiphertextGenericBlockCipher, CiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
+import { CiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
 import { ArrayVector, BytesVector } from "mods/binary/vector.js"
 import { Cipher, Cipherer } from "mods/ciphers/cipher.js"
+import { AES_256_CBC } from "mods/ciphers/encryptions/aes_256_cbc/aes_256_cbc.js"
+import { SHA } from "mods/ciphers/hashes/sha/sha.js"
 import { Secrets } from "mods/ciphers/secrets.js"
-import { AES_256_CBC } from "./ciphers/encryptions/aes_256_cbc/aes_256_cbc.js"
-import { SHA } from "./ciphers/hashes/sha/sha.js"
 
 export type State =
   | NoneState
@@ -216,19 +217,19 @@ export class TlsStream extends EventTarget {
 
     stream.readable
       .pipeTo(read.writable, { signal })
-      .then(this.onClose.bind(this))
-      .catch(this.onError.bind(this))
+      .then(this.onReadClose.bind(this))
+      .catch(this.onReadError.bind(this))
 
     write.readable
       .pipeTo(stream.writable, { signal })
-      .then(this.onClose.bind(this))
-      .catch(this.onError.bind(this))
+      .then(this.onWriteClose.bind(this))
+      .catch(this.onWriteError.bind(this))
 
     const trash = new WritableStream()
 
     rtrashable
       .pipeTo(trash, { signal })
-      .catch(this.onError.bind(this))
+      .catch(this.onReadError.bind(this))
   }
 
   get input() {
@@ -239,12 +240,25 @@ export class TlsStream extends EventTarget {
     return this._output!
   }
 
-  private async onClose() {
+  private async onReadClose() {
     const event = new CloseEvent("close", {})
     if (!this.dispatchEvent(event)) return
   }
 
-  private async onError(error?: unknown) {
+  private async onWriteClose() {
+    const event = new CloseEvent("close", {})
+    if (!this.dispatchEvent(event)) return
+  }
+
+  private async onReadError(error?: unknown) {
+    const event = new ErrorEvent("error", { error })
+    if (!this.dispatchEvent(event)) return
+
+    try { this.input.error(error) } catch (e: unknown) { }
+    try { this.output.error(error) } catch (e: unknown) { }
+  }
+
+  private async onWriteError(error?: unknown) {
     const event = new ErrorEvent("error", { error })
     if (!this.dispatchEvent(event)) return
 
