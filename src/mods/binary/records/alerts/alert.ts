@@ -82,6 +82,6 @@ export class Alert {
   export() {
     const binary = Binary.allocUnsafe(this.size())
     this.write(binary)
-    return binary.buffer
+    return binary.bytes
   }
 }

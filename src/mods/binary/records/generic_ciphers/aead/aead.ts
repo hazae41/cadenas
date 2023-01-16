@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary";
 import { Bytes } from "libs/bytes/bytes.js";
-import { CiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
+import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
 import { Exportable, Writable } from "mods/binary/writable.js";
 import { AEADCipherer } from "mods/ciphers/cipher.js";
 
@@ -50,7 +50,7 @@ export class GenericAEADCipher {
     return new this(nonce_explicit, ciphertext)
   }
 
-  async decrypt(record: CiphertextRecord, cipherer: AEADCipherer, sequence: bigint) {
+  async decrypt(record: AEADCiphertextRecord, cipherer: AEADCipherer, sequence: bigint) {
     const additional_data = Binary.allocUnsafe(8 + 1 + 2 + 2)
     additional_data.writeUint64(sequence)
     additional_data.writeUint8(record.subtype)

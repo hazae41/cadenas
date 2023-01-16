@@ -12,7 +12,27 @@ export class Cipher {
   ) { }
 }
 
+export type Cipherer =
+  | IBlockCipherer
+  | IAEADCipherer
+
+export interface IBlockCipherer {
+  readonly cipher_type: "block"
+  readonly encrypter: BlockEncrypter,
+  readonly hasher: Hasher,
+  readonly secrets: Secrets
+}
+
+export interface IAEADCipherer {
+  readonly cipher_type: "aead"
+  readonly encrypter: AEADEncrypter,
+  readonly hasher: Hasher,
+  readonly secrets: Secrets
+}
+
 export class BlockCipherer {
+  readonly cipher_type = "block"
+
   constructor(
     readonly encrypter: BlockEncrypter,
     readonly hasher: Hasher,
@@ -21,6 +41,8 @@ export class BlockCipherer {
 }
 
 export class AEADCipherer {
+  readonly cipher_type = "aead"
+
   constructor(
     readonly encrypter: AEADEncrypter,
     readonly hasher: Hasher,

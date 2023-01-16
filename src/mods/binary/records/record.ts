@@ -1,10 +1,10 @@
 import { Binary } from "@hazae41/binary"
+import { Opaque } from "mods/binary/opaque.js"
 import { ReadableLenghted } from "mods/binary/readable.js"
+import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
-import { GenericCipher } from "mods/binary/records/generic_ciphers/types.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
-import { BlockCipherer } from "mods/ciphers/cipher.js"
-import { Opaque } from "../opaque.js"
+import { AEADCipherer, BlockCipherer, Cipherer } from "mods/ciphers/cipher.js"
 
 export namespace Record {
 
@@ -96,29 +96,38 @@ export class PlaintextRecord<T extends Writable & Exportable> {
   export() {
     const binary = Binary.allocUnsafe(this.size())
     this.write(binary)
-    return binary.buffer
+    return binary.bytes
   }
 
-  async encrypt(cipherer: BlockCipherer, sequence: bigint) {
-    const fragment = await GenericBlockCipher.encrypt<T>(this, cipherer, sequence)
-    return new CiphertextRecord(this.subtype, this.version, fragment)
+  async encrypt(cipherer: Cipherer, sequence: bigint) {
+    if (cipherer.cipher_type === "block") {
+      const fragment = await GenericBlockCipher.encrypt<T>(this, cipherer, sequence)
+      return new BlockCiphertextRecord(this.subtype, this.version, fragment)
+    }
+
+    if (cipherer.cipher_type === "aead") {
+      const fragment = await GenericAEADCipher.encrypt<T>(this, cipherer, sequence)
+      return new AEADCiphertextRecord(this.subtype, this.version, fragment)
+    }
+
+    throw new Error(`Invalid cipherer type`)
   }
 }
 
-export class CiphertextRecord {
-  readonly #class = CiphertextRecord
+export class BlockCiphertextRecord {
+  readonly #class = BlockCiphertextRecord
 
   constructor(
     readonly subtype: number,
     readonly version: number,
-    readonly fragment: GenericCipher
+    readonly fragment: GenericBlockCipher
   ) { }
 
   get class() {
     return this.#class
   }
 
-  static from(header: RecordHeader, fragment: GenericCipher) {
+  static from(header: RecordHeader, fragment: GenericBlockCipher) {
     return new this(header.subtype, header.version, fragment)
   }
 
@@ -136,10 +145,50 @@ export class CiphertextRecord {
   export() {
     const binary = Binary.allocUnsafe(this.size())
     this.write(binary)
-    return binary.buffer
+    return binary.bytes
   }
 
   async decrypt(cipherer: BlockCipherer, sequence: bigint) {
+    const content = await this.fragment.decrypt(this, cipherer, sequence)
+    return new PlaintextRecord(this.subtype, this.version, new Opaque(content))
+  }
+}
+
+export class AEADCiphertextRecord {
+  readonly #class = AEADCiphertextRecord
+
+  constructor(
+    readonly subtype: number,
+    readonly version: number,
+    readonly fragment: GenericAEADCipher
+  ) { }
+
+  get class() {
+    return this.#class
+  }
+
+  static from(header: RecordHeader, fragment: GenericAEADCipher) {
+    return new this(header.subtype, header.version, fragment)
+  }
+
+  size() {
+    return 1 + 2 + 2 + this.fragment.size()
+  }
+
+  write(binary: Binary) {
+    binary.writeUint8(this.subtype)
+    binary.writeUint16(this.version)
+    binary.writeUint16(this.fragment.size())
+    this.fragment.write(binary)
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
+  async decrypt(cipherer: AEADCipherer, sequence: bigint) {
     const content = await this.fragment.decrypt(this, cipherer, sequence)
     return new PlaintextRecord(this.subtype, this.version, new Opaque(content))
   }

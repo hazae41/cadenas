@@ -1,5 +1,6 @@
 import { Binary } from "@hazae41/binary"
-import { ReadableLenghted } from "./readable.js"
+import { ReadableLenghted } from "mods/binary/readable.js"
+import { Exportable } from "mods/binary/writable.js"
 
 export class Opaque {
   readonly #class = Opaque
@@ -10,6 +11,10 @@ export class Opaque {
 
   get class() {
     return this.#class
+  }
+
+  static from(fragment: Exportable) {
+    return new this(fragment.export())
   }
 
   into<T extends ReadableLenghted<T>>(clazz: T["class"]) {

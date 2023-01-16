@@ -21,7 +21,7 @@ import { ServerHelloDone2 } from "mods/binary/records/handshakes/server_hello_do
 import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
 import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
-import { CiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
+import { BlockCiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
 import { ArrayVector, BytesVector } from "mods/binary/vector.js"
 import { BlockCipherer, Cipher } from "mods/ciphers/cipher.js"
 import { AES_256_CBC } from "mods/ciphers/encryptions/aes_256_cbc/aes_256_cbc.js"
@@ -372,7 +372,7 @@ export class TlsStream extends EventTarget {
       throw new Error(`Invalid state`)
 
     const gcipher = GenericBlockCipher.read(binary, header.length)
-    const cipher = CiphertextRecord.from(header, gcipher)
+    const cipher = BlockCiphertextRecord.from(header, gcipher)
     const plain = await cipher.decrypt(this.state.cipherer, this.state.server_sequence++)
 
     return await this.onPlaintextRecord(plain)

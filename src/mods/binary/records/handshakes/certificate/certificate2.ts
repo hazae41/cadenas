@@ -46,6 +46,6 @@ export class Certificate2 {
   export() {
     const binary = Binary.allocUnsafe(this.size())
     this.write(binary)
-    return binary.buffer
+    return binary.bytes
   }
 }

@@ -3,6 +3,7 @@ import { Secrets } from "mods/ciphers/secrets.js"
 export class AES_256_GCM {
   readonly #class = AES_256_GCM
 
+  static cipher_type = "aead"
   static enc_key_length = 32
   static fixed_iv_length = 4
   static record_iv_length = 8
