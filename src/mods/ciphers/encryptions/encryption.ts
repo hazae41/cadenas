@@ -1,3 +1,5 @@
+import { Secrets } from "mods/ciphers/secrets.js"
+
 export type Encryption =
   | BlockEncryption
   | AEADEncryption
@@ -10,11 +12,11 @@ export interface IEncryption {
 }
 
 export interface BlockEncryption extends IEncryption {
-  readonly cipher_type: "block"
+  init(secrets: Secrets): Promise<BlockEncrypter>
 }
 
 export interface AEADEncryption extends IEncryption {
-  readonly cipher_type: "aead"
+  init(secrets: Secrets): Promise<AEADEncrypter>
 }
 
 export type Encrypter =

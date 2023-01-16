@@ -12,6 +12,7 @@ async function createWebSocketStream() {
     websocket.addEventListener("error", err)
   })
 
+  await new Promise(ok => setTimeout(ok, 100))
   return new WebSocketStream(websocket)
 }
 
@@ -27,13 +28,13 @@ export default function Home() {
   const onClick = useCallback(async () => {
     const ws = await createWebSocketStream()
 
-    const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA]
+    const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
 
     const tls = new TlsStream(ws, { ciphers })
 
     await tls.handshake()
 
-    const res = await fetch("http://localhost/", { stream: tls })
+    const res = await fetch("https://localhost/", { stream: tls })
 
     console.log(res)
     console.log(await res.text())

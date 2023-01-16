@@ -1,5 +1,6 @@
 import { Binary } from "@hazae41/binary";
 import { Bytes } from "libs/bytes/bytes.js";
+import { Opaque } from "mods/binary/opaque.js";
 import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
 import { Exportable, Writable } from "mods/binary/writable.js";
 import { AEADCipherer } from "mods/ciphers/cipher.js";
@@ -23,6 +24,18 @@ export class GenericAEADCipher {
   write(binary: Binary) {
     binary.write(this.nonce_explicit)
     binary.write(this.block)
+  }
+
+  static read(binary: Binary, length: number) {
+    const start = binary.offset
+
+    const nonce_explicit = binary.read(12)
+    const block = binary.read(length - 12)
+
+    if (binary.offset - start !== length)
+      throw new Error(`Invalid ${this.name} length`)
+
+    return new this(nonce_explicit, block)
   }
 
   static async encrypt<T extends Writable & Exportable>(record: PlaintextRecord<T>, cipherer: AEADCipherer, sequence: bigint) {
@@ -62,7 +75,7 @@ export class GenericAEADCipher {
     // console.log("<- content", raw.length, Bytes.toHex(raw))
     // console.log("<- mac", mac.length, Bytes.toHex(mac))
 
-    return plaintext
+    return new Opaque(plaintext)
   }
 
 }

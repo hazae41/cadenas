@@ -2,6 +2,8 @@ import { Cipher } from "mods/ciphers/cipher.js"
 import { AES_256_CBC } from "mods/ciphers/encryptions/aes_256_cbc/aes_256_cbc.js"
 import { SHA } from "mods/ciphers/hashes/sha/sha.js"
 import { DHE_RSA } from "mods/ciphers/key_exchanges/dhe_rsa/dhe_rsa.js"
+import { AES_128_GCM } from "./encryptions/aes_128_gcm/aes_128_gcm.js"
+import { SHA256 } from "./hashes/sha256/sha256.js"
 
 /**
  * Legacy ciphers
@@ -13,4 +15,5 @@ export const TLS_DHE_RSA_WITH_AES_256_CBC_SHA = new Cipher(0x0039, DHE_RSA, AES_
 /**
  * Modern ciphers
  */
+export const TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 = new Cipher(0x009e, DHE_RSA, AES_128_GCM, SHA256)
 // export const TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 = new CipherSuite(0xC02B, "ecdhe_ecdsa", "aes_128_gcm", "sha256")

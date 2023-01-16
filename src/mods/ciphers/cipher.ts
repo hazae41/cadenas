@@ -10,42 +10,26 @@ export class Cipher {
     readonly encryption: Encryption,
     readonly hash: Hash
   ) { }
+
+  async init(secrets: Secrets) {
+    const encrypter = await this.encryption.init(secrets)
+    const hasher = await this.hash.init(secrets)
+    return { encrypter, hasher, secrets } satisfies Cipherer
+  }
 }
 
 export type Cipherer =
-  | IBlockCipherer
-  | IAEADCipherer
+  | BlockCipherer
+  | AEADCipherer
 
-export interface IBlockCipherer {
-  readonly cipher_type: "block"
+export interface BlockCipherer {
   readonly encrypter: BlockEncrypter,
   readonly hasher: Hasher,
-  readonly secrets: Secrets
+  readonly secrets: Secrets,
 }
 
-export interface IAEADCipherer {
-  readonly cipher_type: "aead"
+export interface AEADCipherer {
   readonly encrypter: AEADEncrypter,
   readonly hasher: Hasher,
-  readonly secrets: Secrets
-}
-
-export class BlockCipherer {
-  readonly cipher_type = "block"
-
-  constructor(
-    readonly encrypter: BlockEncrypter,
-    readonly hasher: Hasher,
-    readonly secrets: Secrets
-  ) { }
-}
-
-export class AEADCipherer {
-  readonly cipher_type = "aead"
-
-  constructor(
-    readonly encrypter: AEADEncrypter,
-    readonly hasher: Hasher,
-    readonly secrets: Secrets
-  ) { }
+  readonly secrets: Secrets,
 }

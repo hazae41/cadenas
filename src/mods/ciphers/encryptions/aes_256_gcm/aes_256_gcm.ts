@@ -3,7 +3,7 @@ import { Secrets } from "mods/ciphers/secrets.js"
 export class AES_256_GCM {
   readonly #class = AES_256_GCM
 
-  static cipher_type = "aead"
+  static cipher_type = "aead" as const
   static enc_key_length = 32
   static fixed_iv_length = 4
   static record_iv_length = 8
@@ -32,6 +32,8 @@ export class AES_256_GCM {
   }
 
   async decrypt(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array) {
-    return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", length: 256, iv: nonce, additionalData }, this.decryption_key, block))
+    const pkcs7 = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", length: 256, iv: nonce, additionalData }, this.decryption_key, block))
+
+    return pkcs7.subarray(0, -1)
   }
 }

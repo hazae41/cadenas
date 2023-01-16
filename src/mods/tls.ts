@@ -21,12 +21,11 @@ import { ServerHelloDone2 } from "mods/binary/records/handshakes/server_hello_do
 import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
 import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
-import { BlockCiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
+import { AEADCiphertextRecord, BlockCiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
 import { ArrayVector, BytesVector } from "mods/binary/vector.js"
-import { BlockCipherer, Cipher } from "mods/ciphers/cipher.js"
-import { AES_256_CBC } from "mods/ciphers/encryptions/aes_256_cbc/aes_256_cbc.js"
-import { SHA } from "mods/ciphers/hashes/sha/sha.js"
+import { AEADCipherer, BlockCipherer, Cipher, Cipherer } from "mods/ciphers/cipher.js"
 import { Secrets } from "mods/ciphers/secrets.js"
+import { GenericAEADCipher } from "./binary/records/generic_ciphers/aead/aead.js"
 
 export type State =
   | NoneState
@@ -134,7 +133,7 @@ export interface ClientCertificateHandshakeState extends ClientCertificateHandsh
 }
 
 export interface ClientChangeCipherSpecHandshakeData extends ServerHelloHandshakeData {
-  cipherer: BlockCipherer
+  cipherer: Cipherer
   client_sequence: bigint
 }
 
@@ -371,11 +370,21 @@ export class TlsStream extends EventTarget {
     if (!this.state.server_encrypted)
       throw new Error(`Invalid state`)
 
-    const gcipher = GenericBlockCipher.read(binary, header.length)
-    const cipher = BlockCiphertextRecord.from(header, gcipher)
-    const plain = await cipher.decrypt(this.state.cipherer, this.state.server_sequence++)
+    if (this.state.cipherer.encrypter.class.cipher_type === "block") {
+      const gcipher = GenericBlockCipher.read(binary, header.length)
+      const cipher = BlockCiphertextRecord.from(header, gcipher)
+      const plain = await cipher.decrypt(this.state.cipherer as BlockCipherer, this.state.server_sequence++)
+      return await this.onPlaintextRecord(plain)
+    }
 
-    return await this.onPlaintextRecord(plain)
+    if (this.state.cipherer.encrypter.class.cipher_type === "aead") {
+      const gcipher = GenericAEADCipher.read(binary, header.length)
+      const cipher = AEADCiphertextRecord.from(header, gcipher)
+      const plain = await cipher.decrypt(this.state.cipherer as AEADCipherer, this.state.server_sequence++)
+      return await this.onPlaintextRecord(plain)
+    }
+
+    throw new Error(`Invalid cipher type`)
   }
 
   private async onPlaintextRecord(record: PlaintextRecord<Opaque>) {
@@ -499,7 +508,7 @@ export class TlsStream extends EventTarget {
 
       const server_dh_params = server_key_exchange.params
 
-      this.state = { ...state, action: "server_key_exchange", server_dh_params } as ServerKeyExchangeHandshakeState
+      this.state = { ...state, action: "server_key_exchange", server_dh_params }
 
       return
     }
@@ -571,7 +580,7 @@ export class TlsStream extends EventTarget {
       server_write_key,
       client_write_IV,
       server_write_IV
-    } as Secrets
+    } satisfies Secrets
   }
 
   private async onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState) {
@@ -611,10 +620,7 @@ export class TlsStream extends EventTarget {
     this.output.enqueue(record_client_key_exchange.export())
 
     const secrets = await this.computeSecrets(state, dh_Z)
-
-    const encrypter = await AES_256_CBC.init(secrets)
-    const hasher = await SHA.init(secrets)
-    const cipherer = new BlockCipherer(encrypter, hasher, secrets)
+    const cipherer = await state.cipher.init(secrets)
 
     const change_cipher_spec = new ChangeCipherSpec()
     const record_change_cipher_spec = change_cipher_spec.record(state.version)

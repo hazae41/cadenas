@@ -1,7 +1,9 @@
-export interface Hash {
-  readonly name: string
+import { Secrets } from "mods/ciphers/secrets.js"
 
+export interface Hash {
   readonly mac_key_length: number
+
+  init(secrets: Secrets): Promise<Hasher>
 }
 
 export interface Hasher {

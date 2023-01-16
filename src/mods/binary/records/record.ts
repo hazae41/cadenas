@@ -1,5 +1,4 @@
 import { Binary } from "@hazae41/binary"
-import { Opaque } from "mods/binary/opaque.js"
 import { ReadableLenghted } from "mods/binary/readable.js"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
@@ -100,17 +99,17 @@ export class PlaintextRecord<T extends Writable & Exportable> {
   }
 
   async encrypt(cipherer: Cipherer, sequence: bigint) {
-    if (cipherer.cipher_type === "block") {
-      const fragment = await GenericBlockCipher.encrypt<T>(this, cipherer, sequence)
-      return new BlockCiphertextRecord(this.subtype, this.version, fragment)
+    if (cipherer.encrypter.class.cipher_type === "block") {
+      const gcipher = await GenericBlockCipher.encrypt<T>(this, cipherer as BlockCipherer, sequence)
+      return new BlockCiphertextRecord(this.subtype, this.version, gcipher)
     }
 
-    if (cipherer.cipher_type === "aead") {
-      const fragment = await GenericAEADCipher.encrypt<T>(this, cipherer, sequence)
-      return new AEADCiphertextRecord(this.subtype, this.version, fragment)
+    if (cipherer.encrypter.class.cipher_type === "aead") {
+      const gcipher = await GenericAEADCipher.encrypt<T>(this, cipherer as AEADCipherer, sequence)
+      return new AEADCiphertextRecord(this.subtype, this.version, gcipher)
     }
 
-    throw new Error(`Invalid cipherer type`)
+    throw new Error(`Invalid cipher type`)
   }
 }
 
@@ -149,8 +148,8 @@ export class BlockCiphertextRecord {
   }
 
   async decrypt(cipherer: BlockCipherer, sequence: bigint) {
-    const content = await this.fragment.decrypt(this, cipherer, sequence)
-    return new PlaintextRecord(this.subtype, this.version, new Opaque(content))
+    const fragment = await this.fragment.decrypt(this, cipherer, sequence)
+    return new PlaintextRecord(this.subtype, this.version, fragment)
   }
 }
 
@@ -189,7 +188,7 @@ export class AEADCiphertextRecord {
   }
 
   async decrypt(cipherer: AEADCipherer, sequence: bigint) {
-    const content = await this.fragment.decrypt(this, cipherer, sequence)
-    return new PlaintextRecord(this.subtype, this.version, new Opaque(content))
+    const fragment = await this.fragment.decrypt(this, cipherer, sequence)
+    return new PlaintextRecord(this.subtype, this.version, fragment)
   }
 }

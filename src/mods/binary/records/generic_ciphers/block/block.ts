@@ -1,8 +1,9 @@
 import { Binary } from "@hazae41/binary"
 import { Bytes } from "libs/bytes/bytes.js"
+import { Opaque } from "mods/binary/opaque.js"
 import { BlockCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
-import { BlockCipherer, IBlockCipherer } from "mods/ciphers/cipher.js"
+import { BlockCipherer } from "mods/ciphers/cipher.js"
 
 /**
  * (y % m) where (x + y) % m == 0
@@ -75,7 +76,7 @@ export class GenericBlockCipher {
     return new this(iv, ciphertext)
   }
 
-  async decrypt(record: BlockCiphertextRecord, cipherer: IBlockCipherer, sequence: bigint) {
+  async decrypt(record: BlockCiphertextRecord, cipherer: BlockCipherer, sequence: bigint) {
     const plaintext = await cipherer.encrypter.decrypt(this.iv, this.block)
 
     const content = plaintext.subarray(0, -20)
@@ -84,7 +85,7 @@ export class GenericBlockCipher {
     // console.log("<- content", raw.length, Bytes.toHex(raw))
     // console.log("<- mac", mac.length, Bytes.toHex(mac))
 
-    return content
+    return new Opaque(content)
   }
 
   static import(bytes: Uint8Array) {
