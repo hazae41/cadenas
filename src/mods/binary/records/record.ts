@@ -1,13 +1,10 @@
 import { Binary } from "@hazae41/binary"
 import { ReadableLenghted } from "mods/binary/readable.js"
-import { PlaintextGenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
-import { CiphertextGenericCipher } from "mods/binary/records/generic_ciphers/types.js"
+import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
+import { GenericCipher } from "mods/binary/records/generic_ciphers/types.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
-import { Cipherer } from "mods/ciphers/cipher.js"
-
-export type Record<T extends Writable & Exportable & ReadableLenghted<T>> =
-  | PlaintextRecord<T>
-  | CiphertextRecord<T>
+import { BlockCipherer } from "mods/ciphers/cipher.js"
+import { Opaque } from "../opaque.js"
 
 export namespace Record {
 
@@ -102,29 +99,27 @@ export class PlaintextRecord<T extends Writable & Exportable> {
     return binary.buffer
   }
 
-  async encrypt(cipherer: Cipherer, sequence: bigint) {
-    const pfragment = await PlaintextGenericBlockCipher.from<T>(this, cipherer, sequence)
-    const cfragment = await pfragment.encrypt(cipherer)
-
-    return new CiphertextRecord<T>(this.subtype, this.version, cfragment)
+  async encrypt(cipherer: BlockCipherer, sequence: bigint) {
+    const fragment = await GenericBlockCipher.encrypt<T>(this, cipherer, sequence)
+    return new CiphertextRecord(this.subtype, this.version, fragment)
   }
 }
 
-export class CiphertextRecord<T extends Writable & Exportable> {
+export class CiphertextRecord {
   readonly #class = CiphertextRecord
 
   constructor(
     readonly subtype: number,
     readonly version: number,
-    readonly fragment: CiphertextGenericCipher<T>
+    readonly fragment: GenericCipher
   ) { }
 
   get class() {
     return this.#class
   }
 
-  static from<T extends Writable & Exportable>(header: RecordHeader, fragment: CiphertextGenericCipher<T>) {
-    return new this<T>(header.subtype, header.version, fragment)
+  static from(header: RecordHeader, fragment: GenericCipher) {
+    return new this(header.subtype, header.version, fragment)
   }
 
   size() {
@@ -144,9 +139,8 @@ export class CiphertextRecord<T extends Writable & Exportable> {
     return binary.buffer
   }
 
-  async decrypt(cipherer: Cipherer) {
-    const { content } = await this.fragment.decrypt(cipherer)
-
-    return new PlaintextRecord(this.subtype, this.version, content)
+  async decrypt(cipherer: BlockCipherer, sequence: bigint) {
+    const content = await this.fragment.decrypt(this, cipherer, sequence)
+    return new PlaintextRecord(this.subtype, this.version, new Opaque(content))
   }
 }

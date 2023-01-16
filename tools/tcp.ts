@@ -3,7 +3,7 @@ import { writeAll } from "https://deno.land/std@0.157.0/streams/mod.ts";
 const server = Deno.listen({ port: 8080 })
 
 for await (const conn of server)
-  onconn(conn)
+  onconn(conn).catch(console.error)
 
 async function read(reader: Deno.Reader) {
   const p = new Uint8Array(32 * 1024)

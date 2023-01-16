@@ -1,9 +1,8 @@
 import { Binary } from "@hazae41/binary"
 import { Bytes } from "libs/bytes/bytes.js"
-import { Opaque } from "mods/binary/opaque.js"
-import { PlaintextRecord } from "mods/binary/records/record.js"
+import { CiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
-import { Cipherer } from "mods/ciphers/cipher.js"
+import { BlockCipherer } from "mods/ciphers/cipher.js"
 
 /**
  * (y % m) where (x + y) % m == 0
@@ -16,53 +15,8 @@ function modulup(x: number, m: number) {
   return (m - ((x + m) % m)) % m
 }
 
-export class PlaintextGenericBlockCipher<T extends Writable & Exportable> {
-  readonly #class = PlaintextGenericBlockCipher
-
-  constructor(
-    readonly iv: Uint8Array,
-    readonly content: T,
-    readonly mac: Uint8Array
-  ) { }
-
-  get class() {
-    return this.#class
-  }
-
-  static async from<T extends Writable & Exportable>(plaintext: PlaintextRecord<T>, cipherer: Cipherer, sequence: bigint) {
-    const iv = Bytes.random(16)
-
-    const content = plaintext.fragment
-
-    const premac = Binary.allocUnsafe(8 + plaintext.size())
-    premac.writeUint64(sequence)
-    plaintext.write(premac)
-
-    const mac = await cipherer.hasher.mac(premac.bytes)
-
-    return new this<T>(iv, content, mac)
-  }
-
-  async encrypt(cipherer: Cipherer) {
-    const content = this.content.export()
-
-    const length = content.length + this.mac.length
-    const padding_length = modulup(length + 1, 16)
-    const padding = Bytes.allocUnsafe(padding_length + 1)
-    padding.fill(padding_length)
-
-    const plaintext = Bytes.concat([content, this.mac, padding])
-    const ciphertext = await cipherer.encrypter.encrypt(this.iv, plaintext)
-
-    // console.log("-> content", content.length, Bytes.toHex(content))
-    // console.log("-> mac", this.mac.length, Bytes.toHex(this.mac))
-
-    return new CiphertextGenericBlockCipher<T>(this.iv, ciphertext)
-  }
-}
-
-export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
-  readonly #class = CiphertextGenericBlockCipher
+export class GenericBlockCipher {
+  readonly #class = GenericBlockCipher
 
   constructor(
     readonly iv: Uint8Array,
@@ -94,18 +48,42 @@ export class CiphertextGenericBlockCipher<T extends Writable & Exportable> {
     return new this(iv, block)
   }
 
-  async decrypt(cipherer: Cipherer) {
+  static async encrypt<T extends Writable & Exportable>(record: PlaintextRecord<T>, cipherer: BlockCipherer, sequence: bigint) {
+    const iv = Bytes.random(16)
+
+    const content = record.fragment.export()
+
+    const premac = Binary.allocUnsafe(8 + record.size())
+    premac.writeUint64(sequence)
+    record.write(premac)
+
+    const mac = await cipherer.hasher.mac(premac.bytes)
+
+    const length = content.length + mac.length
+    const padding_length = modulup(length + 1, 16)
+    const padding = Bytes.allocUnsafe(padding_length + 1)
+    padding.fill(padding_length)
+
+    const plaintext = Bytes.concat([content, mac, padding])
+    const ciphertext = await cipherer.encrypter.encrypt(iv, plaintext)
+
+    // console.log("-> plaintext", plaintext.length, Bytes.toHex(plaintext))
+    // console.log("-> content", content.length, Bytes.toHex(content))
+    // console.log("-> mac", mac.length, Bytes.toHex(mac))
+
+    return new this(iv, ciphertext)
+  }
+
+  async decrypt(record: CiphertextRecord, cipherer: BlockCipherer, sequence: bigint) {
     const plaintext = await cipherer.encrypter.decrypt(this.iv, this.block)
 
-    const raw = plaintext.subarray(0, -21)
+    const content = plaintext.subarray(0, -21)
     const mac = plaintext.subarray(-21, -1)
 
     // console.log("<- content", raw.length, Bytes.toHex(raw))
     // console.log("<- mac", mac.length, Bytes.toHex(mac))
 
-    const content = new Opaque(raw)
-
-    return new PlaintextGenericBlockCipher(this.iv, content, mac)
+    return content
   }
 
   export() {

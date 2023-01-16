@@ -8,7 +8,7 @@ import { Number16, Number24 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Alert } from "mods/binary/records/alerts/alert.js"
 import { ChangeCipherSpec } from "mods/binary/records/change_cipher_spec/change_cipher_spec.js"
-import { CiphertextGenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
+import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { Certificate2 } from "mods/binary/records/handshakes/certificate/certificate2.js"
 import { CertificateRequest2 } from "mods/binary/records/handshakes/certificate_request/certificate_request2.js"
 import { ClientHello2 } from "mods/binary/records/handshakes/client_hello/client_hello2.js"
@@ -23,7 +23,7 @@ import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/recor
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { CiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
 import { ArrayVector, BytesVector } from "mods/binary/vector.js"
-import { Cipher, Cipherer } from "mods/ciphers/cipher.js"
+import { BlockCipherer, Cipher } from "mods/ciphers/cipher.js"
 import { AES_256_CBC } from "mods/ciphers/encryptions/aes_256_cbc/aes_256_cbc.js"
 import { SHA } from "mods/ciphers/hashes/sha/sha.js"
 import { Secrets } from "mods/ciphers/secrets.js"
@@ -134,7 +134,7 @@ export interface ClientCertificateHandshakeState extends ClientCertificateHandsh
 }
 
 export interface ClientChangeCipherSpecHandshakeData extends ServerHelloHandshakeData {
-  cipherer: Cipherer
+  cipherer: BlockCipherer
   client_sequence: bigint
 }
 
@@ -347,14 +347,12 @@ export class TlsStream extends EventTarget {
     if (this.state.type !== "data")
       throw new Error(`Invalid state`)
 
-    this.state.client_sequence++
-
     const { version, cipherer } = this.state
     const type = Record.types.application_data
     const fragment = new Opaque(chunk)
 
     const plaintext = new PlaintextRecord(type, version, fragment)
-    const ciphertext = await plaintext.encrypt(cipherer, this.state.client_sequence)
+    const ciphertext = await plaintext.encrypt(cipherer, this.state.client_sequence++)
 
     this.output.enqueue(ciphertext.export())
   }
@@ -373,9 +371,9 @@ export class TlsStream extends EventTarget {
     if (!this.state.server_encrypted)
       throw new Error(`Invalid state`)
 
-    const gcipher = CiphertextGenericBlockCipher.read(binary, header.length)
+    const gcipher = GenericBlockCipher.read(binary, header.length)
     const cipher = CiphertextRecord.from(header, gcipher)
-    const plain = await cipher.decrypt(this.state.cipherer)
+    const plain = await cipher.decrypt(this.state.cipherer, this.state.server_sequence++)
 
     return await this.onPlaintextRecord(plain)
   }
@@ -616,7 +614,7 @@ export class TlsStream extends EventTarget {
 
     const encrypter = await AES_256_CBC.init(secrets)
     const hasher = await SHA.init(secrets)
-    const cipherer = new Cipherer(encrypter, hasher)
+    const cipherer = new BlockCipherer(encrypter, hasher, secrets)
 
     const change_cipher_spec = new ChangeCipherSpec()
     const record_change_cipher_spec = change_cipher_spec.record(state.version)
@@ -630,7 +628,7 @@ export class TlsStream extends EventTarget {
 
     const verify_data = await PRF("SHA-256", secrets.master_secret, "client finished", handshake_messages_hash, 12)
     const finished = new Finished2(verify_data).handshake().record(state.version)
-    const cfinished = await finished.encrypt(state.cipherer, state.client_sequence)
+    const cfinished = await finished.encrypt(state.cipherer, state.client_sequence++)
 
     state = { ...state, step: "client_finished" }
 

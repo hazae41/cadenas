@@ -19,7 +19,7 @@ async function createHttpStream() {
   const headers = { "x-session-id": crypto.randomUUID() }
   const request = new Request("https://meek.bamsoftware.com/", { headers })
 
-  return new BatchedFetchStream(request)
+  return new BatchedFetchStream(request, { highDelay: 100 })
 }
 
 export default function Home() {
