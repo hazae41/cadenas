@@ -1,9 +1,11 @@
 import { Binary } from "@hazae41/binary"
 import { Number16, Number8 } from "mods/binary/number.js"
 import { Random } from "mods/binary/random.js"
+import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ArrayVector, Vector, Vector16, Vector8 } from "mods/binary/vector.js"
 import { Cipher } from "mods/ciphers/cipher.js"
+import { SignatureAlgorithms } from "../extensions/signature_algorithms/signature_algorithms.js"
 
 export class ClientHello2 {
   readonly #class = ClientHello2
@@ -31,11 +33,14 @@ export class ClientHello2 {
     const version = 0x0303
     const random = Random.default()
 
-    const session_id = new (ArrayVector<Number8, Number8>(Number8, Number8))([])
-    const cipher_suites = new (Vector16<Number16>(Number16))(ciphers.map(it => it.id))
-    const compression_methods = new (Vector8<Number8>(Number8))([0])
+    const session_id = ArrayVector<Number8, Number8>(Number8, Number8).from([])
+    const cipher_suites = Vector16<Number16>(Number16).from(ciphers.map(it => it.id))
+    const compression_methods = Vector8<Number8>(Number8).from([0])
 
-    return new this(version, random, session_id, cipher_suites, compression_methods)
+    const signature_algorithms = SignatureAlgorithms.default().extension()
+    const extensions = ArrayVector<Number16, Extension>(Number16, Extension).from([signature_algorithms])
+
+    return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
   }
 
   size() {

@@ -8,7 +8,7 @@ export interface Vector<L extends NumberX> extends Writable {
   readonly vlength: L["class"]
 }
 
-export type BytesVector<L extends NumberX,> =
+export type BytesVector<L extends NumberX> =
   InstanceType<ReturnType<typeof BytesVector<L>>>
 
 export const BytesVector = <L extends NumberX>(vlength: L["class"]) => class {
@@ -17,6 +17,10 @@ export const BytesVector = <L extends NumberX>(vlength: L["class"]) => class {
   constructor(
     readonly bytes: Uint8Array
   ) { }
+
+  static from(bytes: Uint8Array) {
+    return new this(bytes)
+  }
 
   get vlength() {
     return vlength
@@ -48,12 +52,19 @@ export const BytesVector = <L extends NumberX>(vlength: L["class"]) => class {
   }
 }
 
-export const AnyVector = <L extends NumberX = any>(vlength: L["class"]) => class <T extends Writable = any> {
+export type AnyVector<L extends NumberX, T extends Writable> =
+  InstanceType<ReturnType<typeof AnyVector<L, T>>>
+
+export const AnyVector = <L extends NumberX, T extends Writable>(vlength: L["class"]) => class {
   readonly #class = AnyVector(vlength)
 
   constructor(
     readonly value: T
   ) { }
+
+  static from(value: T) {
+    return new this(value)
+  }
 
   get vlength() {
     return vlength
@@ -74,6 +85,50 @@ export const AnyVector = <L extends NumberX = any>(vlength: L["class"]) => class
   }
 }
 
+export type AnyArrayVector<L extends NumberX, T extends Writable> =
+  InstanceType<ReturnType<typeof AnyArrayVector<L, T>>>
+
+export const AnyArrayVector = <L extends NumberX, T extends Writable>(vlength: L["class"]) => class {
+  readonly #class = AnyArrayVector(vlength)
+
+  constructor(
+    readonly array: T[]
+  ) { }
+
+  static from(array: T[]) {
+    return new this(array)
+  }
+
+  get vlength() {
+    return vlength
+  }
+
+  get class() {
+    return this.#class
+  }
+
+  size() {
+    let size = vlength.size
+
+    for (const element of this.array)
+      size += element.size()
+
+    return size
+  }
+
+  write(binary: Binary) {
+    let size = 0
+
+    for (const element of this.array)
+      size += element.size()
+
+    new vlength(size).write(binary)
+
+    for (const element of this.array)
+      element.write(binary)
+  }
+}
+
 export type ArrayVector<L extends NumberX, T extends Writable & Readable<T>> =
   InstanceType<ReturnType<typeof ArrayVector<L, T>>>
 
@@ -83,6 +138,10 @@ export const ArrayVector = <L extends NumberX, T extends Writable & Readable<T>>
   constructor(
     readonly array: T[]
   ) { }
+
+  static from(array: T[]) {
+    return new this(array)
+  }
 
   get vlength() {
     return vlength
@@ -136,6 +195,10 @@ export const Vector8 = <L extends NumberX>(vlength: L["class"]) => class {
     readonly array: number[]
   ) { }
 
+  static from(array: number[]) {
+    return new this(array)
+  }
+
   get vlength() {
     return vlength
   }
@@ -177,6 +240,10 @@ export const Vector16 = <L extends NumberX>(vlength: L["class"]) => class {
   constructor(
     readonly array: number[]
   ) { }
+
+  static from(array: number[]) {
+    return new this(array)
+  }
 
   get vlength() {
     return vlength

@@ -1,2 +1,3 @@
 export * from "./extension.js";
-export * from "./supported_versions/index.js";
+export * from "./signature_algorithms/signature_algorithms.js";
+

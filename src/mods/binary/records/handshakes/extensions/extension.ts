@@ -3,22 +3,23 @@ import { Number16 } from "mods/binary/number.js"
 import { AnyVector, Vector } from "mods/binary/vector.js"
 import { Writable } from "mods/binary/writable.js"
 
-export interface IExtension extends Writable {
-  type: number
-}
 
 export class Extension {
   readonly #class = Extension
 
+  static types = {
+    signature_algorithms: 13
+  } as const
+
   constructor(
-    readonly type: number,
-    readonly data: Vector<Number16>
+    readonly extension_type: number,
+    readonly extension_data: Vector<Number16>
   ) { }
 
-  static from(extension: IExtension) {
-    const data = new (AnyVector<Number16>(Number16))(extension)
+  static from(type: number, extension: Writable) {
+    const data = AnyVector<Number16, Writable>(Number16).from(extension)
 
-    return new this(extension.type, data)
+    return new this(type, data)
   }
 
   get class() {
@@ -26,12 +27,12 @@ export class Extension {
   }
 
   size() {
-    return 2 + this.data.size()
+    return 2 + this.extension_data.size()
   }
 
   write(binary: Binary) {
-    binary.writeUint16(this.type)
-    this.data.write(binary)
+    binary.writeUint16(this.extension_type)
+    this.extension_data.write(binary)
   }
 
   static read(binary: Binary): Extension {

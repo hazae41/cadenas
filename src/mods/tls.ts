@@ -592,7 +592,7 @@ export class TlsStream extends EventTarget {
     console.log(server_hello_done)
 
     if ("certificate_request" in state) {
-      const certificate_list = new (ArrayVector<Number24, BytesVector<Number24>>(Number24, BytesVector(Number24)))([])
+      const certificate_list = ArrayVector<Number24, BytesVector<Number24>>(Number24, BytesVector(Number24)).from([])
 
       const certificate = new Certificate2(certificate_list)
       const handshake_certificate = certificate.handshake()
@@ -608,7 +608,7 @@ export class TlsStream extends EventTarget {
 
     const { dh_Yc, dh_Z } = await this.computeDiffieHellman(state)
 
-    const dh_yc_vector = new (BytesVector<Number16>(Number16))(dh_Yc)
+    const dh_yc_vector = BytesVector<Number16>(Number16).from(dh_Yc)
     const dh_public = new ClientDiffieHellmanPublicExplicit(dh_yc_vector)
 
     const client_key_exchange = new ClientKeyExchange2DH(dh_public)
