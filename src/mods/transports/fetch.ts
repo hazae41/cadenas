@@ -24,7 +24,7 @@ export class BatchedFetchStream {
     readonly request: RequestInfo,
     readonly params: BatchedFetchStreamParams = {}
   ) {
-    const { lowDelay = 100, highDelay = 10000 } = params
+    const { lowDelay = 100, highDelay = 1000 } = params
 
     let rcontroller: ReadableStreamController<Uint8Array>
     let wcontroller: WritableStreamDefaultController
