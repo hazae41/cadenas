@@ -28,7 +28,7 @@ export default function Home() {
   const onClick = useCallback(async () => {
     const ws = await createWebSocketStream()
 
-    const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
+    const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA]
 
     const tls = new TlsStream(ws, { ciphers })
 

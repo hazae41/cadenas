@@ -72,6 +72,7 @@ export class GenericBlockCipher {
     // console.log("-> plaintext", plaintext.length, Bytes.toHex(plaintext))
     // console.log("-> content", content.length, Bytes.toHex(content))
     // console.log("-> mac", mac.length, Bytes.toHex(mac))
+    // console.log("-> ciphertext", ciphertext.length, ciphertext)
 
     return new this(iv, ciphertext)
   }
@@ -82,7 +83,7 @@ export class GenericBlockCipher {
     const content = plaintext.subarray(0, -20)
     const mac = plaintext.subarray(-20)
 
-    // console.log("<- content", raw.length, Bytes.toHex(raw))
+    // console.log("<- content", content.length, Bytes.toHex(content))
     // console.log("<- mac", mac.length, Bytes.toHex(mac))
 
     return new Opaque(content)

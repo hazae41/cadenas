@@ -2,6 +2,8 @@ import { Binary } from "@hazae41/binary"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
 import { Bytes } from "libs/bytes/bytes.js"
+import { CloseEvent } from "libs/events/close.js"
+import { ErrorEvent } from "libs/events/error.js"
 import { Future } from "libs/futures/future.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { Number16, Number24 } from "mods/binary/number.js"
@@ -182,6 +184,9 @@ export class TlsStream extends EventTarget {
   readonly readable: ReadableStream<Uint8Array>
   readonly writable: WritableStream<Uint8Array>
 
+  readonly read = new EventTarget()
+  readonly write = new EventTarget()
+
   private state: State = { type: "none", client_encrypted: false, server_encrypted: false }
 
   private _input?: TransformStreamDefaultController<Uint8Array>
@@ -229,6 +234,11 @@ export class TlsStream extends EventTarget {
     rtrashable
       .pipeTo(trash, { signal })
       .catch(this.onReadError.bind(this))
+
+    const onError = this.onError.bind(this)
+
+    this.read.addEventListener("error", onError, { passive: true })
+    this.write.addEventListener("error", onError, { passive: true })
   }
 
   get input() {
@@ -241,17 +251,17 @@ export class TlsStream extends EventTarget {
 
   private async onReadClose() {
     const event = new CloseEvent("close", {})
-    if (!this.dispatchEvent(event)) return
+    if (!this.read.dispatchEvent(event)) return
   }
 
   private async onWriteClose() {
     const event = new CloseEvent("close", {})
-    if (!this.dispatchEvent(event)) return
+    if (!this.write.dispatchEvent(event)) return
   }
 
   private async onReadError(error?: unknown) {
     const event = new ErrorEvent("error", { error })
-    if (!this.dispatchEvent(event)) return
+    if (!this.read.dispatchEvent(event)) return
 
     try { this.input.error(error) } catch (e: unknown) { }
     try { this.output.error(error) } catch (e: unknown) { }
@@ -259,10 +269,15 @@ export class TlsStream extends EventTarget {
 
   private async onWriteError(error?: unknown) {
     const event = new ErrorEvent("error", { error })
-    if (!this.dispatchEvent(event)) return
+    if (!this.write.dispatchEvent(event)) return
 
     try { this.input.error(error) } catch (e: unknown) { }
     try { this.output.error(error) } catch (e: unknown) { }
+  }
+
+  private async onError(error?: unknown) {
+    const event = new ErrorEvent("error", { error })
+    if (!this.dispatchEvent(event)) return
   }
 
   private async onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
@@ -292,14 +307,14 @@ export class TlsStream extends EventTarget {
     const finished = new Future<Event>()
 
     try {
+      this.read.addEventListener("close", finished.err, { passive: true })
       this.addEventListener("error", finished.err, { passive: true })
-      this.addEventListener("close", finished.err, { passive: true })
       this.addEventListener("finished", finished.ok, { passive: true })
 
       await finished.promise
     } finally {
+      this.read.removeEventListener("close", finished.err)
       this.removeEventListener("error", finished.err)
-      this.removeEventListener("close", finished.err)
       this.removeEventListener("finished", finished.ok)
     }
   }
@@ -436,7 +451,7 @@ export class TlsStream extends EventTarget {
     const handshake = Handshake.from(header, fragment)
 
     if (handshake.subtype !== Handshake.types.hello_request)
-      this.state.messages.push(record.fragment.bytes)
+      this.state.messages.push(new Uint8Array(record.fragment.bytes))
 
     if (handshake.subtype === ServerHello2.type)
       return this.onServerHello(handshake, this.state)

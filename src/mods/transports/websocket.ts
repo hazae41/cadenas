@@ -63,7 +63,7 @@ export class WebSocketSource implements UnderlyingSource<Uint8Array> {
   async start(controller: ReadableStreamController<Uint8Array>) {
     const onMessage = (e: MessageEvent) => {
       const chunk = new Uint8Array(e.data satisfies ArrayBuffer)
-      controller.enqueue(chunk)
+      try { controller.enqueue(chunk) } catch (e: unknown) { }
     }
 
     const onError = (e: Event) => {

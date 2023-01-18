@@ -1,8 +1,7 @@
-import inject from '@rollup/plugin-inject';
+import inject from "@rollup/plugin-inject";
 import ts from "@rollup/plugin-typescript";
 import dts from "rollup-plugin-dts";
 import externals from "rollup-plugin-node-externals";
-import typescript from "ttypescript";
 
 export const config = [
   {
@@ -22,7 +21,7 @@ export const config = [
       sourcemap: true,
       entryFileNames: "[name].cjs",
     }],
-    plugins: [externals(), ts({ typescript })]
+    plugins: [externals(), ts()]
   },
   {
     input: "./src/index.ts",
@@ -34,7 +33,7 @@ export const config = [
       sourcemap: false,
       entryFileNames: "[name].d.ts",
     }],
-    plugins: [externals(), ts({ typescript }), dts()]
+    plugins: [externals(), ts(), dts()]
   },
   {
     input: "./src/index.test.ts",
@@ -44,10 +43,9 @@ export const config = [
       exports: "named",
       preserveModules: true,
       sourcemap: true,
-      entryFileNames: "[name].mjs"
+      entryFileNames: "[name].mjs",
     }],
-    plugins: [externals(), ts({ typescript }), inject({ crypto: "node:crypto" })],
-    external: ["@hazae41/phobos"]
+    plugins: [externals({ devDeps: true }), ts(), inject({ crypto: "node:crypto" })],
   },
 ]
 
