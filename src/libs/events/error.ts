@@ -1,5 +1,6 @@
 export interface ErrorEvent extends Event {
   readonly error?: any
+  readonly message?: string
 }
 
 export class ErrorEvent extends Event {
