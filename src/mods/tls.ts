@@ -214,7 +214,7 @@ export class TlsStream extends EventTarget {
       transform: this.onWrite.bind(this),
     })
 
-    const [readable, rtrashable] = read.readable.tee()
+    const [readable, trashable] = read.readable.tee()
 
     this.readable = readable
     this.writable = write.writable
@@ -231,8 +231,9 @@ export class TlsStream extends EventTarget {
 
     const trash = new WritableStream()
 
-    rtrashable
+    trashable
       .pipeTo(trash, { signal })
+      .then(this.onReadClose.bind(this))
       .catch(this.onReadError.bind(this))
 
     const onError = this.onError.bind(this)
