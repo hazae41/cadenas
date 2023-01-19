@@ -31,7 +31,7 @@ export class Random {
 
   static read(binary: Binary) {
     const gmt_unix_time = binary.readUint32()
-    const random_bytes = binary.read(28)
+    const random_bytes = new Uint8Array(binary.read(28))
 
     return new this(gmt_unix_time, random_bytes)
   }

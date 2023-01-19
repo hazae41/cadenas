@@ -46,7 +46,7 @@ export const BytesVector = <L extends NumberX>(vlength: L["class"]) => class {
 
   static read(binary: Binary) {
     const length = vlength.read(binary).value
-    const buffer = binary.read(length)
+    const buffer = new Uint8Array(binary.read(length))
 
     return new this(buffer)
   }

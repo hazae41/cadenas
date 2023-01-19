@@ -21,6 +21,10 @@ export namespace Bytes {
     return decoder.decode(bytes)
   }
 
+  export function fromHexSafe(text: string) {
+    return fromHex((text.length % 2) ? `0${text}` : text)
+  }
+
   export function fromHex(text: string) {
     return fromView(Buffer.from(text, "hex"))
   }

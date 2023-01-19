@@ -30,12 +30,13 @@ async function onconn(conn: Deno.Conn) {
 async function onsocket(socket: WebSocket) {
   socket.binaryType = "arraybuffer"
 
-  const target = await Deno.connect({ hostname: "127.0.0.1", port: 9001, transport: "tcp" })
+  const target = await Deno.connect({ hostname: "127.0.0.1", port: 44330, transport: "tcp" })
 
   socket.addEventListener("message", async e => {
     try {
       const buffer = new Uint8Array(e.data)
       console.debug("->", buffer)
+      // await new Promise(ok => setTimeout(ok, 100))
       await writeAll(target, buffer)
     } catch (_: unknown) {
       socket.close()
@@ -53,6 +54,7 @@ async function onsocket(socket: WebSocket) {
       }
 
       console.debug("<-", output)
+      // await new Promise(ok => setTimeout(ok, 100))
       socket.send(output)
     } catch (_: unknown) {
       socket.close()

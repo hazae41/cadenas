@@ -35,9 +35,9 @@ export default function Home() {
     await tls.handshake()
 
     const res = await fetch("https://localhost/", { stream: tls })
-
-    console.log(res)
-    console.log(await res.text())
+    // console.log(res.status)
+    // const text = await res.text()
+    // console.log(text.length)
   }, [])
 
   return <button onClick={onClick}>

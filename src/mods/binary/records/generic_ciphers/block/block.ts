@@ -18,7 +18,6 @@ function modulup(x: number, m: number) {
 
 export class GenericBlockCipher {
   readonly #class = GenericBlockCipher
-  readonly type = "block"
 
   constructor(
     readonly iv: Uint8Array,
@@ -69,10 +68,11 @@ export class GenericBlockCipher {
     const plaintext = Bytes.concat([content, mac, padding])
     const ciphertext = await cipherer.encrypter.encrypt(iv, plaintext)
 
+    // console.log("-> iv", iv.length, Bytes.toHex(iv))
     // console.log("-> plaintext", plaintext.length, Bytes.toHex(plaintext))
     // console.log("-> content", content.length, Bytes.toHex(content))
     // console.log("-> mac", mac.length, Bytes.toHex(mac))
-    // console.log("-> ciphertext", ciphertext.length, ciphertext)
+    // console.log("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
 
     return new this(iv, ciphertext)
   }
@@ -87,10 +87,6 @@ export class GenericBlockCipher {
     // console.log("<- mac", mac.length, Bytes.toHex(mac))
 
     return new Opaque(content)
-  }
-
-  static import(bytes: Uint8Array) {
-    return this.read(new Binary(bytes), bytes.length)
   }
 
   export() {

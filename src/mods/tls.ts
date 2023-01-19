@@ -554,8 +554,8 @@ export class TlsStream extends EventTarget {
     const Yc = BigMath.umodpow(g, yc, p)
     const Z = BigMath.umodpow(Ys, yc, p)
 
-    const dh_Yc = Bytes.fromHex(Yc.toString(16))
-    const dh_Z = Bytes.fromHex(Z.toString(16))
+    const dh_Yc = Bytes.fromHexSafe(Yc.toString(16))
+    const dh_Z = Bytes.fromHexSafe(Z.toString(16))
 
     return { dh_Yc, dh_Z }
   }
