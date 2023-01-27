@@ -1,6 +1,7 @@
 import { Secrets } from "mods/ciphers/secrets.js"
 
-export class SHA256 {
+export class HMAC_SHA256 {
+  static mac_length = 32
   static mac_key_length = 32
 
   constructor(
@@ -13,7 +14,15 @@ export class SHA256 {
     return new this(mac_key)
   }
 
-  async mac(seed: Uint8Array) {
+  async write(seed: Uint8Array) {
     return new Uint8Array(await crypto.subtle.sign("HMAC", this.mac_key, seed))
   }
+}
+
+export class SHA256 {
+  static mac = HMAC_SHA256
+  static mac_length = 32
+  static mac_key_length = 32
+
+  constructor() { }
 }

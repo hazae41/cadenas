@@ -1,11 +1,18 @@
 import { Secrets } from "mods/ciphers/secrets.js"
 
 export interface Hash {
+  readonly mac: Mac
+  readonly mac_length: number
   readonly mac_key_length: number
-
-  init(secrets: Secrets): Promise<Hasher>
 }
 
-export interface Hasher {
-  mac(seed: Uint8Array): Promise<Uint8Array>
+export interface Mac {
+  readonly mac_length: number
+  readonly mac_key_length: number
+
+  init(secrets: Secrets): Promise<Macher>
+}
+
+export interface Macher {
+  write(seed: Uint8Array): Promise<Uint8Array>
 }

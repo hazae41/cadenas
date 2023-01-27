@@ -3,7 +3,7 @@ import { Bytes } from "libs/bytes/bytes.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { BlockCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
-import { BlockCipherer } from "mods/ciphers/cipher.js"
+import { BlockEncrypter } from "mods/ciphers/encryptions/encryption.js"
 
 /**
  * (y % m) where (x + y) % m == 0
@@ -49,7 +49,7 @@ export class GenericBlockCipher {
     return new this(iv, block)
   }
 
-  static async encrypt<T extends Writable & Exportable>(record: PlaintextRecord<T>, cipherer: BlockCipherer, sequence: bigint) {
+  static async encrypt<T extends Writable & Exportable>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint) {
     const iv = Bytes.random(16)
 
     const content = record.fragment.export()
@@ -58,7 +58,7 @@ export class GenericBlockCipher {
     premac.writeUint64(sequence)
     record.write(premac)
 
-    const mac = await cipherer.hasher.mac(premac.bytes)
+    const mac = await encrypter.macher.mac(premac.bytes)
 
     const length = content.length + mac.length
     const padding_length = modulup(length + 1, 16)
@@ -66,7 +66,7 @@ export class GenericBlockCipher {
     padding.fill(padding_length)
 
     const plaintext = Bytes.concat([content, mac, padding])
-    const ciphertext = await cipherer.encrypter.encrypt(iv, plaintext)
+    const ciphertext = await encrypter.encrypt(iv, plaintext)
 
     // console.log("-> iv", iv.length, Bytes.toHex(iv))
     // console.log("-> plaintext", plaintext.length, Bytes.toHex(plaintext))
@@ -77,8 +77,8 @@ export class GenericBlockCipher {
     return new this(iv, ciphertext)
   }
 
-  async decrypt(record: BlockCiphertextRecord, cipherer: BlockCipherer, sequence: bigint) {
-    const plaintext = await cipherer.encrypter.decrypt(this.iv, this.block)
+  async decrypt(record: BlockCiphertextRecord, encrypter: BlockEncrypter, sequence: bigint) {
+    const plaintext = await encrypter.decrypt(this.iv, this.block)
 
     const content = plaintext.subarray(0, -20)
     const mac = plaintext.subarray(-20)

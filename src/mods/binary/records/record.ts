@@ -3,7 +3,7 @@ import { ReadableLenghted } from "mods/binary/readable.js"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
-import { AEADCipherer, BlockCipherer, Cipherer } from "mods/ciphers/cipher.js"
+import { AEADEncrypter, BlockEncrypter, Encrypter } from "mods/ciphers/encryptions/encryption.js"
 
 export namespace Record {
 
@@ -98,14 +98,14 @@ export class PlaintextRecord<T extends Writable & Exportable> {
     return binary.bytes
   }
 
-  async encrypt(cipherer: Cipherer, sequence: bigint) {
-    if (cipherer.encrypter.class.cipher_type === "block") {
-      const gcipher = await GenericBlockCipher.encrypt<T>(this, cipherer as BlockCipherer, sequence)
+  async encrypt(encrypter: Encrypter, sequence: bigint) {
+    if (encrypter.cipher_type === "block") {
+      const gcipher = await GenericBlockCipher.encrypt<T>(this, encrypter, sequence)
       return new BlockCiphertextRecord(this.subtype, this.version, gcipher)
     }
 
-    if (cipherer.encrypter.class.cipher_type === "aead") {
-      const gcipher = await GenericAEADCipher.encrypt<T>(this, cipherer as AEADCipherer, sequence)
+    if (encrypter.cipher_type === "aead") {
+      const gcipher = await GenericAEADCipher.encrypt<T>(this, encrypter, sequence)
       return new AEADCiphertextRecord(this.subtype, this.version, gcipher)
     }
 
@@ -147,8 +147,8 @@ export class BlockCiphertextRecord {
     return binary.bytes
   }
 
-  async decrypt(cipherer: BlockCipherer, sequence: bigint) {
-    const fragment = await this.fragment.decrypt(this, cipherer, sequence)
+  async decrypt(encrypter: BlockEncrypter, sequence: bigint) {
+    const fragment = await this.fragment.decrypt(this, encrypter, sequence)
     return new PlaintextRecord(this.subtype, this.version, fragment)
   }
 }
@@ -187,8 +187,8 @@ export class AEADCiphertextRecord {
     return binary.bytes
   }
 
-  async decrypt(cipherer: AEADCipherer, sequence: bigint) {
-    const fragment = await this.fragment.decrypt(this, cipherer, sequence)
+  async decrypt(encrypter: AEADEncrypter, sequence: bigint) {
+    const fragment = await this.fragment.decrypt(this, encrypter, sequence)
     return new PlaintextRecord(this.subtype, this.version, fragment)
   }
 }

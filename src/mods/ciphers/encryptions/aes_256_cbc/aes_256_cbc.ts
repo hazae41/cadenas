@@ -1,3 +1,4 @@
+import { Hash, Macher } from "mods/ciphers/hashes/hash.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 
 export class AES_256_CBC {
@@ -10,15 +11,18 @@ export class AES_256_CBC {
   static block_length = 16
 
   constructor(
+    readonly macher: Macher,
     readonly encryption_key: CryptoKey,
     readonly decryption_key: CryptoKey
   ) { }
 
-  static async init(secrets: Secrets) {
+  static async init(secrets: Secrets, hash: Hash) {
+    const macher = await hash.mac.init(secrets)
+
     const encryption = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-CBC", length: 256 }, false, ["encrypt"])
     const decryption = await crypto.subtle.importKey("raw", secrets.server_write_key, { name: "AES-CBC", length: 256 }, false, ["decrypt"])
 
-    return new this(encryption, decryption)
+    return new this(macher, encryption, decryption)
   }
 
   get class() {

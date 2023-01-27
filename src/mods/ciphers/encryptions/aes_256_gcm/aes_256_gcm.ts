@@ -10,6 +10,7 @@ export class AES_256_GCM {
   static block_length = 16
 
   constructor(
+    readonly secrets: Secrets, // TODO
     readonly encryption_key: CryptoKey,
     readonly decryption_key: CryptoKey
   ) { }
@@ -18,7 +19,7 @@ export class AES_256_GCM {
     const encryption = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-GCM", length: 256 }, false, ["encrypt"])
     const decryption = await crypto.subtle.importKey("raw", secrets.server_write_key, { name: "AES-GCM", length: 256 }, false, ["decrypt"])
 
-    return new this(encryption, decryption)
+    return new this(secrets, encryption, decryption)
   }
 
   get class() {

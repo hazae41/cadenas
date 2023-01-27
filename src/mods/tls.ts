@@ -10,6 +10,7 @@ import { Number16, Number24 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Alert } from "mods/binary/records/alerts/alert.js"
 import { ChangeCipherSpec } from "mods/binary/records/change_cipher_spec/change_cipher_spec.js"
+import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { Certificate2 } from "mods/binary/records/handshakes/certificate/certificate2.js"
 import { CertificateRequest2 } from "mods/binary/records/handshakes/certificate_request/certificate_request2.js"
@@ -25,9 +26,9 @@ import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/recor
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { AEADCiphertextRecord, BlockCiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
 import { ArrayVector, BytesVector } from "mods/binary/vector.js"
-import { AEADCipherer, BlockCipherer, Cipher, Cipherer } from "mods/ciphers/cipher.js"
+import { Cipher } from "mods/ciphers/cipher.js"
+import { Encrypter } from "mods/ciphers/encryptions/encryption.js"
 import { Secrets } from "mods/ciphers/secrets.js"
-import { GenericAEADCipher } from "./binary/records/generic_ciphers/aead/aead.js"
 
 export type State =
   | NoneState
@@ -135,7 +136,7 @@ export interface ClientCertificateHandshakeState extends ClientCertificateHandsh
 }
 
 export interface ClientChangeCipherSpecHandshakeData extends ServerHelloHandshakeData {
-  cipherer: Cipherer
+  encrypter: Encrypter
   client_sequence: bigint
 }
 
@@ -326,7 +327,12 @@ export class TlsStream extends EventTarget {
 
       if (!header) break
 
-      await this.onRecord(header, this.rbinary)
+      try {
+        await this.onRecord(header, this.rbinary)
+      } catch (e: unknown) {
+        console.error(e)
+        throw e
+      }
     }
 
     if (!this.rbinary.offset)
@@ -359,12 +365,12 @@ export class TlsStream extends EventTarget {
     if (this.state.type !== "data")
       throw new Error(`Invalid state`)
 
-    const { version, cipherer } = this.state
+    const { version, encrypter } = this.state
     const type = Record.types.application_data
     const fragment = new Opaque(chunk)
 
     const plaintext = new PlaintextRecord(type, version, fragment)
-    const ciphertext = await plaintext.encrypt(cipherer, this.state.client_sequence++)
+    const ciphertext = await plaintext.encrypt(encrypter, this.state.client_sequence++)
 
     this.output.enqueue(ciphertext.export())
   }
@@ -383,17 +389,17 @@ export class TlsStream extends EventTarget {
     if (!this.state.server_encrypted)
       throw new Error(`Invalid state`)
 
-    if (this.state.cipherer.encrypter.class.cipher_type === "block") {
+    if (this.state.encrypter.cipher_type === "block") {
       const gcipher = GenericBlockCipher.read(binary, header.length)
       const cipher = BlockCiphertextRecord.from(header, gcipher)
-      const plain = await cipher.decrypt(this.state.cipherer as BlockCipherer, this.state.server_sequence++)
+      const plain = await cipher.decrypt(this.state.encrypter, this.state.server_sequence++)
       return await this.onPlaintextRecord(plain)
     }
 
-    if (this.state.cipherer.encrypter.class.cipher_type === "aead") {
+    if (this.state.encrypter.cipher_type === "aead") {
       const gcipher = GenericAEADCipher.read(binary, header.length)
       const cipher = AEADCiphertextRecord.from(header, gcipher)
-      const plain = await cipher.decrypt(this.state.cipherer as AEADCipherer, this.state.server_sequence++)
+      const plain = await cipher.decrypt(this.state.encrypter, this.state.server_sequence++)
       return await this.onPlaintextRecord(plain)
     }
 
@@ -576,8 +582,12 @@ export class TlsStream extends EventTarget {
 
     const key_block_binary = new Binary(key_block)
 
-    const client_write_MAC_key = key_block_binary.read(cipher.hash.mac_key_length)
-    const server_write_MAC_key = key_block_binary.read(cipher.hash.mac_key_length)
+    const mac_key_length = state.cipher.encryption.cipher_type === "block"
+      ? cipher.hash.mac_key_length
+      : 0
+
+    const client_write_MAC_key = key_block_binary.read(mac_key_length)
+    const server_write_MAC_key = key_block_binary.read(mac_key_length)
 
     const client_write_key = key_block_binary.read(cipher.encryption.enc_key_length)
     const server_write_key = key_block_binary.read(cipher.encryption.enc_key_length)
@@ -633,12 +643,12 @@ export class TlsStream extends EventTarget {
     this.output.enqueue(record_client_key_exchange.export())
 
     const secrets = await this.computeSecrets(state, dh_Z)
-    const cipherer = await state.cipher.init(secrets)
+    const encrypter = await state.cipher.init(secrets)
 
     const change_cipher_spec = new ChangeCipherSpec()
     const record_change_cipher_spec = change_cipher_spec.record(state.version)
 
-    state = { ...state, step: "client_change_cipher_spec", cipherer, client_encrypted: true, client_sequence: BigInt(0) }
+    state = { ...state, step: "client_change_cipher_spec", encrypter, client_encrypted: true, client_sequence: BigInt(0) }
 
     this.output.enqueue(record_change_cipher_spec.export())
 
@@ -647,7 +657,7 @@ export class TlsStream extends EventTarget {
 
     const verify_data = await PRF("SHA-256", secrets.master_secret, "client finished", handshake_messages_hash, 12)
     const finished = new Finished2(verify_data).handshake().record(state.version)
-    const cfinished = await finished.encrypt(state.cipherer, state.client_sequence++)
+    const cfinished = await finished.encrypt(state.encrypter, state.client_sequence++)
 
     state = { ...state, step: "client_finished" }
 
