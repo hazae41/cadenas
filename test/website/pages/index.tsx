@@ -34,10 +34,14 @@ export default function Home() {
 
     await tls.handshake()
 
-    const res = await fetch("https://localhost/", { stream: tls })
-    // console.log(res.status)
-    // const text = await res.text()
-    // console.log(text.length)
+    const headers = { "Content-Type": "application/json" }
+    const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
+
+    const res = await fetch("https://eth.llamarpc.com/", { stream: tls, method: "POST", headers, body })
+    console.log(res)
+
+    const text = await res.text()
+    console.log(text)
   }, [])
 
   return <button onClick={onClick}>
