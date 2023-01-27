@@ -583,7 +583,7 @@ export class TlsStream extends EventTarget {
     const key_block_binary = new Binary(key_block)
 
     const mac_key_length = state.cipher.encryption.cipher_type === "block"
-      ? cipher.hash.mac_key_length
+      ? cipher.hash.mac.mac_key_length
       : 0
 
     const client_write_MAC_key = key_block_binary.read(mac_key_length)

@@ -58,7 +58,7 @@ export class GenericBlockCipher {
     premac.writeUint64(sequence)
     record.write(premac)
 
-    const mac = await encrypter.macher.mac(premac.bytes)
+    const mac = await encrypter.macher.write(premac.bytes)
 
     const length = content.length + mac.length
     const padding_length = modulup(length + 1, 16)
