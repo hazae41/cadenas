@@ -49,6 +49,14 @@ export namespace Bytes {
     return Buffers.fromView(bytes).toString("ascii")
   }
 
+  export function fromBigInt(bigint: bigint) {
+    return fromHexSafe(bigint.toString(16))
+  }
+
+  export function toBigInt(bytes: Uint8Array) {
+    return BigInt(`0x${toHex(bytes)}`)
+  }
+
   export function random(length: number) {
     const buffer = Buffer.allocUnsafe(length)
     crypto.getRandomValues(buffer)
