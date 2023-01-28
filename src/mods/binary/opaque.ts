@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Exportable, Lengthed, LengthedClass } from "mods/binary/fragment.js"
+import { Lengthed, LengthedClass, Writable } from "mods/binary/fragment.js"
 
 export class Opaque {
   readonly #class = Opaque
@@ -12,7 +12,7 @@ export class Opaque {
     return this.#class
   }
 
-  static from(fragment: Exportable) {
+  static from(fragment: Writable) {
     return new this(fragment.export())
   }
 
@@ -28,15 +28,15 @@ export class Opaque {
     binary.write(this.bytes)
   }
 
-  static read(binary: Binary, length: number) {
-    const buffer = binary.read(length)
-
-    return new this(buffer)
-  }
-
   export() {
     const binary = Binary.allocUnsafe(this.size())
     this.write(binary)
     return binary.bytes
+  }
+
+  static read(binary: Binary, length: number) {
+    const buffer = binary.read(length)
+
+    return new this(buffer)
   }
 }

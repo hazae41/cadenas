@@ -22,4 +22,10 @@ export class PreMasterSecret {
     binary.writeUint16(this.client_version)
     binary.write(this.random)
   }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
 }

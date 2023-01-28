@@ -39,6 +39,12 @@ export class Extension<T extends Writable = Writable> {
     this.extension_data.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary) {
     const extension_type = binary.readUint16()
     const extension_data = LengthedVector(Number16, Opaque).read(binary)

@@ -19,6 +19,12 @@ export class EllipticCurves {
     this.named_curve_list.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary) {
 
   }

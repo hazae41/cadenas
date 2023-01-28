@@ -33,6 +33,12 @@ export class Number8 {
     binary.writeUint8(this.value)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary) {
     return new this(binary.readUint8())
   }
@@ -59,6 +65,12 @@ export class Number16 {
     binary.writeUint16(this.value)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary) {
     return new this(binary.readUint16())
   }
@@ -83,6 +95,12 @@ export class Number24 {
 
   write(binary: Binary) {
     binary.writeUint24(this.value)
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
   }
 
   static read(binary: Binary) {

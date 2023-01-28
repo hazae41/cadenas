@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Exportable, Writable } from "mods/binary/fragment.js"
+import { Writable } from "mods/binary/fragment.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { PlaintextRecord, Record } from "mods/binary/records/record.js"
 
@@ -30,6 +30,12 @@ export class HandshakeHeader {
     binary.writeUint24(this.length)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary, length: number) {
     console.log(binary.after)
 
@@ -43,15 +49,9 @@ export class HandshakeHeader {
 
     return new this(type, sublength)
   }
-
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
-  }
 }
 
-export class Handshake<T extends Writable & Exportable> {
+export class Handshake<T extends Writable> {
   readonly #class = Handshake
 
   static type = Record.types.handshake
@@ -82,7 +82,7 @@ export class Handshake<T extends Writable & Exportable> {
     return this.#class.type
   }
 
-  static from<T extends Writable & Exportable>(header: HandshakeHeader, fragment: T) {
+  static from<T extends Writable>(header: HandshakeHeader, fragment: T) {
     return new this<T>(header.subtype, fragment)
   }
 
@@ -96,6 +96,16 @@ export class Handshake<T extends Writable & Exportable> {
     this.fragment.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
+  record(version: number) {
+    return new PlaintextRecord<Handshake<T>>(this.class.type, version, this)
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
@@ -107,15 +117,5 @@ export class Handshake<T extends Writable & Exportable> {
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(subtype, fragment)
-  }
-
-  record(version: number) {
-    return new PlaintextRecord<Handshake<T>>(this.class.type, version, this)
-  }
-
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
   }
 }

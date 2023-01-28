@@ -1,5 +1,4 @@
 import { Binary } from "@hazae41/binary"
-import { Lengthed } from "mods/binary/fragment.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ServerKeyExchange2Anonymous } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_anonymous.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
@@ -18,7 +17,7 @@ export function getServerKeyExchange2(cipher: Cipher) {
   return ServerKeyExchange2None
 }
 
-export class ServerKeyExchange2None implements Lengthed<ServerKeyExchange2None> {
+export class ServerKeyExchange2None {
   readonly #class = ServerKeyExchange2None
 
   static type = Handshake.types.server_key_exchange
@@ -34,7 +33,15 @@ export class ServerKeyExchange2None implements Lengthed<ServerKeyExchange2None> 
   }
 
   write(binary: Binary) {
-    return
+    /**
+     * NOOP
+     */
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
   }
 
   static read(binary: Binary, length: number) {

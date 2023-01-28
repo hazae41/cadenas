@@ -23,6 +23,12 @@ export class ServerKeyExchange2Anonymous {
     this.params.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 

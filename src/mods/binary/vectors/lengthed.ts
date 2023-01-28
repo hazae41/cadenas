@@ -31,6 +31,12 @@ export const LengthedVector = <L extends NumberX, T extends Lengthed<T>>(vlength
     this.value.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary) {
     const length = vlength.read(binary).value
     const start = binary.offset

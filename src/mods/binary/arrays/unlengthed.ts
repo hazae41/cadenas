@@ -30,6 +30,12 @@ export const UnlengthedArray = <T extends Unlengthed<T>>(clazz: UnlengthedClass<
       element.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
     const array = new Array<T>()

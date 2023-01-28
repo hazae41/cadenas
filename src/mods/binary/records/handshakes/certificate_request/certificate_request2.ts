@@ -37,6 +37,12 @@ export class ClientCertificateType {
     binary.writeUint8(this.type)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary) {
     return new this(binary.readUint8())
   }
@@ -68,6 +74,12 @@ export class CertificateRequest2 {
     this.certificate_types.write(binary)
     this.supported_signature_algorithms.write(binary)
     this.certificate_authorities.write(binary)
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
   }
 
   static read(binary: Binary, length: number) {

@@ -30,4 +30,10 @@ export const WritableVector = <L extends NumberX>(vlength: NumberClass<L>) => cl
 
     this.value.write(binary)
   }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
 }

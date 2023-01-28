@@ -42,13 +42,19 @@ export class SignatureAlgorithms {
     this.supported_signature_algorithms.write(binary)
   }
 
-  static read(binary: Binary) {
-    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedArray(SignatureAndHashAlgorithm)).read(binary)
-
-    return new this(supported_signature_algorithms)
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
   }
 
   extension() {
     return Extension.from<SignatureAlgorithms>(this.#class.type, this)
+  }
+
+  static read(binary: Binary) {
+    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedArray(SignatureAndHashAlgorithm)).read(binary)
+
+    return new this(supported_signature_algorithms)
   }
 }

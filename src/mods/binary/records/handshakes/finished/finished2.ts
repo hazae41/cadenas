@@ -26,19 +26,19 @@ export class Finished2 {
     binary.write(this.verify_data)
   }
 
-  static read(binary: Binary, length: number) {
-    const verify_data = binary.read(length)
-
-    return new this(verify_data)
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
   }
 
   handshake() {
     return new Handshake<Finished2>(this.type, this)
   }
 
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+  static read(binary: Binary, length: number) {
+    const verify_data = binary.read(length)
+
+    return new this(verify_data)
   }
 }

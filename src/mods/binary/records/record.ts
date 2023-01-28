@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Exportable, Writable } from "mods/binary/fragment.js"
+import { Writable } from "mods/binary/fragment.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
@@ -36,6 +36,12 @@ export class RecordHeader {
     binary.writeUint16(this.length)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static tryRead(binary: Binary) {
     const start = binary.offset
 
@@ -61,7 +67,7 @@ export class RecordHeader {
 }
 
 
-export class PlaintextRecord<T extends Writable & Exportable> {
+export class PlaintextRecord<T extends Writable> {
   readonly #class = PlaintextRecord<T>
 
   constructor(
@@ -74,7 +80,7 @@ export class PlaintextRecord<T extends Writable & Exportable> {
     return this.#class
   }
 
-  static from<T extends Writable & Exportable>(
+  static from<T extends Writable>(
     header: RecordHeader,
     fragment: T
   ) {
@@ -92,6 +98,12 @@ export class PlaintextRecord<T extends Writable & Exportable> {
     this.fragment.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
@@ -104,12 +116,6 @@ export class PlaintextRecord<T extends Writable & Exportable> {
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(subtype, version, fragment)
-  }
-
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
   }
 
   async encrypt(encrypter: Encrypter, sequence: bigint) {

@@ -81,6 +81,12 @@ export class SignatureAlgorithm {
     binary.writeUint8(this.type)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary) {
     return new this(binary.readUint8())
   }
@@ -111,6 +117,12 @@ export class SignatureAndHashAlgorithm {
     this.signature.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary) {
     const hash = HashAlgorithm.read(binary)
     const signature = SignatureAlgorithm.read(binary)
@@ -138,6 +150,12 @@ export class DigitallySigned {
   write(binary: Binary) {
     this.algorithm.write(binary)
     this.signature.write(binary)
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
   }
 
   static read(binary: Binary) {

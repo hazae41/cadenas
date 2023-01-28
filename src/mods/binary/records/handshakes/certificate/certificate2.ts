@@ -43,13 +43,13 @@ export class Certificate2 {
     this.certificate_list.write(binary)
   }
 
-  handshake() {
-    return new Handshake<Certificate2>(this.type, this)
-  }
-
   export() {
     const binary = Binary.allocUnsafe(this.size())
     this.write(binary)
     return binary.bytes
+  }
+
+  handshake() {
+    return new Handshake<Certificate2>(this.type, this)
   }
 }

@@ -27,6 +27,16 @@ export class ClientKeyExchange2DH {
     this.exchange_keys.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
+  handshake() {
+    return new Handshake<ClientKeyExchange2DH>(this.type, this)
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
@@ -36,15 +46,5 @@ export class ClientKeyExchange2DH {
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(exchange_keys)
-  }
-
-  handshake() {
-    return new Handshake<ClientKeyExchange2DH>(this.type, this)
-  }
-
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
   }
 }

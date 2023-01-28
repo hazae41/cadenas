@@ -30,6 +30,12 @@ export class ServerDHParams {
     this.dh_Ys.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary) {
     const dh_p = LengthedVector(Number16, Opaque).read(binary)
     const dh_g = LengthedVector(Number16, Opaque).read(binary)

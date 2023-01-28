@@ -18,15 +18,21 @@ export class ServerHelloDone2 {
 
   write(binary: Binary) {
     /**
-     * Nothing to write
+     * NOOP
      */
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
   }
 
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
     /**
-     * Nothing to read
+     * NOOP
      */
 
     if (binary.offset - start !== length)

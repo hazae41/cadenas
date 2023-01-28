@@ -1,10 +1,9 @@
 import { Binary } from "@hazae41/binary"
-import { Lengthed } from "mods/binary/fragment.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
 import { DigitallySigned } from "mods/binary/signature.js"
 
-export class ServerKeyExchange2Ephemeral implements Lengthed<ServerKeyExchange2Ephemeral>{
+export class ServerKeyExchange2Ephemeral {
   readonly #class = ServerKeyExchange2Ephemeral
 
   static type = Handshake.types.server_key_exchange
@@ -25,6 +24,12 @@ export class ServerKeyExchange2Ephemeral implements Lengthed<ServerKeyExchange2E
   write(binary: Binary) {
     this.params.write(binary)
     this.signed_params.write(binary)
+  }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
   }
 
   static read(binary: Binary, length: number) {

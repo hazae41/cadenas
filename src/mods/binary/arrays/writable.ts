@@ -29,4 +29,10 @@ export const WritableArray = () => class <T extends Writable> {
     for (const element of this.array)
       element.write(binary)
   }
+
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
 }

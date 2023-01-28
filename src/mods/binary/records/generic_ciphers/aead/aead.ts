@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary";
-import { Exportable, Writable } from "mods/binary/fragment.js";
+import { Writable } from "mods/binary/fragment.js";
 import { Opaque } from "mods/binary/opaque.js";
 import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
 import { AEADEncrypter } from "mods/ciphers/encryptions/encryption.js";
@@ -25,6 +25,12 @@ export class GenericAEADCipher {
     binary.write(this.block)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
@@ -37,7 +43,7 @@ export class GenericAEADCipher {
     return new this(nonce_explicit, block)
   }
 
-  static async encrypt<T extends Writable & Exportable>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint) {
+  static async encrypt<T extends Writable>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint) {
     const nonce = Binary.allocUnsafe(encrypter.fixed_iv_length + 8)
     nonce.write(encrypter.secrets.client_write_IV)
     nonce.writeUint64(sequence)

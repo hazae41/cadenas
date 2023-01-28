@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary"
 import { Bytes } from "libs/bytes/bytes.js"
-import { Exportable, Writable } from "mods/binary/fragment.js"
+import { Writable } from "mods/binary/fragment.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { BlockCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js"
 import { BlockEncrypter } from "mods/ciphers/encryptions/encryption.js"
@@ -37,6 +37,12 @@ export class GenericBlockCipher {
     binary.write(this.block)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
@@ -49,7 +55,7 @@ export class GenericBlockCipher {
     return new this(iv, block)
   }
 
-  static async encrypt<T extends Writable & Exportable>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint) {
+  static async encrypt<T extends Writable>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint) {
     const iv = Bytes.random(16)
 
     const content = record.fragment.export()
@@ -87,11 +93,5 @@ export class GenericBlockCipher {
     // console.log("<- mac", mac.length, Bytes.toHex(mac))
 
     return new Opaque(content)
-  }
-
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
   }
 }

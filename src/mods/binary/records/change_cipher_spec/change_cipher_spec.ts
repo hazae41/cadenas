@@ -30,6 +30,16 @@ export class ChangeCipherSpec {
     binary.writeUint8(this.subtype)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
+  record(version: number) {
+    return new PlaintextRecord<ChangeCipherSpec>(this.class.type, version, this)
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
@@ -39,15 +49,5 @@ export class ChangeCipherSpec {
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(subtype)
-  }
-
-  record(version: number) {
-    return new PlaintextRecord<ChangeCipherSpec>(this.class.type, version, this)
-  }
-
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
   }
 }

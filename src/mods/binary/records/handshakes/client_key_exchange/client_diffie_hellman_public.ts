@@ -17,6 +17,12 @@ export class ClientDiffieHellmanPublicExplicit {
     this.dh_Yc.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary) {
     const dh_Yc = LengthedVector(Number16, Opaque).read(binary)
 

@@ -25,6 +25,12 @@ export class NamedCurveList {
     this.named_curve_list.write(binary)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
   static read(binary: Binary) {
     const named_curve_list = LengthedVector(Number16, UnlengthedArray(NamedCurve)).read(binary)
 

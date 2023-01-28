@@ -63,6 +63,16 @@ export class Alert {
     binary.writeUint8(this.description)
   }
 
+  export() {
+    const binary = Binary.allocUnsafe(this.size())
+    this.write(binary)
+    return binary.bytes
+  }
+
+  record(version: number) {
+    return new PlaintextRecord<Alert>(this.class.type, version, this)
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
@@ -73,15 +83,5 @@ export class Alert {
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(level, description)
-  }
-
-  record(version: number) {
-    return new PlaintextRecord<Alert>(this.class.type, version, this)
-  }
-
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
   }
 }
