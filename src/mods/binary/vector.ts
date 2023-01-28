@@ -1,17 +1,17 @@
 import { Binary } from "@hazae41/binary";
 import { Bytes } from "libs/bytes/bytes.js";
-import { NumberX } from "mods/binary/number.js";
-import { Readable } from "mods/binary/readable.js";
-import { Writable } from "mods/binary/writable.js";
+import { NumberClass, NumberX } from "mods/binary/number.js";
+import { Lengthed, LengthedClass, Unlengthed, UnlengthedClass } from "./fragment.js";
+import { Writable } from "./writable.js";
 
 export interface Vector<L extends NumberX> extends Writable {
-  readonly vlength: L["class"]
+  readonly vlength: NumberClass<L>
 }
 
 export type BytesVector<L extends NumberX> =
   InstanceType<ReturnType<typeof BytesVector<L>>>
 
-export const BytesVector = <L extends NumberX>(vlength: L["class"]) => class {
+export const BytesVector = <L extends NumberX>(vlength: NumberClass<L>) => class {
   readonly #class = BytesVector(vlength)
 
   constructor(
@@ -52,11 +52,11 @@ export const BytesVector = <L extends NumberX>(vlength: L["class"]) => class {
   }
 }
 
-export type AnyVector<L extends NumberX, T extends Writable> =
-  InstanceType<ReturnType<typeof AnyVector<L, T>>>
+export type LengthedVector<L extends NumberX, T extends Lengthed<T>> =
+  InstanceType<ReturnType<typeof LengthedVector<L, T>>>
 
-export const AnyVector = <L extends NumberX, T extends Writable>(vlength: L["class"]) => class {
-  readonly #class = AnyVector(vlength)
+export const LengthedVector = <L extends NumberX, T extends Lengthed<T>>(vlength: NumberClass<L>, clazz: LengthedClass<T>) => class {
+  readonly #class = LengthedVector(vlength, clazz)
 
   constructor(
     readonly value: T
@@ -83,57 +83,25 @@ export const AnyVector = <L extends NumberX, T extends Writable>(vlength: L["cla
 
     this.value.write(binary)
   }
-}
 
-export type AnyArrayVector<L extends NumberX, T extends Writable> =
-  InstanceType<ReturnType<typeof AnyArrayVector<L, T>>>
+  static read(binary: Binary) {
+    const length = vlength.read(binary).value
+    const start = binary.offset
 
-export const AnyArrayVector = <L extends NumberX, T extends Writable>(vlength: L["class"]) => class {
-  readonly #class = AnyArrayVector(vlength)
+    const value = clazz.read(binary, length)
 
-  constructor(
-    readonly array: T[]
-  ) { }
+    if (binary.offset - start !== length)
+      throw new Error(`Invalid vector length`)
 
-  static from(array: T[]) {
-    return new this(array)
-  }
-
-  get vlength() {
-    return vlength
-  }
-
-  get class() {
-    return this.#class
-  }
-
-  size() {
-    let size = vlength.size
-
-    for (const element of this.array)
-      size += element.size()
-
-    return size
-  }
-
-  write(binary: Binary) {
-    let size = 0
-
-    for (const element of this.array)
-      size += element.size()
-
-    new vlength(size).write(binary)
-
-    for (const element of this.array)
-      element.write(binary)
+    return new this(value)
   }
 }
 
-export type ArrayVector<L extends NumberX, T extends Writable & Readable<T>> =
+export type ArrayVector<L extends NumberX, T extends Unlengthed<T>> =
   InstanceType<ReturnType<typeof ArrayVector<L, T>>>
 
-export const ArrayVector = <L extends NumberX, T extends Writable & Readable<T>>(vlength: L["class"], type: T["class"]) => class {
-  readonly #class = ArrayVector(vlength, type)
+export const ArrayVector = <L extends NumberX, T extends Unlengthed<T>>(vlength: NumberClass<L>, clazz: UnlengthedClass<T>) => class {
+  readonly #class = ArrayVector(vlength, clazz)
 
   constructor(
     readonly array: T[]
@@ -152,7 +120,7 @@ export const ArrayVector = <L extends NumberX, T extends Writable & Readable<T>>
   }
 
   size() {
-    let size = vlength.size
+    let size: number = vlength.size
 
     for (const element of this.array)
       size += element.size()
@@ -179,7 +147,7 @@ export const ArrayVector = <L extends NumberX, T extends Writable & Readable<T>>
     const array = new Array<T>()
 
     while (binary.offset - start < length)
-      array.push(type.read(binary))
+      array.push(clazz.read(binary))
 
     if (binary.offset - start !== length)
       throw new Error(`Invalid vector length`)
@@ -188,7 +156,10 @@ export const ArrayVector = <L extends NumberX, T extends Writable & Readable<T>>
   }
 }
 
-export const Vector8 = <L extends NumberX>(vlength: L["class"]) => class {
+export type Vector8<L extends NumberX> =
+  InstanceType<ReturnType<typeof Vector8<L>>>
+
+export const Vector8 = <L extends NumberX>(vlength: NumberClass<L>) => class {
   readonly #class = Vector8(vlength)
 
   constructor(
@@ -234,7 +205,10 @@ export const Vector8 = <L extends NumberX>(vlength: L["class"]) => class {
   }
 }
 
-export const Vector16 = <L extends NumberX>(vlength: L["class"]) => class {
+export type Vector16<L extends NumberX> =
+  InstanceType<ReturnType<typeof Vector16<L>>>
+
+export const Vector16 = <L extends NumberX>(vlength: NumberClass<L>) => class {
   readonly #class = Vector16(vlength)
 
   constructor(

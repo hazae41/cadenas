@@ -27,8 +27,19 @@ export class ClientKeyExchange2DH {
     this.exchange_keys.write(binary)
   }
 
+  static read(binary: Binary, length: number) {
+    const start = binary.offset
+
+    const exchange_keys = ClientDiffieHellmanPublicExplicit.read(binary)
+
+    if (binary.offset - start !== length)
+      throw new Error(`Invalid ${this.name} length`)
+
+    return new this(exchange_keys)
+  }
+
   handshake() {
-    return new Handshake(this.type, this)
+    return new Handshake<ClientKeyExchange2DH>(this.type, this)
   }
 
   export() {

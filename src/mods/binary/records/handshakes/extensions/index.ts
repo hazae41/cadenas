@@ -1,4 +1,5 @@
-export * from "./ec_point_formats/ec_point_formats.js";
-export * from "./elliptic_curves/elliptic_curves.js";
+export * from "./ec_point_formats/index.js";
+export * from "./elliptic_curves/index.js";
 export * from "./extension.js";
-export * from "./signature_algorithms/signature_algorithms.js";
+export * from "./signature_algorithms/index.js";
+

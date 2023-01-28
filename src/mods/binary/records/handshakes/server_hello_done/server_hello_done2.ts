@@ -12,6 +12,16 @@ export class ServerHelloDone2 {
     return this.#class
   }
 
+  size() {
+    return 0
+  }
+
+  write(binary: Binary) {
+    /**
+     * Nothing to write
+     */
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 

@@ -26,6 +26,12 @@ export class Finished2 {
     binary.write(this.verify_data)
   }
 
+  static read(binary: Binary, length: number) {
+    const verify_data = binary.read(length)
+
+    return new this(verify_data)
+  }
+
   handshake() {
     return new Handshake<Finished2>(this.type, this)
   }

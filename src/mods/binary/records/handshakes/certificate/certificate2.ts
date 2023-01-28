@@ -23,7 +23,7 @@ export class Certificate2 {
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
-    const certificate_list = ArrayVector<Number24, BytesVector<Number24>>(Number24, BytesVector(Number24)).read(binary)
+    const certificate_list = ArrayVector(Number24, BytesVector(Number24)).read(binary)
 
     if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
@@ -40,7 +40,7 @@ export class Certificate2 {
   }
 
   handshake() {
-    return new Handshake(this.type, this)
+    return new Handshake<Certificate2>(this.type, this)
   }
 
   export() {

@@ -15,6 +15,14 @@ export class ServerKeyExchange2Anonymous {
     return this.#class
   }
 
+  size() {
+    return this.params.size()
+  }
+
+  write(binary: Binary) {
+    this.params.write(binary)
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 

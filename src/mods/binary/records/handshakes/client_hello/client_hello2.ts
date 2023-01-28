@@ -3,7 +3,7 @@ import { Number16, Number8 } from "mods/binary/number.js"
 import { Random } from "mods/binary/random.js"
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
-import { ArrayVector, Vector, Vector16, Vector8 } from "mods/binary/vector.js"
+import { ArrayVector, Vector16, Vector8 } from "mods/binary/vector.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 import { SignatureAlgorithms } from "../extensions/signature_algorithms/signature_algorithms.js"
 
@@ -15,10 +15,10 @@ export class ClientHello2 {
   constructor(
     readonly version: number,
     readonly random: Random,
-    readonly session_id: Vector<Number8>,
-    readonly cipher_suites: Vector<Number16>,
-    readonly compression_methods: Vector<Number8>,
-    readonly extensions?: Vector<Number16>
+    readonly session_id: ArrayVector<Number8, Number8>,
+    readonly cipher_suites: Vector16<Number16>,
+    readonly compression_methods: Vector8<Number8>,
+    readonly extensions?: ArrayVector<Number16, Extension>
   ) { }
 
   get class() {
@@ -33,7 +33,7 @@ export class ClientHello2 {
     const version = 0x0303
     const random = Random.default()
 
-    const session_id = ArrayVector<Number8, Number8>(Number8, Number8).from([])
+    const session_id = ArrayVector(Number8, Number8).from([])
     const cipher_suites = Vector16<Number16>(Number16).from(ciphers.map(it => it.id))
     const compression_methods = Vector8<Number8>(Number8).from([0])
 
@@ -68,12 +68,12 @@ export class ClientHello2 {
     const version = binary.readUint16()
     const random = Random.read(binary)
 
-    const session_id = ArrayVector<Number8, Number8>(Number8, Number8).read(binary)
-    const cipher_suites = Vector16<Number16>(Number16).read(binary)
-    const compression_methods = Vector8<Number8>(Number8).read(binary)
+    const session_id = ArrayVector(Number8, Number8).read(binary)
+    const cipher_suites = Vector16(Number16).read(binary)
+    const compression_methods = Vector8(Number8).read(binary)
 
     const extensions = binary.offset - start !== length
-      ? Vector8<Number16>(Number16).read(binary)
+      ? ArrayVector(Number16, Extension).read(binary)
       : undefined
 
     if (binary.offset - start !== length)
@@ -83,7 +83,7 @@ export class ClientHello2 {
   }
 
   handshake() {
-    return new Handshake(this.type, this)
+    return new Handshake<ClientHello2>(this.type, this)
   }
 
   export() {

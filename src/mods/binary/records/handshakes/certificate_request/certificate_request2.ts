@@ -2,7 +2,7 @@ import { Binary } from "@hazae41/binary"
 import { Number16, Number8 } from "mods/binary/number.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { SignatureAndHashAlgorithm } from "mods/binary/signature.js"
-import { ArrayVector, BytesVector, Vector } from "mods/binary/vector.js"
+import { ArrayVector, BytesVector } from "mods/binary/vector.js"
 
 export class ClientCertificateType {
   readonly #class = ClientCertificateType
@@ -46,19 +46,32 @@ export class CertificateRequest2 {
   constructor(
     readonly certificate_types: ArrayVector<Number8, ClientCertificateType>,
     readonly supported_signature_algorithms: ArrayVector<Number16, SignatureAndHashAlgorithm>,
-    readonly certificate_authorities: Vector<Number16>
+    readonly certificate_authorities: BytesVector<Number16>
   ) { }
 
   get class() {
     return this.#class
   }
 
+  size() {
+    return 0
+      + this.certificate_types.size()
+      + this.supported_signature_algorithms.size()
+      + this.certificate_authorities.size()
+  }
+
+  write(binary: Binary) {
+    this.certificate_types.write(binary)
+    this.supported_signature_algorithms.write(binary)
+    this.certificate_authorities.write(binary)
+  }
+
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
-    const certificate_types = ArrayVector<Number8, ClientCertificateType>(Number8, ClientCertificateType).read(binary)
-    const supported_signature_algorithms = ArrayVector<Number16, SignatureAndHashAlgorithm>(Number16, SignatureAndHashAlgorithm).read(binary)
-    const certificate_authorities = BytesVector<Number16>(Number16).read(binary)
+    const certificate_types = ArrayVector(Number8, ClientCertificateType).read(binary)
+    const supported_signature_algorithms = ArrayVector(Number16, SignatureAndHashAlgorithm).read(binary)
+    const certificate_authorities = BytesVector(Number16).read(binary)
 
     if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)

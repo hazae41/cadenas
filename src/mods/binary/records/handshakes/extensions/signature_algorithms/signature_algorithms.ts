@@ -16,10 +16,7 @@ export class SignatureAlgorithms {
   static default() {
     const { rsaWithSha256 } = SignatureAndHashAlgorithm.instances
 
-    const supported_signature_algorithms =
-      ArrayVector<Number16, SignatureAndHashAlgorithm>(
-        Number16, SignatureAndHashAlgorithm
-      ).from([rsaWithSha256])
+    const supported_signature_algorithms = ArrayVector(Number16, SignatureAndHashAlgorithm).from([rsaWithSha256])
 
     return new this(supported_signature_algorithms)
   }
@@ -40,7 +37,13 @@ export class SignatureAlgorithms {
     this.supported_signature_algorithms.write(binary)
   }
 
+  static read(binary: Binary) {
+    const supported_signature_algorithms = ArrayVector(Number16, SignatureAndHashAlgorithm).read(binary)
+
+    return new this(supported_signature_algorithms)
+  }
+
   extension() {
-    return Extension.from(this.#class.type, this)
+    return Extension.from<SignatureAlgorithms>(this.#class.type, this)
   }
 }

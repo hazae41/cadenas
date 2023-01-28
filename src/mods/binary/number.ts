@@ -5,6 +5,13 @@ export type NumberX =
   | Number16
   | Number24
 
+export interface NumberClass<T> {
+  readonly size: number
+
+  new(value: number): T
+  read(binary: Binary): T
+}
+
 export class Number8 {
   readonly #class = Number8
 

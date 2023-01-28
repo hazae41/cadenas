@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { ReadableLenghted } from "mods/binary/readable.js"
+import { Lengthed } from "mods/binary/fragment.js"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
@@ -74,7 +74,7 @@ export class PlaintextRecord<T extends Writable & Exportable> {
     return this.#class
   }
 
-  static from<T extends Writable & Exportable & ReadableLenghted<T>>(
+  static from<T extends Lengthed<T> & Exportable>(
     header: RecordHeader,
     fragment: T
   ) {

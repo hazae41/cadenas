@@ -1,6 +1,7 @@
 import { Binary } from "@hazae41/binary"
+import { Lengthed } from "mods/binary/fragment.js"
 import { PlaintextRecord, Record } from "mods/binary/records/record.js"
-import { Exportable, Writable } from "mods/binary/writable.js"
+import { Exportable } from "mods/binary/writable.js"
 
 export class HandshakeHeader {
   readonly #class = HandshakeHeader
@@ -50,7 +51,7 @@ export class HandshakeHeader {
   }
 }
 
-export class Handshake<T extends Writable & Exportable> {
+export class Handshake<T extends Lengthed<T> & Exportable> {
   readonly #class = Handshake
 
   static type = Record.types.handshake
@@ -81,7 +82,7 @@ export class Handshake<T extends Writable & Exportable> {
     return this.#class.type
   }
 
-  static from<T extends Writable & Exportable>(header: HandshakeHeader, fragment: T) {
+  static from<T extends Lengthed<T> & Exportable>(header: HandshakeHeader, fragment: T) {
     return new this<T>(header.subtype, fragment)
   }
 

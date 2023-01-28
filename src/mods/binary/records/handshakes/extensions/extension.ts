@@ -1,10 +1,10 @@
 import { Binary } from "@hazae41/binary"
+import { Lengthed } from "mods/binary/fragment.js"
 import { Number16 } from "mods/binary/number.js"
-import { AnyVector, Vector } from "mods/binary/vector.js"
-import { Writable } from "mods/binary/writable.js"
+import { Opaque } from "mods/binary/opaque.js"
+import { LengthedVector } from "mods/binary/vector.js"
 
-
-export class Extension {
+export class Extension<T extends Lengthed<T> = Lengthed> {
   readonly #class = Extension
 
   static types = {
@@ -15,13 +15,13 @@ export class Extension {
 
   constructor(
     readonly extension_type: number,
-    readonly extension_data: Vector<Number16>
+    readonly extension_data: LengthedVector<Number16, T>
   ) { }
 
-  static from(type: number, extension: Writable) {
-    const data = AnyVector<Number16, Writable>(Number16).from(extension)
+  static from<T extends Lengthed<T>>(extension_type: number, extension: T) {
+    const extension_data = LengthedVector(Number16, extension.class).from(extension)
 
-    return new this(type, data)
+    return new this(extension_type, extension_data)
   }
 
   get class() {
@@ -37,7 +37,10 @@ export class Extension {
     this.extension_data.write(binary)
   }
 
-  static read(binary: Binary): Extension {
-    throw new Error(`Unimplemented`)
+  static read(binary: Binary) {
+    const extension_type = binary.readUint16()
+    const extension_data = LengthedVector(Number16, Opaque).read(binary)
+
+    return new this(extension_type, extension_data)
   }
 }

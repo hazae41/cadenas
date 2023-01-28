@@ -15,10 +15,23 @@ export class ServerDHParams {
     return this.#class
   }
 
+  size() {
+    return 0
+      + this.dh_p.size()
+      + this.dh_g.size()
+      + this.dh_Ys.size()
+  }
+
+  write(binary: Binary) {
+    this.dh_p.write(binary)
+    this.dh_g.write(binary)
+    this.dh_Ys.write(binary)
+  }
+
   static read(binary: Binary) {
-    const dh_p = BytesVector<Number16>(Number16).read(binary)
-    const dh_g = BytesVector<Number16>(Number16).read(binary)
-    const dh_Ys = BytesVector<Number16>(Number16).read(binary)
+    const dh_p = BytesVector(Number16).read(binary)
+    const dh_g = BytesVector(Number16).read(binary)
+    const dh_Ys = BytesVector(Number16).read(binary)
 
     return new this(dh_p, dh_g, dh_Ys)
   }
