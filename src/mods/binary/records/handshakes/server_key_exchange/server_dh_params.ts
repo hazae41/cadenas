@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Number16 } from "mods/binary/number.js"
+import { Number16 } from "mods/binary/numbers/number16.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { LengthedVector } from "mods/binary/vectors/lengthed.js"
 import { Vector } from "mods/binary/vectors/vector.js"

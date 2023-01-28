@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary";
 import { Unlengthed, UnlengthedClass } from "mods/binary/fragment.js";
-import { NumberClass, NumberX } from "mods/binary/number.js";
+import { NumberClass, NumberX } from "mods/binary/numbers/number.js";
 
 export const UnlengthedVector = <L extends NumberX, T extends Unlengthed<T>>(vlength: NumberClass<L>, clazz: UnlengthedClass<T>) => class {
   readonly #class = UnlengthedVector(vlength, clazz)

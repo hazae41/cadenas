@@ -1,7 +1,7 @@
 import { Binary } from "@hazae41/binary"
 import { Array } from "mods/binary/arrays/array.js"
 import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js"
-import { Number24 } from "mods/binary/number.js"
+import { Number24 } from "mods/binary/numbers/number24.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { LengthedVector } from "mods/binary/vectors/lengthed.js"

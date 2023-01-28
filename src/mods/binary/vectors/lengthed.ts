@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary";
 import { Lengthed, LengthedClass } from "mods/binary/fragment.js";
-import { NumberClass, NumberX } from "mods/binary/number.js";
+import { NumberClass, NumberX } from "mods/binary/numbers/number.js";
 
 export const LengthedVector = <L extends NumberX, T extends Lengthed<T>>(vlength: NumberClass<L>, clazz: LengthedClass<T>) => class {
   readonly #class = LengthedVector(vlength, clazz)
