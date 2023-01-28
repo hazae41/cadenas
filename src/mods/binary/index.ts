@@ -1,4 +1,4 @@
-export * from "./array.js";
+export * from "./arrays/index.js";
 export * from "./fragment.js";
 export * from "./number.js";
 export * from "./opaque.js";

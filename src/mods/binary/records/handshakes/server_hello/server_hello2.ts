@@ -1,5 +1,6 @@
 import { Binary } from "@hazae41/binary";
-import { Array, UnlengthedArray } from "mods/binary/array.js";
+import { Array } from "mods/binary/arrays/array.js";
+import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js";
 import { Number16, Number8 } from "mods/binary/number.js";
 import { Opaque } from "mods/binary/opaque.js";
 import { Random } from "mods/binary/random.js";

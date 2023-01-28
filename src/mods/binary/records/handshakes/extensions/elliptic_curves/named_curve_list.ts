@@ -1,5 +1,6 @@
 import { Binary } from "@hazae41/binary";
-import { Array, UnlengthedArray } from "mods/binary/array.js";
+import { Array } from "mods/binary/arrays/array.js";
+import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js";
 import { Number16 } from "mods/binary/number.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/vector.js";

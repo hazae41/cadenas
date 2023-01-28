@@ -1,4 +1,3 @@
-export * from "./lengthed.js";
+export * from "./array.js";
 export * from "./unlengthed.js";
 export * from "./writable.js";
-

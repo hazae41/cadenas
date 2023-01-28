@@ -1,5 +1,7 @@
 import { Binary } from "@hazae41/binary";
-import { Array, UnlengthedArray, WritableArray } from "mods/binary/array.js";
+import { Array } from "mods/binary/arrays/array.js";
+import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js";
+import { WritableArray } from "mods/binary/arrays/writable.js";
 import { Number16 } from "mods/binary/number.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
 import { SignatureAndHashAlgorithm } from "mods/binary/signature.js";
