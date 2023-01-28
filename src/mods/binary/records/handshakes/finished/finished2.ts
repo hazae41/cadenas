@@ -33,7 +33,7 @@ export class Finished2 {
   }
 
   handshake() {
-    return new Handshake<Finished2>(this.type, this)
+    return new Handshake(this.type, this)
   }
 
   static read(binary: Binary, length: number) {

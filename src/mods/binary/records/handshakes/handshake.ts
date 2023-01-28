@@ -83,7 +83,7 @@ export class Handshake<T extends Writable> {
   }
 
   static from<T extends Writable>(header: HandshakeHeader, fragment: T) {
-    return new this<T>(header.subtype, fragment)
+    return new this(header.subtype, fragment)
   }
 
   size() {
@@ -103,7 +103,7 @@ export class Handshake<T extends Writable> {
   }
 
   record(version: number) {
-    return new PlaintextRecord<Handshake<T>>(this.class.type, version, this)
+    return new PlaintextRecord(this.class.type, version, this)
   }
 
   static read(binary: Binary, length: number) {

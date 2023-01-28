@@ -95,7 +95,7 @@ export class ClientHello2 {
   }
 
   handshake() {
-    return new Handshake<ClientHello2>(this.type, this)
+    return new Handshake(this.type, this)
   }
 
   export() {
