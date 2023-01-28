@@ -30,6 +30,8 @@ export class HandshakeHeader {
   }
 
   static read(binary: Binary, length: number) {
+    console.log(binary.after)
+
     const start = binary.offset
 
     const type = binary.readUint8()

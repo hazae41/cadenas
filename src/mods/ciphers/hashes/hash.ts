@@ -14,5 +14,8 @@ export interface Mac {
 }
 
 export interface Macher {
+  readonly mac_length: number
+  readonly mac_key_length: number
+
   write(seed: Uint8Array): Promise<Uint8Array>
 }

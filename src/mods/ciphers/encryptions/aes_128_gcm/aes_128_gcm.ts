@@ -3,11 +3,11 @@ import { Secrets } from "mods/ciphers/secrets.js"
 export class AES_128_GCM {
   readonly #class = AES_128_GCM
 
-  static cipher_type = "aead" as const
-  static enc_key_length = 16
-  static fixed_iv_length = 4
-  static record_iv_length = 8
-  static block_length = 16
+  static readonly cipher_type = "aead" as const
+  static readonly enc_key_length = 16 as const
+  static readonly block_length = 16 as const
+  static readonly fixed_iv_length = 4 as const
+  static readonly record_iv_length = 8 as const
 
   constructor(
     readonly secrets: Secrets, // TODO
@@ -30,13 +30,27 @@ export class AES_128_GCM {
     return this.#class.cipher_type
   }
 
+  get enc_key_length() {
+    return this.#class.enc_key_length
+  }
+
+  get block_length() {
+    return this.#class.block_length
+  }
+
+  get fixed_iv_length() {
+    return this.#class.fixed_iv_length
+  }
+
+  get record_iv_length() {
+    return this.#class.record_iv_length
+  }
+
   async encrypt(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array) {
     return new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", length: 128, iv: nonce, additionalData }, this.encryption_key, block))
   }
 
   async decrypt(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array) {
-    const pkcs7 = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", length: 128, iv: nonce, additionalData }, this.decryption_key, block))
-
-    return pkcs7
+    return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", length: 128, iv: nonce, additionalData }, this.decryption_key, block))
   }
 }

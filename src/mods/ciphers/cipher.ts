@@ -14,7 +14,10 @@ export class Cipher {
   async init(secrets: Secrets) {
     const { hash } = this
 
-    return await this.encryption.init(secrets, hash)
+    if (this.encryption.cipher_type === "block")
+      return await this.encryption.init(secrets, hash.mac)
+    else
+      return await this.encryption.init(secrets)
   }
 }
 

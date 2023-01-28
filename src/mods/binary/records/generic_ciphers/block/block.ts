@@ -80,8 +80,8 @@ export class GenericBlockCipher {
   async decrypt(record: BlockCiphertextRecord, encrypter: BlockEncrypter, sequence: bigint) {
     const plaintext = await encrypter.decrypt(this.iv, this.block)
 
-    const content = plaintext.subarray(0, -20)
-    const mac = plaintext.subarray(-20)
+    const content = plaintext.subarray(0, -encrypter.macher.mac_length)
+    const mac = plaintext.subarray(-encrypter.macher.mac_length)
 
     // console.log("<- content", content.length, Bytes.toHex(content))
     // console.log("<- mac", mac.length, Bytes.toHex(mac))

@@ -1,5 +1,4 @@
 import { Binary } from "@hazae41/binary";
-import { Bytes } from "libs/bytes/bytes.js";
 import { Opaque } from "mods/binary/opaque.js";
 import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
 import { Exportable, Writable } from "mods/binary/writable.js";
@@ -55,13 +54,13 @@ export class GenericAEADCipher {
     additional_data.writeUint16(record.version)
     additional_data.writeUint16(record.fragment.size())
 
-    console.log("-> nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
-    console.log("-> plaintext", content.length, Bytes.toHex(content))
-    console.log("-> additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
+    // console.log("-> nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
+    // console.log("-> plaintext", content.length, Bytes.toHex(content))
+    // console.log("-> additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
 
     const ciphertext = await encrypter.encrypt(nonce.bytes, content, additional_data.bytes)
 
-    console.log("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
+    // console.log("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
 
     return new this(nonce_explicit, ciphertext)
   }
@@ -71,21 +70,19 @@ export class GenericAEADCipher {
     nonce.write(encrypter.secrets.server_write_IV)
     nonce.write(this.nonce_explicit)
 
-    console.log("<- nonce_explicit", this.nonce_explicit.length, Bytes.toHex(this.nonce_explicit))
-
     const additional_data = Binary.allocUnsafe(8 + 1 + 2 + 2)
     additional_data.writeUint64(sequence)
     additional_data.writeUint8(record.subtype)
     additional_data.writeUint16(record.version)
     additional_data.writeUint16(record.fragment.size() - 24)
 
-    console.log("<- nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
-    console.log("<- ciphertext", this.block.length, Bytes.toHex(this.block))
-    console.log("<- additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
+    // console.log("<- nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
+    // console.log("<- ciphertext", this.block.length, Bytes.toHex(this.block))
+    // console.log("<- additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
 
     const plaintext = await encrypter.decrypt(nonce.bytes, this.block, additional_data.bytes)
 
-    console.log("<- plaintext", plaintext.length, Bytes.toHex(plaintext))
+    // console.log("<- plaintext", plaintext.length, Bytes.toHex(plaintext))
 
     return new Opaque(plaintext)
   }

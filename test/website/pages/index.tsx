@@ -28,16 +28,16 @@ export default function Home() {
   const onClick = useCallback(async () => {
     const ws = await createWebSocketStream()
 
-    const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
+    const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384]
 
     const tls = new TlsStream(ws, { ciphers })
 
     await tls.handshake()
 
-    const headers = { "Content-Type": "application/json" }
-    const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
+    // const headers = { "Content-Type": "application/json" }
+    // const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
 
-    const res = await fetch("https://eth.llamarpc.com/", { stream: tls, method: "POST", headers, body })
+    const res = await fetch("https://localhost/", { stream: tls })
     console.log(res)
 
     const text = await res.text()
