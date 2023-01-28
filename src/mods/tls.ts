@@ -25,10 +25,11 @@ import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchan
 import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { AEADCiphertextRecord, BlockCiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
-import { ArrayVector, BytesVector } from "mods/binary/vector.js"
+import { LengthedVector, WritableVector } from "mods/binary/vector.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 import { Encrypter } from "mods/ciphers/encryptions/encryption.js"
 import { Secrets } from "mods/ciphers/secrets.js"
+import { UnlengthedArray } from "./binary/array.js"
 
 export type State =
   | NoneState
@@ -504,8 +505,8 @@ export class TlsStream extends EventTarget {
 
     console.log(certificate)
 
-    const server_certificates = certificate.certificate_list.array
-      .map(it => X509.Certificate.fromBytes(it.bytes))
+    const server_certificates = certificate.certificate_list.value.array
+      .map(it => X509.Certificate.fromBytes(it.value.bytes))
 
     this.state = { ...state, action: "server_certificate", server_certificates }
 
@@ -549,11 +550,11 @@ export class TlsStream extends EventTarget {
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {
     const { dh_g, dh_p, dh_Ys } = state.server_dh_params
 
-    const g = BigInt(`0x${Bytes.toHex(dh_g.bytes)}`)
-    const p = BigInt(`0x${Bytes.toHex(dh_p.bytes)}`)
-    const Ys = BigInt(`0x${Bytes.toHex(dh_Ys.bytes)}`)
+    const g = BigInt(`0x${Bytes.toHex(dh_g.value.bytes)}`)
+    const p = BigInt(`0x${Bytes.toHex(dh_p.value.bytes)}`)
+    const Ys = BigInt(`0x${Bytes.toHex(dh_Ys.value.bytes)}`)
 
-    const dh_yc = Bytes.random(dh_p.bytes.length)
+    const dh_yc = Bytes.random(dh_p.value.bytes.length)
 
     const yc = BigInt(`0x${Bytes.toHex(dh_yc)}`)
 
@@ -631,7 +632,7 @@ export class TlsStream extends EventTarget {
     console.log(server_hello_done)
 
     if ("certificate_request" in state) {
-      const certificate_list = ArrayVector(Number24, BytesVector(Number24)).from([])
+      const certificate_list = LengthedVector(Number24, UnlengthedArray(LengthedVector(Number24, Opaque))).from(UnlengthedArray(LengthedVector(Number24, Opaque)).from([]))
 
       const certificate = new Certificate2(certificate_list)
       const handshake_certificate = certificate.handshake()
@@ -647,7 +648,7 @@ export class TlsStream extends EventTarget {
 
     const { dh_Yc, dh_Z } = await this.computeDiffieHellman(state)
 
-    const dh_yc_vector = BytesVector(Number16).from(dh_Yc)
+    const dh_yc_vector = WritableVector<Number16, Opaque>(Number16).from(new Opaque(dh_Yc))
     const dh_public = new ClientDiffieHellmanPublicExplicit(dh_yc_vector)
 
     const client_key_exchange = new ClientKeyExchange2DH(dh_public)

@@ -1,8 +1,10 @@
 import { Binary } from "@hazae41/binary"
+import { UnlengthedArray } from "mods/binary/array.js"
 import { Number16, Number8 } from "mods/binary/number.js"
+import { Opaque } from "mods/binary/opaque.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { SignatureAndHashAlgorithm } from "mods/binary/signature.js"
-import { ArrayVector, BytesVector } from "mods/binary/vector.js"
+import { IWritableVector, LengthedVector } from "mods/binary/vector.js"
 
 export class ClientCertificateType {
   readonly #class = ClientCertificateType
@@ -44,9 +46,9 @@ export class CertificateRequest2 {
   static type = Handshake.types.certificate_request
 
   constructor(
-    readonly certificate_types: ArrayVector<Number8, ClientCertificateType>,
-    readonly supported_signature_algorithms: ArrayVector<Number16, SignatureAndHashAlgorithm>,
-    readonly certificate_authorities: BytesVector<Number16>
+    readonly certificate_types: LengthedVector<Number8, UnlengthedArray<ClientCertificateType>>,
+    readonly supported_signature_algorithms: LengthedVector<Number16, UnlengthedArray<SignatureAndHashAlgorithm>>,
+    readonly certificate_authorities: IWritableVector<Number16, Opaque>
   ) { }
 
   get class() {
@@ -69,9 +71,9 @@ export class CertificateRequest2 {
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
-    const certificate_types = ArrayVector(Number8, ClientCertificateType).read(binary)
-    const supported_signature_algorithms = ArrayVector(Number16, SignatureAndHashAlgorithm).read(binary)
-    const certificate_authorities = BytesVector(Number16).read(binary)
+    const certificate_types = LengthedVector(Number8, UnlengthedArray(ClientCertificateType)).read(binary)
+    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedArray(SignatureAndHashAlgorithm)).read(binary)
+    const certificate_authorities = LengthedVector(Number16, Opaque).read(binary)
 
     if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)

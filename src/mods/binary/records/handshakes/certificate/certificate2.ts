@@ -1,7 +1,9 @@
 import { Binary } from "@hazae41/binary"
+import { IWritableArray, UnlengthedArray } from "mods/binary/array.js"
 import { Number24 } from "mods/binary/number.js"
+import { Opaque } from "mods/binary/opaque.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
-import { ArrayVector, BytesVector } from "mods/binary/vector.js"
+import { IWritableVector, LengthedVector } from "mods/binary/vector.js"
 
 export class Certificate2 {
   readonly #class = Certificate2
@@ -9,7 +11,7 @@ export class Certificate2 {
   static type = Handshake.types.certificate
 
   constructor(
-    readonly certificate_list: ArrayVector<Number24, BytesVector<Number24>>
+    readonly certificate_list: IWritableVector<Number24, IWritableArray<IWritableVector<Number24, Opaque>>>
   ) { }
 
   get class() {
@@ -23,7 +25,7 @@ export class Certificate2 {
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
-    const certificate_list = ArrayVector(Number24, BytesVector(Number24)).read(binary)
+    const certificate_list = LengthedVector(Number24, UnlengthedArray(LengthedVector(Number24, Opaque))).read(binary)
 
     if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)

@@ -1,9 +1,11 @@
 import { Binary } from "@hazae41/binary"
+import { IWritableArray, UnlengthedArray, WritableArray } from "mods/binary/array.js"
 import { Number16, Number8 } from "mods/binary/number.js"
+import { Opaque } from "mods/binary/opaque.js"
 import { Random } from "mods/binary/random.js"
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
-import { ArrayVector, Vector16, Vector8 } from "mods/binary/vector.js"
+import { IWritableVector, LengthedVector, WritableVector } from "mods/binary/vector.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 import { SignatureAlgorithms } from "../extensions/signature_algorithms/signature_algorithms.js"
 
@@ -15,10 +17,10 @@ export class ClientHello2 {
   constructor(
     readonly version: number,
     readonly random: Random,
-    readonly session_id: ArrayVector<Number8, Number8>,
-    readonly cipher_suites: Vector16<Number16>,
-    readonly compression_methods: Vector8<Number8>,
-    readonly extensions?: ArrayVector<Number16, Extension>
+    readonly session_id: LengthedVector<Number8, Opaque>,
+    readonly cipher_suites: LengthedVector<Number16, UnlengthedArray<Number16>>,
+    readonly compression_methods: LengthedVector<Number8, UnlengthedArray<Number8>>,
+    readonly extensions?: IWritableVector<Number16, IWritableArray<Extension>>
   ) { }
 
   get class() {
@@ -33,12 +35,12 @@ export class ClientHello2 {
     const version = 0x0303
     const random = Random.default()
 
-    const session_id = ArrayVector(Number8, Number8).from([])
-    const cipher_suites = Vector16<Number16>(Number16).from(ciphers.map(it => it.id))
-    const compression_methods = Vector8<Number8>(Number8).from([0])
+    const session_id = LengthedVector(Number8, Opaque).from(new Opaque(new Uint8Array()))
+    const cipher_suites = LengthedVector(Number16, UnlengthedArray(Number16)).from(UnlengthedArray(Number16).from(ciphers.map(it => new Number16(it.id))))
+    const compression_methods = LengthedVector(Number8, UnlengthedArray(Number8)).from(UnlengthedArray(Number8).from([new Number8(0)]))
 
     const signature_algorithms = SignatureAlgorithms.default().extension()
-    const extensions = ArrayVector<Number16, Extension>(Number16, Extension).from([signature_algorithms])
+    const extensions = WritableVector<Number16, IWritableArray<Extension>>(Number16).from(WritableArray<Extension>().from([signature_algorithms]))
 
     return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
   }
@@ -68,12 +70,12 @@ export class ClientHello2 {
     const version = binary.readUint16()
     const random = Random.read(binary)
 
-    const session_id = ArrayVector(Number8, Number8).read(binary)
-    const cipher_suites = Vector16(Number16).read(binary)
-    const compression_methods = Vector8(Number8).read(binary)
+    const session_id = LengthedVector(Number8, Opaque).read(binary)
+    const cipher_suites = LengthedVector(Number16, UnlengthedArray(Number16)).read(binary)
+    const compression_methods = LengthedVector(Number8, UnlengthedArray(Number8)).read(binary)
 
     const extensions = binary.offset - start !== length
-      ? ArrayVector(Number16, Extension).read(binary)
+      ? LengthedVector(Number16, UnlengthedArray(Extension)).read(binary)
       : undefined
 
     if (binary.offset - start !== length)

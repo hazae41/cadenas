@@ -1,7 +1,7 @@
 import { Binary } from "@hazae41/binary"
-import { Lengthed } from "mods/binary/fragment.js"
+import { Opaque } from "mods/binary/opaque.js"
 import { PlaintextRecord, Record } from "mods/binary/records/record.js"
-import { Exportable } from "mods/binary/writable.js"
+import { Exportable, Writable } from "mods/binary/writable.js"
 
 export class HandshakeHeader {
   readonly #class = HandshakeHeader
@@ -51,7 +51,7 @@ export class HandshakeHeader {
   }
 }
 
-export class Handshake<T extends Lengthed<T> & Exportable> {
+export class Handshake<T extends Writable & Exportable> {
   readonly #class = Handshake
 
   static type = Record.types.handshake
@@ -82,7 +82,7 @@ export class Handshake<T extends Lengthed<T> & Exportable> {
     return this.#class.type
   }
 
-  static from<T extends Lengthed<T> & Exportable>(header: HandshakeHeader, fragment: T) {
+  static from<T extends Writable & Exportable>(header: HandshakeHeader, fragment: T) {
     return new this<T>(header.subtype, fragment)
   }
 
@@ -94,6 +94,19 @@ export class Handshake<T extends Lengthed<T> & Exportable> {
     binary.writeUint8(this.subtype)
     binary.writeUint24(this.fragment.size())
     this.fragment.write(binary)
+  }
+
+  static read(binary: Binary, length: number) {
+    const start = binary.offset
+
+    const subtype = binary.readUint8()
+    const size = binary.readUint24()
+    const fragment = Opaque.read(binary, size)
+
+    if (binary.offset - start !== length)
+      throw new Error(`Invalid ${this.name} length`)
+
+    return new this(subtype, fragment)
   }
 
   record(version: number) {

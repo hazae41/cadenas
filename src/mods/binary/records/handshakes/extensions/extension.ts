@@ -1,10 +1,10 @@
 import { Binary } from "@hazae41/binary"
-import { Lengthed } from "mods/binary/fragment.js"
 import { Number16 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
-import { LengthedVector } from "mods/binary/vector.js"
+import { IWritableVector, LengthedVector, WritableVector } from "mods/binary/vector.js"
+import { Writable } from "mods/binary/writable.js"
 
-export class Extension<T extends Lengthed<T> = Lengthed> {
+export class Extension<T extends Writable = Writable> {
   readonly #class = Extension
 
   static types = {
@@ -15,11 +15,11 @@ export class Extension<T extends Lengthed<T> = Lengthed> {
 
   constructor(
     readonly extension_type: number,
-    readonly extension_data: LengthedVector<Number16, T>
+    readonly extension_data: IWritableVector<Number16, T>
   ) { }
 
-  static from<T extends Lengthed<T>>(extension_type: number, extension: T) {
-    const extension_data = LengthedVector(Number16, extension.class).from(extension)
+  static from<T extends Writable>(extension_type: number, extension: T) {
+    const extension_data = WritableVector(Number16).from(extension)
 
     return new this(extension_type, extension_data)
   }

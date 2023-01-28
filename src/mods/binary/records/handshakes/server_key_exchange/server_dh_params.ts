@@ -1,14 +1,15 @@
 import { Binary } from "@hazae41/binary"
 import { Number16 } from "mods/binary/number.js"
-import { BytesVector } from "mods/binary/vector.js"
+import { Opaque } from "mods/binary/opaque.js"
+import { IWritableVector, LengthedVector } from "mods/binary/vector.js"
 
 export class ServerDHParams {
   readonly #class = ServerDHParams
 
   constructor(
-    readonly dh_p: BytesVector<Number16>,
-    readonly dh_g: BytesVector<Number16>,
-    readonly dh_Ys: BytesVector<Number16>
+    readonly dh_p: IWritableVector<Number16, Opaque>,
+    readonly dh_g: IWritableVector<Number16, Opaque>,
+    readonly dh_Ys: IWritableVector<Number16, Opaque>
   ) { }
 
   get class() {
@@ -29,9 +30,9 @@ export class ServerDHParams {
   }
 
   static read(binary: Binary) {
-    const dh_p = BytesVector(Number16).read(binary)
-    const dh_g = BytesVector(Number16).read(binary)
-    const dh_Ys = BytesVector(Number16).read(binary)
+    const dh_p = LengthedVector(Number16, Opaque).read(binary)
+    const dh_g = LengthedVector(Number16, Opaque).read(binary)
+    const dh_Ys = LengthedVector(Number16, Opaque).read(binary)
 
     return new this(dh_p, dh_g, dh_Ys)
   }

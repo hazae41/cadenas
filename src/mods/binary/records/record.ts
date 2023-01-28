@@ -1,9 +1,9 @@
 import { Binary } from "@hazae41/binary"
-import { Lengthed } from "mods/binary/fragment.js"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { Exportable, Writable } from "mods/binary/writable.js"
 import { AEADEncrypter, BlockEncrypter, Encrypter } from "mods/ciphers/encryptions/encryption.js"
+import { Opaque } from "../opaque.js"
 
 export namespace Record {
 
@@ -74,7 +74,7 @@ export class PlaintextRecord<T extends Writable & Exportable> {
     return this.#class
   }
 
-  static from<T extends Lengthed<T> & Exportable>(
+  static from<T extends Writable & Exportable>(
     header: RecordHeader,
     fragment: T
   ) {
@@ -90,6 +90,20 @@ export class PlaintextRecord<T extends Writable & Exportable> {
     binary.writeUint16(this.version)
     binary.writeUint16(this.fragment.size())
     this.fragment.write(binary)
+  }
+
+  static read(binary: Binary, length: number) {
+    const start = binary.offset
+
+    const subtype = binary.readUint8()
+    const version = binary.readUint16()
+    const size = binary.readUint16()
+    const fragment = Opaque.read(binary, size)
+
+    if (binary.offset - start !== length)
+      throw new Error(`Invalid ${this.name} length`)
+
+    return new this(subtype, version, fragment)
   }
 
   export() {

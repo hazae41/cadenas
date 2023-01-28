@@ -1,9 +1,10 @@
 import { Binary } from "@hazae41/binary";
+import { IWritableArray, UnlengthedArray } from "mods/binary/array.js";
 import { Number16, Number8 } from "mods/binary/number.js";
 import { Opaque } from "mods/binary/opaque.js";
 import { Random } from "mods/binary/random.js";
 import { Handshake } from "mods/binary/records/handshakes/handshake.js";
-import { BytesVector, LengthedVector, Vector8 } from "mods/binary/vector.js";
+import { IWritableVector, LengthedVector } from "mods/binary/vector.js";
 
 export class ServerHello2 {
   readonly #class = ServerHello2
@@ -13,9 +14,9 @@ export class ServerHello2 {
   constructor(
     readonly server_version: number,
     readonly random: Random,
-    readonly session_id: BytesVector<Number8>,
+    readonly session_id: IWritableVector<Number8, Opaque>,
     readonly cipher_suite: number,
-    readonly compression_methods: Vector8<Number8>,
+    readonly compression_methods: IWritableVector<Number8, IWritableArray<Number8>>,
     readonly extensions?: LengthedVector<Number16, Opaque>
   ) { }
 
@@ -47,9 +48,9 @@ export class ServerHello2 {
 
     const server_version = binary.readUint16()
     const random = Random.read(binary)
-    const session_id = BytesVector(Number8).read(binary)
+    const session_id = LengthedVector(Number8, Opaque).read(binary)
     const cipher_suite = binary.readUint16()
-    const compression_methods = Vector8(Number8).read(binary)
+    const compression_methods = LengthedVector(Number8, UnlengthedArray(Number8)).read(binary)
 
     if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
