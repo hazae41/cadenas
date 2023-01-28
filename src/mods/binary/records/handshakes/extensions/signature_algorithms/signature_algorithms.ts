@@ -49,7 +49,7 @@ export class SignatureAlgorithms {
   }
 
   extension() {
-    return Extension.from<SignatureAlgorithms>(this.#class.type, this)
+    return Extension.from(this.#class.type, this)
   }
 
   static read(binary: Binary) {

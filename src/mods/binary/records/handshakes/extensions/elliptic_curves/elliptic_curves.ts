@@ -11,6 +11,10 @@ export class EllipticCurves {
     readonly named_curve_list: NamedCurveList
   ) { }
 
+  static default() {
+    return new this(NamedCurveList.default())
+  }
+
   size() {
     return this.named_curve_list.size()
   }
@@ -25,7 +29,13 @@ export class EllipticCurves {
     return binary.bytes
   }
 
-  static read(binary: Binary) {
+  extension() {
+    return Extension.from(this.#class.type, this)
+  }
 
+  static read(binary: Binary) {
+    const named_curve_list = NamedCurveList.read(binary)
+
+    return new this(named_curve_list)
   }
 }

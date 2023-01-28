@@ -3,28 +3,28 @@ import { Array } from "mods/binary/arrays/array.js";
 import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js";
 import { WritableArray } from "mods/binary/arrays/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
-import { NamedCurve } from "mods/binary/records/handshakes/extensions/elliptic_curves/named_curve.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/vector.js";
 import { WritableVector } from "mods/binary/vectors/writable.js";
+import { ECPointFormat } from "./ec_point_format.js";
 
-export class NamedCurveList {
-  readonly #class = NamedCurveList
+export class ECPointFormatList {
+  readonly #class = ECPointFormatList
 
   constructor(
-    readonly named_curve_list: Vector<Number16, Array<NamedCurve>>
+    readonly ec_point_format_list: Vector<Number16, Array<ECPointFormat>>
   ) { }
 
   static default() {
-    const { secp256r1, secp384r1, secp521r1, x25519 } = NamedCurve.instances
+    const { uncompressed } = ECPointFormat.instances
 
-    return this.from([secp256r1, secp384r1, secp521r1, x25519])
+    return this.from([uncompressed])
   }
 
-  static from(named_curves: NamedCurve[]) {
-    const named_curve_list = WritableVector(Number16).from(WritableArray().from(named_curves))
+  static from(ec_point_formats: ECPointFormat[]) {
+    const ec_point_format_list = WritableVector(Number16).from(WritableArray().from(ec_point_formats))
 
-    return new this(named_curve_list)
+    return new this(ec_point_format_list)
   }
 
   get class() {
@@ -32,11 +32,11 @@ export class NamedCurveList {
   }
 
   size() {
-    return this.named_curve_list.size()
+    return this.ec_point_format_list.size()
   }
 
   write(binary: Binary) {
-    this.named_curve_list.write(binary)
+    this.ec_point_format_list.write(binary)
   }
 
   export() {
@@ -46,8 +46,8 @@ export class NamedCurveList {
   }
 
   static read(binary: Binary) {
-    const named_curve_list = LengthedVector(Number16, UnlengthedArray(NamedCurve)).read(binary)
+    const ec_point_format_list = LengthedVector(Number16, UnlengthedArray(ECPointFormat)).read(binary)
 
-    return new this(named_curve_list)
+    return new this(ec_point_format_list)
   }
 }

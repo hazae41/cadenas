@@ -12,11 +12,11 @@ export class NamedCurve {
   } as const
 
   static readonly instances = {
-    secp256r1: new this(23),
-    secp384r1: new this(24),
-    secp521r1: new this(25),
-    x25519: new this(29),
-    x448: new this(30),
+    secp256r1: new this(this.types.secp256r1),
+    secp384r1: new this(this.types.secp384r1),
+    secp521r1: new this(this.types.secp521r1),
+    x25519: new this(this.types.x25519),
+    x448: new this(this.types.x448),
   }
 
   constructor(
