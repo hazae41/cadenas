@@ -5,7 +5,7 @@ import { Handshake } from "mods/binary/records/handshakes/handshake.js";
 export class ClientKeyExchange2DH {
   readonly #class = ClientKeyExchange2DH
 
-  static type = Handshake.types.client_key_exchange
+  static readonly type = Handshake.types.client_key_exchange
 
   constructor(
     readonly exchange_keys: ClientDiffieHellmanPublicExplicit

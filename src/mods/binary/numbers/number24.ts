@@ -3,7 +3,7 @@ import { Binary } from "@hazae41/binary"
 export class Number24 {
   readonly #class = Number24
 
-  static size: 3 = 3
+  static readonly size = 3 as const
 
   constructor(
     readonly value: number

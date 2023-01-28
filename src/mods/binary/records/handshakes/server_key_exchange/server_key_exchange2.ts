@@ -20,7 +20,7 @@ export function getServerKeyExchange2(cipher: Cipher) {
 export class ServerKeyExchange2None {
   readonly #class = ServerKeyExchange2None
 
-  static type = Handshake.types.server_key_exchange
+  static readonly type = Handshake.types.server_key_exchange
 
   constructor() { }
 

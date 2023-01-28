@@ -13,7 +13,7 @@ export namespace Record {
     alert: 21,
     handshake: 22,
     application_data: 23
-  }
+  } as const
 
 }
 

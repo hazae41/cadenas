@@ -1,4 +1,4 @@
 export class ECDHE_RSA {
-  static ephemeral = true
-  static anonymous = false
+  static readonly ephemeral = true as const
+  static readonly anonymous = false as const
 }

@@ -4,7 +4,7 @@ import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 export class Finished2 {
   readonly #class = Finished2
 
-  static type = Handshake.types.finished
+  static readonly type = Handshake.types.finished
 
   constructor(
     readonly verify_data: Uint8Array

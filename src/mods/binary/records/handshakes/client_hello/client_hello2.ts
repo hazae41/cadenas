@@ -17,7 +17,7 @@ import { Cipher } from "mods/ciphers/cipher.js"
 export class ClientHello2 {
   readonly #class = ClientHello2
 
-  static type = Handshake.types.client_hello
+  static readonly type = Handshake.types.client_hello
 
   constructor(
     readonly version: number,

@@ -5,7 +5,7 @@ import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchan
 export class ServerKeyExchange2Anonymous {
   readonly #class = ServerKeyExchange2Anonymous
 
-  static type = Handshake.types.server_key_exchange
+  static readonly type = Handshake.types.server_key_exchange
 
   constructor(
     readonly params: ServerDHParams

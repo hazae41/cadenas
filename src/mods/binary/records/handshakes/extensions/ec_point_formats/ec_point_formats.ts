@@ -3,5 +3,5 @@ import { Extension } from "mods/binary/records/handshakes/extensions/extension.j
 export class EllipticPointFormats {
   readonly #class = EllipticPointFormats
 
-  static type = Extension.types.ec_point_formats
+  static readonly type = Extension.types.ec_point_formats
 }

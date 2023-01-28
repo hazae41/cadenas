@@ -9,7 +9,7 @@ import { WritableVector } from "mods/binary/vectors/writable.js"
 export class Extension<T extends Writable = Writable> {
   readonly #class = Extension
 
-  static types = {
+  static readonly types = {
     elliptic_curves: 10,
     ec_point_formats: 11,
     signature_algorithms: 13

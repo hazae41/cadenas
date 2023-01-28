@@ -6,7 +6,7 @@ import { DigitallySigned } from "mods/binary/signature.js"
 export class ServerKeyExchange2Ephemeral {
   readonly #class = ServerKeyExchange2Ephemeral
 
-  static type = Handshake.types.server_key_exchange
+  static readonly type = Handshake.types.server_key_exchange
 
   constructor(
     readonly params: ServerDHParams,

@@ -12,7 +12,7 @@ import { WritableVector } from "mods/binary/vectors/writable.js";
 export class SignatureAlgorithms {
   readonly #class = SignatureAlgorithms
 
-  static type = Extension.types.signature_algorithms
+  static readonly type = Extension.types.signature_algorithms
 
   constructor(
     readonly supported_signature_algorithms: Vector<Number16, Array<SignatureAndHashAlgorithm>>

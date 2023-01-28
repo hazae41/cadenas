@@ -4,9 +4,9 @@ import { PlaintextRecord, Record } from "mods/binary/records/record.js";
 export class ChangeCipherSpec {
   readonly #class = ChangeCipherSpec
 
-  static type = Record.types.change_cipher_spec
+  static readonly type = Record.types.change_cipher_spec
 
-  static types = {
+  static readonly types = {
     change_cipher_spec: 1
   } as const
 

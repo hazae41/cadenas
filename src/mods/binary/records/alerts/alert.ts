@@ -4,14 +4,14 @@ import { PlaintextRecord, Record } from "mods/binary/records/record.js"
 export class Alert {
   readonly #class = Alert
 
-  static type = Record.types.alert
+  static readonly type = Record.types.alert
 
-  static levels = {
+  static readonly levels = {
     warning: 1,
     fatal: 2
-  }
+  } as const
 
-  static descriptions = {
+  static readonly descriptions = {
     close_notify: 0,
     unexpected_message: 10,
     bad_record_mac: 20,
@@ -39,7 +39,7 @@ export class Alert {
     unknown_psk_identity: 115,
     certificate_required: 116,
     no_application_protocol: 120,
-  }
+  } as const
 
   constructor(
     readonly level: number,

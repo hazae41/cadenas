@@ -12,7 +12,7 @@ import { Vector } from "mods/binary/vectors/vector.js";
 export class ServerHello2 {
   readonly #class = ServerHello2
 
-  static type = Handshake.types.server_hello
+  static readonly type = Handshake.types.server_hello
 
   constructor(
     readonly server_version: number,

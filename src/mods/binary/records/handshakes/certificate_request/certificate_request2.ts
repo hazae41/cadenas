@@ -12,7 +12,7 @@ import { Vector } from "mods/binary/vectors/vector.js"
 export class ClientCertificateType {
   readonly #class = ClientCertificateType
 
-  static types = {
+  static readonly types = {
     rsa_sign: 1,
     dss_sign: 2,
     rsa_fixed_dh: 3,
@@ -20,7 +20,7 @@ export class ClientCertificateType {
     rsa_ephemeral_dh_RESERVED: 5,
     dss_ephemeral_dh_RESERVED: 6,
     fortezza_dms_RESERVED: 20
-  }
+  } as const
 
   constructor(
     readonly type: number
@@ -52,7 +52,7 @@ export class ClientCertificateType {
 export class CertificateRequest2 {
   readonly #class = CertificateRequest2
 
-  static type = Handshake.types.certificate_request
+  static readonly type = Handshake.types.certificate_request
 
   constructor(
     readonly certificate_types: Vector<Number8, Array<ClientCertificateType>>,

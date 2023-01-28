@@ -10,7 +10,7 @@ import { Vector } from "mods/binary/vectors/vector.js"
 export class Certificate2 {
   readonly #class = Certificate2
 
-  static type = Handshake.types.certificate
+  static readonly type = Handshake.types.certificate
 
   constructor(
     readonly certificate_list: Vector<Number24, Array<Vector<Number24, Opaque>>>

@@ -6,7 +6,7 @@ import { PlaintextRecord, Record } from "mods/binary/records/record.js"
 export class HandshakeHeader {
   readonly #class = HandshakeHeader
 
-  static type = Record.types.handshake
+  static readonly type = Record.types.handshake
 
   constructor(
     readonly subtype: number,
@@ -54,9 +54,9 @@ export class HandshakeHeader {
 export class Handshake<T extends Writable> {
   readonly #class = Handshake
 
-  static type = Record.types.handshake
+  static readonly type = Record.types.handshake
 
-  static types = {
+  static readonly types = {
     hello_request: 0,
     client_hello: 1,
     server_hello: 2,
