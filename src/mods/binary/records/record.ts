@@ -1,9 +1,9 @@
 import { Binary } from "@hazae41/binary"
+import { Exportable, Writable } from "mods/binary/fragment.js"
+import { Opaque } from "mods/binary/opaque.js"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
-import { Exportable, Writable } from "mods/binary/writable.js"
 import { AEADEncrypter, BlockEncrypter, Encrypter } from "mods/ciphers/encryptions/encryption.js"
-import { Opaque } from "../opaque.js"
 
 export namespace Record {
 

@@ -1,7 +1,7 @@
 import { Binary } from "@hazae41/binary"
+import { Exportable, Writable } from "mods/binary/fragment.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { PlaintextRecord, Record } from "mods/binary/records/record.js"
-import { Exportable, Writable } from "mods/binary/writable.js"
 
 export class HandshakeHeader {
   readonly #class = HandshakeHeader

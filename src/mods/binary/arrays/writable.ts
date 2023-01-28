@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Writable } from "mods/binary/writable.js"
+import { Writable } from "mods/binary/fragment.js"
 
 export const WritableArray = () => class <T extends Writable> {
   readonly #class = WritableArray

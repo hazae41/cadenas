@@ -1,6 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Lengthed, LengthedClass } from "mods/binary/fragment.js"
-import { Exportable } from "mods/binary/writable.js"
+import { Exportable, Lengthed, LengthedClass } from "mods/binary/fragment.js"
 
 export class Opaque {
   readonly #class = Opaque

@@ -6,12 +6,12 @@ import { Number16, Number8 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Random } from "mods/binary/random.js"
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
+import { SignatureAlgorithms } from "mods/binary/records/handshakes/extensions/signature_algorithms/signature_algorithms.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { LengthedVector } from "mods/binary/vectors/lengthed.js"
 import { Vector } from "mods/binary/vectors/vector.js"
 import { WritableVector } from "mods/binary/vectors/writable.js"
 import { Cipher } from "mods/ciphers/cipher.js"
-import { SignatureAlgorithms } from "../extensions/signature_algorithms/signature_algorithms.js"
 
 export class ClientHello2 {
   readonly #class = ClientHello2

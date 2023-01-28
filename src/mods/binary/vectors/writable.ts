@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary";
+import { Writable } from "mods/binary/fragment.js";
 import { NumberClass, NumberX } from "mods/binary/number.js";
-import { Writable } from "mods/binary/writable.js";
 
 export const WritableVector = <L extends NumberX>(vlength: NumberClass<L>) => class <T extends Writable> {
   readonly #class = WritableVector(vlength)

@@ -2,9 +2,9 @@ import { Binary } from "@hazae41/binary";
 import { Array } from "mods/binary/arrays/array.js";
 import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js";
 import { Number16 } from "mods/binary/number.js";
+import { NamedCurve } from "mods/binary/records/handshakes/extensions/elliptic_curves/named_curve.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/vector.js";
-import { NamedCurve } from "./named_curve.js";
 
 export class NamedCurveList {
   readonly #class = NamedCurveList

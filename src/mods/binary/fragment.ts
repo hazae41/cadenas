@@ -1,5 +1,13 @@
 import { Binary } from "@hazae41/binary";
-import { Writable } from "mods/binary/writable.js";
+
+export interface Writable {
+  size(): number
+  write(binary: Binary): void
+}
+
+export interface Exportable {
+  export(): Uint8Array
+}
 
 export interface UnlengthedClass<T extends Unlengthed<T> = Unlengthed> {
   read(binary: Binary): T

@@ -6,5 +6,4 @@ export * from "./random.js";
 export * from "./records/index.js";
 export * from "./signature.js";
 export * from "./vectors/index.js";
-export * from "./writable.js";
 

@@ -26,11 +26,11 @@ import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchan
 import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { AEADCiphertextRecord, BlockCiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
+import { Vector } from "mods/binary/vectors/vector.js"
 import { WritableVector } from "mods/binary/vectors/writable.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 import { Encrypter } from "mods/ciphers/encryptions/encryption.js"
 import { Secrets } from "mods/ciphers/secrets.js"
-import { Vector } from "./binary/vectors/vector.js"
 
 export type State =
   | NoneState
