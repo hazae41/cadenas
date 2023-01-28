@@ -49,15 +49,31 @@ export class AES_128_CBC {
     return this.#class.record_iv_length
   }
 
-  async encrypt(iv: Uint8Array, block: Uint8Array) {
-    const pkcs7 = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", length: 128, iv }, this.encryption_key, block))
+  async encrypt(iv: Uint8Array, plaintext: Uint8Array) {
+    /**
+     * The plaintext already has our own padding, but this will append a 16-bytes PKCS7 padding at the end...
+     * 
+     * [...plaintext, ...6 times 6, 6] => [...plaintext, ...6 times 6, 6, ...16*(16)]
+     */
+    const pkcs7 = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", iv }, this.encryption_key, plaintext))
 
+    /**
+     * ...that we remove
+     */
     return pkcs7.subarray(0, -16)
   }
 
-  async decrypt(iv: Uint8Array, block: Uint8Array) {
-    const pkcs7 = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-CBC", length: 128, iv }, this.decryption_key, block))
+  async decrypt(iv: Uint8Array, ciphertext: Uint8Array) {
+    /**
+     * The plaintext has our own padding, but this will strip the padding as PKCS7, so it will leave one byte at the end...
+     * 
+     * [...plaintext, ...6 times 6, 6] => [...plaintext, 06]
+     */
+    const unpkcs7 = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-CBC", iv }, this.decryption_key, ciphertext))
 
-    return pkcs7.subarray(0, -1)
+    /**
+     * ...that we remove
+     */
+    return unpkcs7.subarray(0, -1)
   }
 }
