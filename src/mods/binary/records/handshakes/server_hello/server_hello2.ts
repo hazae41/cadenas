@@ -1,10 +1,10 @@
 import { Binary } from "@hazae41/binary";
-import { IWritableArray, UnlengthedArray } from "mods/binary/array.js";
+import { Array, UnlengthedArray } from "mods/binary/array.js";
 import { Number16, Number8 } from "mods/binary/number.js";
 import { Opaque } from "mods/binary/opaque.js";
 import { Random } from "mods/binary/random.js";
 import { Handshake } from "mods/binary/records/handshakes/handshake.js";
-import { IWritableVector, LengthedVector } from "mods/binary/vector.js";
+import { LengthedVector, Vector } from "mods/binary/vector.js";
 
 export class ServerHello2 {
   readonly #class = ServerHello2
@@ -14,10 +14,10 @@ export class ServerHello2 {
   constructor(
     readonly server_version: number,
     readonly random: Random,
-    readonly session_id: IWritableVector<Number8, Opaque>,
+    readonly session_id: Vector<Number8, Opaque>,
     readonly cipher_suite: number,
-    readonly compression_methods: IWritableVector<Number8, IWritableArray<Number8>>,
-    readonly extensions?: LengthedVector<Number16, Opaque>
+    readonly compression_methods: Vector<Number8, Array<Number8>>,
+    readonly extensions?: Vector<Number16, Opaque>
   ) { }
 
   get class() {

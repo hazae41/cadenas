@@ -1,11 +1,11 @@
 import { Binary } from "@hazae41/binary";
 import { Number16 } from "mods/binary/number.js";
 import { Opaque } from "mods/binary/opaque.js";
-import { IWritableVector, LengthedVector } from "mods/binary/vector.js";
+import { LengthedVector, Vector } from "mods/binary/vector.js";
 
 export class ClientDiffieHellmanPublicExplicit {
   constructor(
-    readonly dh_Yc: IWritableVector<Number16, Opaque>
+    readonly dh_Yc: Vector<Number16, Opaque>
   ) { }
 
   size() {

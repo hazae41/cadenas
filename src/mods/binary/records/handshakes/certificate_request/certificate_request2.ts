@@ -1,10 +1,10 @@
 import { Binary } from "@hazae41/binary"
-import { UnlengthedArray } from "mods/binary/array.js"
+import { Array, UnlengthedArray } from "mods/binary/array.js"
 import { Number16, Number8 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { SignatureAndHashAlgorithm } from "mods/binary/signature.js"
-import { IWritableVector, LengthedVector } from "mods/binary/vector.js"
+import { LengthedVector, Vector } from "mods/binary/vector.js"
 
 export class ClientCertificateType {
   readonly #class = ClientCertificateType
@@ -46,9 +46,9 @@ export class CertificateRequest2 {
   static type = Handshake.types.certificate_request
 
   constructor(
-    readonly certificate_types: LengthedVector<Number8, UnlengthedArray<ClientCertificateType>>,
-    readonly supported_signature_algorithms: LengthedVector<Number16, UnlengthedArray<SignatureAndHashAlgorithm>>,
-    readonly certificate_authorities: IWritableVector<Number16, Opaque>
+    readonly certificate_types: Vector<Number8, Array<ClientCertificateType>>,
+    readonly supported_signature_algorithms: Vector<Number16, Array<SignatureAndHashAlgorithm>>,
+    readonly certificate_authorities: Vector<Number16, Opaque>
   ) { }
 
   get class() {

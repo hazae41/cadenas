@@ -1,7 +1,7 @@
 import { Binary } from "@hazae41/binary"
 import { Number16 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
-import { IWritableVector, LengthedVector, WritableVector } from "mods/binary/vector.js"
+import { LengthedVector, Vector, WritableVector } from "mods/binary/vector.js"
 import { Writable } from "mods/binary/writable.js"
 
 export class Extension<T extends Writable = Writable> {
@@ -15,7 +15,7 @@ export class Extension<T extends Writable = Writable> {
 
   constructor(
     readonly extension_type: number,
-    readonly extension_data: IWritableVector<Number16, T>
+    readonly extension_data: Vector<Number16, T>
   ) { }
 
   static from<T extends Writable>(extension_type: number, extension: T) {

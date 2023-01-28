@@ -1,9 +1,9 @@
 import { Binary } from "@hazae41/binary";
-import { UnlengthedArray } from "mods/binary/array.js";
+import { Array, UnlengthedArray } from "mods/binary/array.js";
 import { Number16 } from "mods/binary/number.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
 import { SignatureAndHashAlgorithm } from "mods/binary/signature.js";
-import { LengthedVector } from "mods/binary/vector.js";
+import { LengthedVector, Vector } from "mods/binary/vector.js";
 
 export class SignatureAlgorithms {
   readonly #class = SignatureAlgorithms
@@ -11,7 +11,7 @@ export class SignatureAlgorithms {
   static type = Extension.types.signature_algorithms
 
   constructor(
-    readonly supported_signature_algorithms: LengthedVector<Number16, UnlengthedArray<SignatureAndHashAlgorithm>>
+    readonly supported_signature_algorithms: Vector<Number16, Array<SignatureAndHashAlgorithm>>
   ) { }
 
   static default() {

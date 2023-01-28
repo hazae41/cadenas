@@ -2,12 +2,9 @@ import { Binary } from "@hazae41/binary"
 import { Unlengthed, UnlengthedClass } from "mods/binary/fragment.js"
 import { Writable } from "mods/binary/writable.js"
 
-export interface IWritableArray<T extends Writable> extends Writable {
+export interface Array<T extends Writable> extends Writable {
   readonly array: T[]
 }
-
-export type WritableArray<T extends Writable> =
-  InstanceType<ReturnType<typeof WritableArray<T>>>
 
 export const WritableArray = <T extends Writable>() => class {
   readonly #class = WritableArray
@@ -38,9 +35,6 @@ export const WritableArray = <T extends Writable>() => class {
       element.write(binary)
   }
 }
-
-export type UnlengthedArray<T extends Unlengthed<T>> =
-  InstanceType<ReturnType<typeof UnlengthedArray<T>>>
 
 export const UnlengthedArray = <T extends Unlengthed<T>>(clazz: UnlengthedClass<T>) => class {
   readonly #class = UnlengthedArray(clazz)

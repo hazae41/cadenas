@@ -1,11 +1,11 @@
 import { Binary } from "@hazae41/binary"
-import { IWritableArray, UnlengthedArray, WritableArray } from "mods/binary/array.js"
+import { Array, UnlengthedArray, WritableArray } from "mods/binary/array.js"
 import { Number16, Number8 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Random } from "mods/binary/random.js"
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
-import { IWritableVector, LengthedVector, WritableVector } from "mods/binary/vector.js"
+import { LengthedVector, Vector, WritableVector } from "mods/binary/vector.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 import { SignatureAlgorithms } from "../extensions/signature_algorithms/signature_algorithms.js"
 
@@ -17,10 +17,10 @@ export class ClientHello2 {
   constructor(
     readonly version: number,
     readonly random: Random,
-    readonly session_id: LengthedVector<Number8, Opaque>,
-    readonly cipher_suites: LengthedVector<Number16, UnlengthedArray<Number16>>,
-    readonly compression_methods: LengthedVector<Number8, UnlengthedArray<Number8>>,
-    readonly extensions?: IWritableVector<Number16, IWritableArray<Extension>>
+    readonly session_id: Vector<Number8, Opaque>,
+    readonly cipher_suites: Vector<Number16, Array<Number16>>,
+    readonly compression_methods: Vector<Number8, Array<Number8>>,
+    readonly extensions?: Vector<Number16, Array<Extension>>
   ) { }
 
   get class() {
@@ -40,7 +40,7 @@ export class ClientHello2 {
     const compression_methods = LengthedVector(Number8, UnlengthedArray(Number8)).from(UnlengthedArray(Number8).from([new Number8(0)]))
 
     const signature_algorithms = SignatureAlgorithms.default().extension()
-    const extensions = WritableVector<Number16, IWritableArray<Extension>>(Number16).from(WritableArray<Extension>().from([signature_algorithms]))
+    const extensions = WritableVector<Number16, Array<Extension>>(Number16).from(WritableArray<Extension>().from([signature_algorithms]))
 
     return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
   }
