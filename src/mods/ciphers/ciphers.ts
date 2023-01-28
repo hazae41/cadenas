@@ -18,7 +18,7 @@ export const TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 = new Cipher(0x0067, DHE_RSA, A
 export const TLS_DHE_RSA_WITH_AES_256_CBC_SHA256 = new Cipher(0x006B, DHE_RSA, AES_256_CBC, SHA256)
 
 /**
- * Modern ciphers
+ * Secure ciphers
  */
 export const TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 = new Cipher(0x009E, DHE_RSA, AES_128_GCM, SHA256)
 export const TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 = new Cipher(0x009F, DHE_RSA, AES_256_GCM, SHA384)

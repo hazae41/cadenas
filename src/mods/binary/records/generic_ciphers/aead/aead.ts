@@ -38,7 +38,7 @@ export class GenericAEADCipher {
   }
 
   static async encrypt<T extends Writable & Exportable>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint) {
-    const nonce = Binary.allocUnsafe(4 + 8)
+    const nonce = Binary.allocUnsafe(encrypter.fixed_iv_length + 8)
     nonce.write(encrypter.secrets.client_write_IV)
     nonce.writeUint64(sequence)
 
@@ -66,7 +66,7 @@ export class GenericAEADCipher {
   }
 
   async decrypt(record: AEADCiphertextRecord, encrypter: AEADEncrypter, sequence: bigint) {
-    const nonce = Binary.allocUnsafe(4 + 8)
+    const nonce = Binary.allocUnsafe(encrypter.fixed_iv_length + 8)
     nonce.write(encrypter.secrets.server_write_IV)
     nonce.write(this.nonce_explicit)
 

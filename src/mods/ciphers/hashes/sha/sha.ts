@@ -40,6 +40,9 @@ export class SHA {
   static readonly mac_length = 20 as const
   static readonly mac_key_length = 20 as const
 
+  static readonly handshake_md = "SHA-256" as const
+  static readonly prf_md = "SHA-256" as const
+
   constructor() { }
 
   get class() {

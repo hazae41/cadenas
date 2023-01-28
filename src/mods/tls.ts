@@ -568,9 +568,14 @@ export class TlsStream extends EventTarget {
 
   private async computeSecrets(state: ServerKeyExchangeHandshakeState, premaster_secret: Uint8Array) {
     const { cipher, client_random, server_random } = state
+    const { prf_md } = state.cipher.hash
+
+    // console.log("premaster_secret", premaster_secret.length, Bytes.toHex(premaster_secret))
 
     const master_secret_seed = Bytes.concat([client_random, server_random])
-    const master_secret = await PRF("SHA-256", premaster_secret, "master secret", master_secret_seed, 48)
+    const master_secret = await PRF(prf_md, premaster_secret, "master secret", master_secret_seed, 48)
+
+    // console.log("master_secret", master_secret.length, Bytes.toHex(master_secret))
 
     const key_block_length = 0
       + (2 * cipher.hash.mac_key_length)
@@ -578,7 +583,9 @@ export class TlsStream extends EventTarget {
       + (2 * cipher.encryption.fixed_iv_length)
 
     const key_block_seed = Bytes.concat([server_random, client_random])
-    const key_block = await PRF("SHA-256", master_secret, "key expansion", key_block_seed, key_block_length)
+    const key_block = await PRF(prf_md, master_secret, "key expansion", key_block_seed, key_block_length)
+
+    // console.log("key_block", key_block.length, Bytes.toHex(key_block))
 
     const key_block_binary = new Binary(key_block)
 
@@ -589,11 +596,20 @@ export class TlsStream extends EventTarget {
     const client_write_MAC_key = key_block_binary.read(mac_key_length)
     const server_write_MAC_key = key_block_binary.read(mac_key_length)
 
+    // console.log("client_write_MAC_key", client_write_MAC_key.length, Bytes.toHex(client_write_MAC_key))
+    // console.log("server_write_MAC_key", server_write_MAC_key.length, Bytes.toHex(server_write_MAC_key))
+
     const client_write_key = key_block_binary.read(cipher.encryption.enc_key_length)
     const server_write_key = key_block_binary.read(cipher.encryption.enc_key_length)
 
+    // console.log("client_write_key", client_write_key.length, Bytes.toHex(client_write_key))
+    // console.log("server_write_key", server_write_key.length, Bytes.toHex(server_write_key))
+
     const client_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
     const server_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
+
+    // console.log("client_write_IV", client_write_IV.length, Bytes.toHex(client_write_IV))
+    // console.log("server_write_IV", server_write_IV.length, Bytes.toHex(server_write_IV))
 
     return {
       master_secret,
@@ -652,10 +668,12 @@ export class TlsStream extends EventTarget {
 
     this.output.enqueue(record_change_cipher_spec.export())
 
-    const handshake_messages = Bytes.concat(state.messages)
-    const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest("SHA-256", handshake_messages))
+    const { handshake_md, prf_md } = state.cipher.hash
 
-    const verify_data = await PRF("SHA-256", secrets.master_secret, "client finished", handshake_messages_hash, 12)
+    const handshake_messages = Bytes.concat(state.messages)
+    const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest(handshake_md, handshake_messages))
+
+    const verify_data = await PRF(prf_md, secrets.master_secret, "client finished", handshake_messages_hash, 12)
     const finished = new Finished2(verify_data).handshake().record(state.version)
     const cfinished = await finished.encrypt(state.encrypter, state.client_sequence++)
 
