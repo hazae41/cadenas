@@ -1,9 +1,9 @@
 import { Binary } from "@hazae41/binary";
+import { ECPointFormatList } from "mods/binary/records/handshakes/extensions/ec_point_formats/ec_point_format_list.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
-import { ECPointFormatList } from "./ec_point_format_list.js";
 
-export class EllipticPointFormats {
-  readonly #class = EllipticPointFormats
+export class ECPointFormats {
+  readonly #class = ECPointFormats
 
   static readonly type = Extension.types.ec_point_formats
 

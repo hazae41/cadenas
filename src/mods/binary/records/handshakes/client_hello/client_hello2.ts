@@ -6,6 +6,8 @@ import { Number16 } from "mods/binary/numbers/number16.js"
 import { Number8 } from "mods/binary/numbers/number8.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Random } from "mods/binary/random.js"
+import { ECPointFormats } from "mods/binary/records/handshakes/extensions/ec_point_formats/ec_point_formats.js"
+import { EllipticCurves } from "mods/binary/records/handshakes/extensions/elliptic_curves/elliptic_curves.js"
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
 import { SignatureAlgorithms } from "mods/binary/records/handshakes/extensions/signature_algorithms/signature_algorithms.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
@@ -45,7 +47,10 @@ export class ClientHello2 {
     const compression_methods = WritableVector(Number8).from(WritableArray().from([new Number8(0)]))
 
     const signature_algorithms = SignatureAlgorithms.default().extension()
-    const extensions = WritableVector(Number16).from(WritableArray().from([signature_algorithms]))
+    const elliptic_curves = EllipticCurves.default().extension()
+    const ec_point_formats = ECPointFormats.default().extension()
+
+    const extensions = WritableVector(Number16).from(WritableArray().from([signature_algorithms, elliptic_curves, ec_point_formats]))
 
     return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
   }
