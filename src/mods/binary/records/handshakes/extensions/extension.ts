@@ -8,6 +8,8 @@ export class Extension {
   readonly #class = Extension
 
   static types = {
+    elliptic_curves: 10,
+    ec_point_formats: 11,
     signature_algorithms: 13
   } as const
 

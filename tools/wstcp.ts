@@ -30,7 +30,7 @@ async function onconn(conn: Deno.Conn) {
 async function onsocket(socket: WebSocket) {
   socket.binaryType = "arraybuffer"
 
-  const target = await Deno.connect({ hostname: "127.0.0.1", port: 44330, transport: "tcp" })
+  const target = await Deno.connect({ hostname: "google.com", port: 443, transport: "tcp" })
 
   socket.addEventListener("message", async e => {
     try {

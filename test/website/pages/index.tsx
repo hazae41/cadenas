@@ -28,7 +28,7 @@ export default function Home() {
   const onClick = useCallback(async () => {
     const ws = await createWebSocketStream()
 
-    const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA]
+    const ciphers = [Ciphers.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384]
 
     const tls = new TlsStream(ws, { ciphers })
 
@@ -37,7 +37,7 @@ export default function Home() {
     // const headers = { "Content-Type": "application/json" }
     // const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
 
-    const res = await fetch("https://localhost/", { stream: tls })
+    const res = await fetch("https://google.com/", { stream: tls })
     console.log(res)
 
     const text = await res.text()
