@@ -1,10 +1,11 @@
 import { Binary } from "@hazae41/binary";
-import { Array, UnlengthedArray } from "mods/binary/array.js";
+import { Array, UnlengthedArray, WritableArray } from "mods/binary/array.js";
 import { Number16 } from "mods/binary/number.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
 import { SignatureAndHashAlgorithm } from "mods/binary/signature.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/vector.js";
+import { WritableVector } from "mods/binary/vectors/writable.js";
 
 export class SignatureAlgorithms {
   readonly #class = SignatureAlgorithms
@@ -18,7 +19,7 @@ export class SignatureAlgorithms {
   static default() {
     const { rsaWithSha256 } = SignatureAndHashAlgorithm.instances
 
-    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedArray(SignatureAndHashAlgorithm)).from(UnlengthedArray(SignatureAndHashAlgorithm).from([rsaWithSha256]))
+    const supported_signature_algorithms = WritableVector(Number16).from(WritableArray().from([rsaWithSha256]))
 
     return new this(supported_signature_algorithms)
   }

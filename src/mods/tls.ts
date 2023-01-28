@@ -551,19 +551,19 @@ export class TlsStream extends EventTarget {
   private async computeDiffieHellman(state: ServerKeyExchangeHandshakeState) {
     const { dh_g, dh_p, dh_Ys } = state.server_dh_params
 
-    const g = BigInt(`0x${Bytes.toHex(dh_g.value.bytes)}`)
-    const p = BigInt(`0x${Bytes.toHex(dh_p.value.bytes)}`)
-    const Ys = BigInt(`0x${Bytes.toHex(dh_Ys.value.bytes)}`)
+    const g = Bytes.toBigInt(dh_g.value.bytes)
+    const p = Bytes.toBigInt(dh_p.value.bytes)
+    const Ys = Bytes.toBigInt(dh_Ys.value.bytes)
 
     const dh_yc = Bytes.random(dh_p.value.bytes.length)
 
-    const yc = BigInt(`0x${Bytes.toHex(dh_yc)}`)
+    const yc = Bytes.toBigInt(dh_yc)
 
     const Yc = BigMath.umodpow(g, yc, p)
     const Z = BigMath.umodpow(Ys, yc, p)
 
-    const dh_Yc = Bytes.fromHexSafe(Yc.toString(16))
-    const dh_Z = Bytes.fromHexSafe(Z.toString(16))
+    const dh_Yc = Bytes.fromBigInt(Yc)
+    const dh_Z = Bytes.fromBigInt(Z)
 
     return { dh_Yc, dh_Z }
   }
