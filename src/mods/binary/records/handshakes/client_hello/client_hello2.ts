@@ -42,7 +42,7 @@ export class ClientHello2 {
     const version = 0x0303
     const random = Random.default()
 
-    const session_id = WritableVector(Number8).from(new Opaque(new Uint8Array()))
+    const session_id = WritableVector(Number8).from(Opaque.empty())
     const cipher_suites = WritableVector(Number16).from(WritableArray().from(ciphers.map(it => new Number16(it.id))))
     const compression_methods = WritableVector(Number8).from(WritableArray().from([new Number8(0)]))
 

@@ -8,6 +8,10 @@ export class Opaque {
     readonly bytes: Uint8Array
   ) { }
 
+  static empty() {
+    return new this(new Uint8Array())
+  }
+
   get class() {
     return this.#class
   }
