@@ -4,7 +4,7 @@ import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js";
 import { WritableArray } from "mods/binary/arrays/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
-import { SignatureAndHashAlgorithm } from "mods/binary/signature.js";
+import { SignatureAndHashAlgorithm } from "mods/binary/signatures/signature_and_hash_algorithm.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/vector.js";
 import { WritableVector } from "mods/binary/vectors/writable.js";

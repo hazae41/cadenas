@@ -5,7 +5,7 @@ import { Number16 } from "mods/binary/numbers/number16.js"
 import { Number8 } from "mods/binary/numbers/number8.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
-import { SignatureAndHashAlgorithm } from "mods/binary/signature.js"
+import { SignatureAndHashAlgorithm } from "mods/binary/signatures/signature_and_hash_algorithm.js"
 import { LengthedVector } from "mods/binary/vectors/lengthed.js"
 import { Vector } from "mods/binary/vectors/vector.js"
 

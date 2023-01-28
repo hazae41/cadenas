@@ -1,7 +1,7 @@
 import { Binary } from "@hazae41/binary"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
-import { DigitallySigned } from "mods/binary/signature.js"
+import { DigitallySigned } from "mods/binary/signatures/digitally_signed.js"
 
 export class ServerKeyExchange2Ephemeral {
   readonly #class = ServerKeyExchange2Ephemeral
