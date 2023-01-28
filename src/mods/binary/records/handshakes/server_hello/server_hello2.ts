@@ -4,7 +4,8 @@ import { Number16, Number8 } from "mods/binary/number.js";
 import { Opaque } from "mods/binary/opaque.js";
 import { Random } from "mods/binary/random.js";
 import { Handshake } from "mods/binary/records/handshakes/handshake.js";
-import { LengthedVector, Vector } from "mods/binary/vector.js";
+import { LengthedVector } from "mods/binary/vectors/lengthed.js";
+import { Vector } from "mods/binary/vectors/vector.js";
 
 export class ServerHello2 {
   readonly #class = ServerHello2

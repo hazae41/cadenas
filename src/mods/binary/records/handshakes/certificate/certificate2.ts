@@ -3,7 +3,8 @@ import { Array, UnlengthedArray } from "mods/binary/array.js"
 import { Number24 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
-import { LengthedVector, Vector } from "mods/binary/vector.js"
+import { LengthedVector } from "mods/binary/vectors/lengthed.js"
+import { Vector } from "mods/binary/vectors/vector.js"
 
 export class Certificate2 {
   readonly #class = Certificate2

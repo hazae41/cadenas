@@ -1,7 +1,8 @@
 import { Binary } from "@hazae41/binary"
 import { Number16 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
-import { LengthedVector, Vector } from "mods/binary/vector.js"
+import { LengthedVector } from "mods/binary/vectors/lengthed.js"
+import { Vector } from "mods/binary/vectors/vector.js"
 
 export class ServerDHParams {
   readonly #class = ServerDHParams

@@ -4,7 +4,8 @@ import { Number16, Number8 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { SignatureAndHashAlgorithm } from "mods/binary/signature.js"
-import { LengthedVector, Vector } from "mods/binary/vector.js"
+import { LengthedVector } from "mods/binary/vectors/lengthed.js"
+import { Vector } from "mods/binary/vectors/vector.js"
 
 export class ClientCertificateType {
   readonly #class = ClientCertificateType

@@ -3,7 +3,8 @@ import { Array, UnlengthedArray } from "mods/binary/array.js";
 import { Number16 } from "mods/binary/number.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
 import { SignatureAndHashAlgorithm } from "mods/binary/signature.js";
-import { LengthedVector, Vector } from "mods/binary/vector.js";
+import { LengthedVector } from "mods/binary/vectors/lengthed.js";
+import { Vector } from "mods/binary/vectors/vector.js";
 
 export class SignatureAlgorithms {
   readonly #class = SignatureAlgorithms

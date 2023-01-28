@@ -1,7 +1,9 @@
 import { Binary } from "@hazae41/binary"
 import { Number16 } from "mods/binary/number.js"
 import { Opaque } from "mods/binary/opaque.js"
-import { LengthedVector, Vector, WritableVector } from "mods/binary/vector.js"
+import { LengthedVector } from "mods/binary/vectors/lengthed.js"
+import { Vector } from "mods/binary/vectors/vector.js"
+import { WritableVector } from "mods/binary/vectors/writable.js"
 import { Writable } from "mods/binary/writable.js"
 
 export class Extension<T extends Writable = Writable> {

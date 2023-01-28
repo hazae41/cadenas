@@ -6,14 +6,14 @@ export interface Array<T extends Writable> extends Writable {
   readonly array: T[]
 }
 
-export const WritableArray = <T extends Writable>() => class {
+export const WritableArray = () => class <T extends Writable> {
   readonly #class = WritableArray
 
   constructor(
     readonly array: T[]
   ) { }
 
-  static from(array: T[]) {
+  static from<T extends Writable>(array: T[]) {
     return new this(array)
   }
 

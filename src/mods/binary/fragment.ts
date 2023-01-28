@@ -1,23 +1,18 @@
 import { Binary } from "@hazae41/binary";
+import { Writable } from "mods/binary/writable.js";
 
 export interface UnlengthedClass<T extends Unlengthed<T> = Unlengthed> {
   read(binary: Binary): T
 }
 
-export interface Unlengthed<T extends Unlengthed<T> = any> {
+export interface Unlengthed<T extends Unlengthed<T> = any> extends Writable {
   readonly class: UnlengthedClass<T>
-
-  size(): number
-  write(binary: Binary): void
 }
 
 export interface LengthedClass<T extends Lengthed<T> = Lengthed> {
   read(binary: Binary, length: number): T
 }
 
-export interface Lengthed<T extends Lengthed<T> = any> {
+export interface Lengthed<T extends Lengthed<T> = any> extends Writable {
   readonly class: LengthedClass<T>
-
-  size(): number
-  write(binary: Binary): void
 }

@@ -5,7 +5,9 @@ import { Opaque } from "mods/binary/opaque.js"
 import { Random } from "mods/binary/random.js"
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
-import { LengthedVector, Vector, WritableVector } from "mods/binary/vector.js"
+import { LengthedVector } from "mods/binary/vectors/lengthed.js"
+import { Vector } from "mods/binary/vectors/vector.js"
+import { WritableVector } from "mods/binary/vectors/writable.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 import { SignatureAlgorithms } from "../extensions/signature_algorithms/signature_algorithms.js"
 
@@ -35,12 +37,12 @@ export class ClientHello2 {
     const version = 0x0303
     const random = Random.default()
 
-    const session_id = LengthedVector(Number8, Opaque).from(new Opaque(new Uint8Array()))
-    const cipher_suites = LengthedVector(Number16, UnlengthedArray(Number16)).from(UnlengthedArray(Number16).from(ciphers.map(it => new Number16(it.id))))
-    const compression_methods = LengthedVector(Number8, UnlengthedArray(Number8)).from(UnlengthedArray(Number8).from([new Number8(0)]))
+    const session_id = WritableVector(Number8).from(new Opaque(new Uint8Array()))
+    const cipher_suites = WritableVector(Number16).from(WritableArray().from(ciphers.map(it => new Number16(it.id))))
+    const compression_methods = WritableVector(Number8).from(WritableArray().from([new Number8(0)]))
 
     const signature_algorithms = SignatureAlgorithms.default().extension()
-    const extensions = WritableVector<Number16, Array<Extension>>(Number16).from(WritableArray<Extension>().from([signature_algorithms]))
+    const extensions = WritableVector(Number16).from(WritableArray().from([signature_algorithms]))
 
     return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
   }
