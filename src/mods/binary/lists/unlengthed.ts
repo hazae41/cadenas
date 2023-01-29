@@ -1,8 +1,8 @@
 import { Binary } from "@hazae41/binary"
-import { UnlengthedClass, Writable } from "mods/binary/fragment.js"
+import { Unlengthed, Writable } from "mods/binary/fragment.js"
 import { List } from "mods/binary/lists/writable.js"
 
-export const UnlengthedList = <T extends Writable>(clazz: UnlengthedClass<T>) => class {
+export const UnlengthedList = <T extends Writable>(clazz: Unlengthed<T>) => class {
 
   static read(binary: Binary, length: number) {
     const start = binary.offset
