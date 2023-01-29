@@ -8,6 +8,7 @@ export interface Vector<L extends NumberX, T extends Writable> extends Writable 
 }
 
 export const Vector = <L extends NumberX>(vlength: NumberClass<L>) => class <T extends Writable> {
+
   constructor(
     readonly value: T
   ) { }

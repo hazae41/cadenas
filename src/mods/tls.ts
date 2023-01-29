@@ -19,7 +19,6 @@ import { ClientDiffieHellmanPublicExplicit } from "mods/binary/records/handshake
 import { ClientKeyExchange2DH } from "mods/binary/records/handshakes/client_key_exchange/client_key_exchange2_dh.js"
 import { ECPointFormats } from "mods/binary/records/handshakes/extensions/ec_point_formats/ec_point_formats.js"
 import { EllipticCurves } from "mods/binary/records/handshakes/extensions/elliptic_curves/elliptic_curves.js"
-import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
 import { SignatureAlgorithms } from "mods/binary/records/handshakes/extensions/signature_algorithms/signature_algorithms.js"
 import { Finished2 } from "mods/binary/records/handshakes/finished/finished2.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
@@ -526,12 +525,12 @@ export class TlsStream extends EventTarget {
         throw new Error(`Duplicated extension type`)
       extension_types.add(extension.extension_type)
 
-      if (extension.extension_type === Extension.types.signature_algorithms)
-        server_extensions.signature_algorithms = extension.extension_data.value.into(SignatureAlgorithms)
-      else if (extension.extension_type === Extension.types.elliptic_curves)
-        server_extensions.elliptic_curves = extension.extension_data.value.into(EllipticCurves)
-      else if (extension.extension_type === Extension.types.ec_point_formats)
-        server_extensions.ec_point_formats = extension.extension_data.value.into(ECPointFormats)
+      if (extension.extension_data.value instanceof SignatureAlgorithms)
+        server_extensions.signature_algorithms = extension.extension_data.value
+      else if (extension.extension_data.value instanceof EllipticCurves)
+        server_extensions.elliptic_curves = extension.extension_data.value
+      else if (extension.extension_data.value instanceof ECPointFormats)
+        server_extensions.ec_point_formats = extension.extension_data.value
     }
 
     console.log(server_extensions)

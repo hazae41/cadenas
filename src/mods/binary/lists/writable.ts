@@ -6,6 +6,7 @@ export interface List<T extends Writable> extends Writable {
 }
 
 export class List<T extends Writable> {
+
   constructor(
     readonly array: T[]
   ) { }

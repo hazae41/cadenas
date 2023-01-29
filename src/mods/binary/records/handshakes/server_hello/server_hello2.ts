@@ -10,7 +10,7 @@ import { Extension } from "mods/binary/records/handshakes/extensions/extension.j
 import { Handshake } from "mods/binary/records/handshakes/handshake.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/writable.js";
-import { OpaqueExtension } from "../extensions/opaque.js";
+import { TypedExtension } from "../extensions/typed.js";
 
 export class ServerHello2<E extends Writable = Writable> {
 
@@ -60,7 +60,7 @@ export class ServerHello2<E extends Writable = Writable> {
     const compression_methods = LengthedVector(Number8, UnlengthedList(Number8)).read(binary)
 
     const extensions = binary.offset - start < length
-      ? LengthedVector(Number16, UnlengthedList(OpaqueExtension)).read(binary)
+      ? LengthedVector(Number16, UnlengthedList(TypedExtension)).read(binary)
       : undefined
 
     if (binary.offset - start !== length)
