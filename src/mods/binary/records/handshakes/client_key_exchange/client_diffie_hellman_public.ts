@@ -5,9 +5,16 @@ import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export class ClientDiffieHellmanPublicExplicit {
+
   constructor(
     readonly dh_Yc: Vector<Number16, Opaque>
   ) { }
+
+  static from(bytes: Uint8Array) {
+    const dh_Yc = Vector(Number16).from(new Opaque(bytes))
+
+    return new this(dh_Yc)
+  }
 
   size() {
     return this.dh_Yc.size()

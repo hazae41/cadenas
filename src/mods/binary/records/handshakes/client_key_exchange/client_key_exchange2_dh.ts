@@ -11,8 +11,10 @@ export class ClientKeyExchange2DH {
     readonly exchange_keys: ClientDiffieHellmanPublicExplicit
   ) { }
 
-  get type() {
-    return this.#class.type
+  static from(bytes: Uint8Array) {
+    const exchange_keys = ClientDiffieHellmanPublicExplicit.from(bytes)
+
+    return new this(exchange_keys)
   }
 
   size() {
@@ -30,7 +32,7 @@ export class ClientKeyExchange2DH {
   }
 
   handshake() {
-    return new Handshake<ClientKeyExchange2DH>(this.type, this)
+    return new Handshake<ClientKeyExchange2DH>(this.#class.type, this)
   }
 
   static read(binary: Binary, length: number) {

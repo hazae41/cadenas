@@ -7,7 +7,6 @@ import { ErrorEvent } from "libs/events/error.js"
 import { Future } from "libs/futures/future.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
-import { Number16 } from "mods/binary/numbers/number16.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Alert } from "mods/binary/records/alerts/alert.js"
@@ -15,20 +14,21 @@ import { ChangeCipherSpec } from "mods/binary/records/change_cipher_spec/change_
 import { Certificate2 } from "mods/binary/records/handshakes/certificate/certificate2.js"
 import { CertificateRequest2 } from "mods/binary/records/handshakes/certificate_request/certificate_request2.js"
 import { ClientHello2 } from "mods/binary/records/handshakes/client_hello/client_hello2.js"
-import { ClientDiffieHellmanPublicExplicit } from "mods/binary/records/handshakes/client_key_exchange/client_diffie_hellman_public.js"
 import { ClientKeyExchange2DH } from "mods/binary/records/handshakes/client_key_exchange/client_key_exchange2_dh.js"
 import { Finished2 } from "mods/binary/records/handshakes/finished/finished2.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ServerHello2 } from "mods/binary/records/handshakes/server_hello/server_hello2.js"
 import { ServerHelloDone2 } from "mods/binary/records/handshakes/server_hello_done/server_hello_done2.js"
 import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
-import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
-import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { AEADCiphertextRecord, BlockCiphertextRecord, PlaintextRecord, Record } from "mods/binary/records/record.js"
 import { Vector } from "mods/binary/vectors/writable.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 import { Encrypter } from "mods/ciphers/encryptions/encryption.js"
 import { Secrets } from "mods/ciphers/secrets.js"
+import { ServerECDHParams } from "./binary/records/handshakes/server_key_exchange/server_ecdh_params.js"
+import { getServerKeyExchange2 } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
+import { ServerKeyExchange2DHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_dh_signed.js"
+import { ServerKeyExchange2ECDHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_ecdh_signed.js"
 import { ExtensionRecord, getClientExtensionRecord, getServerExtensionRecord } from "./extensions.js"
 
 export type State =
@@ -53,38 +53,38 @@ export type HandshakeState =
   | ClientFinishedState
   | ServerChangeCipherSpecState
 
-export interface ClientHelloData {
+export type ClientHelloData = {
   messages: Uint8Array[]
   client_random: Uint8Array
   client_extensions: ExtensionRecord
 }
 
-export interface ClientHelloState extends ClientHelloData {
+export type ClientHelloState = ClientHelloData & {
   type: "handshake"
   step: "client_hello"
   client_encrypted: false
   server_encrypted: false
 }
 
-export interface ServerHelloData extends ClientHelloData {
+export type ServerHelloData = ClientHelloData & {
   version: number
   cipher: Cipher
   server_random: Uint8Array
   server_extensions: ExtensionRecord
 }
 
-export interface ServerHelloState extends ServerHelloData {
+export type ServerHelloState = ServerHelloData & {
   type: "handshake"
   step: "server_hello"
   client_encrypted: false
   server_encrypted: false
 }
 
-export interface ServerCertificateData extends ServerHelloData {
+export type ServerCertificateData = ServerHelloData & {
   server_certificates: Certificate[]
 }
 
-export interface ServerCertificateState extends ServerCertificateData {
+export type ServerCertificateState = ServerCertificateData & {
   type: "handshake"
   step: "server_hello"
   action: "server_certificate"
@@ -92,11 +92,19 @@ export interface ServerCertificateState extends ServerCertificateData {
   server_encrypted: false
 }
 
-export interface ServerKeyExchangeData extends ServerHelloData {
+export type ServerKeyExchangeDHData = ServerHelloData & {
   server_dh_params: ServerDHParams
 }
 
-export interface ServerKeyExchangeState extends ServerKeyExchangeData {
+export type ServerKeyExchangeECDHData = ServerHelloData & {
+  server_ecdh_params: ServerECDHParams
+}
+
+export type ServerKeyExchangeData =
+  | ServerKeyExchangeDHData
+  | ServerKeyExchangeECDHData
+
+export type ServerKeyExchangeState = ServerKeyExchangeData & {
   type: "handshake"
   step: "server_hello"
   action: "server_key_exchange"
@@ -104,11 +112,11 @@ export interface ServerKeyExchangeState extends ServerKeyExchangeData {
   server_encrypted: false
 }
 
-export interface ServerCertificateRequestData extends ServerHelloData {
+export type ServerCertificateRequestData = ServerHelloData & {
   certificate_request: CertificateRequest2
 }
 
-export interface ServerCertificateRequestState extends ServerCertificateRequestData {
+export type ServerCertificateRequestState = ServerCertificateRequestData & {
   type: "handshake"
   step: "server_hello"
   action: "server_certificate_request"
@@ -116,9 +124,9 @@ export interface ServerCertificateRequestState extends ServerCertificateRequestD
   server_encrypted: false
 }
 
-export interface ClientCertificateData extends ServerKeyExchangeData { }
+export type ClientCertificateData = ServerKeyExchangeData & {}
 
-export interface ClientCertificateState extends ClientCertificateData {
+export type ClientCertificateState = ClientCertificateData & {
   type: "handshake"
   step: "client_finish"
   action: "client_certificate"
@@ -126,41 +134,41 @@ export interface ClientCertificateState extends ClientCertificateData {
   server_encrypted: false
 }
 
-export interface ClientChangeCipherSpecData extends ServerHelloData {
+export type ClientChangeCipherSpecData = ServerHelloData & {
   encrypter: Encrypter
   client_sequence: bigint
 }
 
-export interface ClientChangeCipherSpecState extends ClientChangeCipherSpecData {
+export type ClientChangeCipherSpecState = ClientChangeCipherSpecData & {
   type: "handshake"
   step: "client_change_cipher_spec"
   client_encrypted: true
   server_encrypted: false
 }
 
-export interface ClientFinishedData extends ClientChangeCipherSpecData { }
+export type ClientFinishedData = ClientChangeCipherSpecData & {}
 
-export interface ClientFinishedState extends ClientFinishedData {
+export type ClientFinishedState = ClientFinishedData & {
   type: "handshake"
   step: "client_finished"
   client_encrypted: true
   server_encrypted: false
 }
 
-export interface ServerChangeCipherSpecData extends ClientFinishedData {
+export type ServerChangeCipherSpecData = ClientFinishedData & {
   server_sequence: bigint
 }
 
-export interface ServerChangeCipherSpecState extends ServerChangeCipherSpecData {
+export type ServerChangeCipherSpecState = ServerChangeCipherSpecData & {
   type: "handshake"
   step: "server_change_cipher_spec"
   client_encrypted: true
   server_encrypted: true
 }
 
-export interface HandshakedData extends ServerChangeCipherSpecData { }
+export type HandshakedData = ServerChangeCipherSpecData & {}
 
-export interface HandshakedState extends HandshakedData {
+export type HandshakedState = HandshakedData & {
   type: "handshaked"
   client_encrypted: true
   server_encrypted: true
@@ -463,7 +471,7 @@ export class TlsStream extends EventTarget {
       return this.onCertificate(handshake, state)
     if (handshake.subtype === ServerHelloDone2.type)
       return this.onServerHelloDone(handshake, state)
-    if (handshake.subtype === ServerKeyExchange2None.type)
+    if (handshake.subtype === Handshake.types.server_key_exchange)
       return this.onServerKeyExchange(handshake, state)
     if (handshake.subtype === CertificateRequest2.type)
       return this.onCertificateRequest(handshake, state)
@@ -529,12 +537,24 @@ export class TlsStream extends EventTarget {
 
     const server_key_exchange = handshake.fragment.into<InstanceType<typeof clazz>>(clazz)
 
-    if (server_key_exchange instanceof ServerKeyExchange2Ephemeral) {
+    if (server_key_exchange instanceof ServerKeyExchange2DHSigned) {
       console.debug(server_key_exchange)
 
       const server_dh_params = server_key_exchange.params
 
       const state2: ServerKeyExchangeState = { ...state, action: "server_key_exchange", server_dh_params }
+
+      this.state = state2
+
+      return
+    }
+
+    if (server_key_exchange instanceof ServerKeyExchange2ECDHSigned) {
+      console.debug(server_key_exchange)
+
+      const server_ecdh_params = server_key_exchange.params
+
+      const state2: ServerKeyExchangeState = { ...state, action: "server_key_exchange", server_ecdh_params }
 
       this.state = state2
 
@@ -557,7 +577,7 @@ export class TlsStream extends EventTarget {
     this.state = state2
   }
 
-  private async computeDiffieHellman(state: ServerKeyExchangeState) {
+  private async computeDiffieHellman(state: ServerKeyExchangeState & { server_dh_params: ServerDHParams }) {
     const { dh_g, dh_p, dh_Ys } = state.server_dh_params
 
     const g = Bytes.toBigInt(dh_g.value.bytes)
@@ -653,48 +673,51 @@ export class TlsStream extends EventTarget {
       this.output.enqueue(record_certificate.export())
     }
 
-    if (!("server_dh_params" in state))
-      throw new Error(`Invalid state`)
+    if ("server_dh_params" in state) {
+      const { dh_Yc, dh_Z } = await this.computeDiffieHellman(state)
 
-    const { dh_Yc, dh_Z } = await this.computeDiffieHellman(state)
+      const handshake_client_key_exchange = ClientKeyExchange2DH.from(dh_Yc).handshake()
+      const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
 
-    const dh_yc_vector = Vector(Number16).from(new Opaque(dh_Yc))
-    const dh_public = new ClientDiffieHellmanPublicExplicit(dh_yc_vector)
+      state.messages.push(handshake_client_key_exchange.export())
 
-    const client_key_exchange = new ClientKeyExchange2DH(dh_public)
-    const handshake_client_key_exchange = client_key_exchange.handshake()
-    const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
+      this.output.enqueue(record_client_key_exchange.export())
 
-    state.messages.push(handshake_client_key_exchange.export())
+      const secrets = await this.computeSecrets(state, dh_Z)
+      const encrypter = await state.cipher.init(secrets)
 
-    this.output.enqueue(record_client_key_exchange.export())
+      const change_cipher_spec = new ChangeCipherSpec()
+      const record_change_cipher_spec = change_cipher_spec.record(state.version)
 
-    const secrets = await this.computeSecrets(state, dh_Z)
-    const encrypter = await state.cipher.init(secrets)
+      const state2: ClientChangeCipherSpecState = { ...state, step: "client_change_cipher_spec", encrypter, client_encrypted: true, client_sequence: BigInt(0) }
 
-    const change_cipher_spec = new ChangeCipherSpec()
-    const record_change_cipher_spec = change_cipher_spec.record(state.version)
+      this.state = state2
 
-    const state2: ClientChangeCipherSpecState = { ...state, step: "client_change_cipher_spec", encrypter, client_encrypted: true, client_sequence: BigInt(0) }
+      this.output.enqueue(record_change_cipher_spec.export())
 
-    this.state = state2
+      const { handshake_md, prf_md } = state2.cipher.hash
 
-    this.output.enqueue(record_change_cipher_spec.export())
+      const handshake_messages = Bytes.concat(state2.messages)
+      const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest(handshake_md, handshake_messages))
 
-    const { handshake_md, prf_md } = state2.cipher.hash
+      const verify_data = await PRF(prf_md, secrets.master_secret, "client finished", handshake_messages_hash, 12)
+      const finished = new Finished2(verify_data).handshake().record(state.version)
+      const cfinished = await finished.encrypt(state2.encrypter, state2.client_sequence++)
 
-    const handshake_messages = Bytes.concat(state2.messages)
-    const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest(handshake_md, handshake_messages))
+      this.output.enqueue(cfinished.export())
 
-    const verify_data = await PRF(prf_md, secrets.master_secret, "client finished", handshake_messages_hash, 12)
-    const finished = new Finished2(verify_data).handshake().record(state.version)
-    const cfinished = await finished.encrypt(state2.encrypter, state2.client_sequence++)
+      const state3: ClientFinishedState = { ...state2, step: "client_finished" }
 
-    this.output.enqueue(cfinished.export())
+      this.state = state3
 
-    const state3: ClientFinishedState = { ...state2, step: "client_finished" }
+      return
+    }
 
-    this.state = state3
+    if ("server_ecdh_params" in state) {
+      throw new Error("lol")
+    }
+
+    throw new Error(`Invalid state`)
   }
 
   private async onFinished(handshake: Handshake<Opaque>, state: HandshakeState) {

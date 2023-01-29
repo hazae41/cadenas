@@ -1,24 +1,21 @@
 import { Binary } from "@hazae41/binary"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
-import { DigitallySigned } from "mods/binary/signatures/digitally_signed.js"
 
-export class ServerKeyExchange2Ephemeral {
+export class ServerKeyExchange2DH {
 
   static readonly type = Handshake.types.server_key_exchange
 
   constructor(
-    readonly params: ServerDHParams,
-    readonly signed_params: DigitallySigned
+    readonly params: ServerDHParams
   ) { }
 
   size() {
-    return this.params.size() + this.signed_params.size()
+    return this.params.size()
   }
 
   write(binary: Binary) {
     this.params.write(binary)
-    this.signed_params.write(binary)
   }
 
   export() {
@@ -31,11 +28,10 @@ export class ServerKeyExchange2Ephemeral {
     const start = binary.offset
 
     const params = ServerDHParams.read(binary)
-    const signed_params = DigitallySigned.read(binary)
 
     if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
-    return new this(params, signed_params)
+    return new this(params)
   }
 }
