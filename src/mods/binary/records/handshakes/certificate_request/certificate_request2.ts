@@ -3,7 +3,7 @@ import { Array } from "mods/binary/arrays/array.js"
 import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js"
 import { Number16 } from "mods/binary/numbers/number16.js"
 import { Number8 } from "mods/binary/numbers/number8.js"
-import { Opaque } from "mods/binary/opaque.js"
+import { Opaque, SafeOpaque } from "mods/binary/opaque.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { SignatureAndHashAlgorithm } from "mods/binary/signatures/signature_and_hash_algorithm.js"
 import { LengthedVector } from "mods/binary/vectors/lengthed.js"
@@ -88,7 +88,7 @@ export class CertificateRequest2 {
 
     const certificate_types = LengthedVector(Number8, UnlengthedArray(ClientCertificateType)).read(binary)
     const supported_signature_algorithms = LengthedVector(Number16, UnlengthedArray(SignatureAndHashAlgorithm)).read(binary)
-    const certificate_authorities = LengthedVector(Number16, Opaque).read(binary)
+    const certificate_authorities = LengthedVector(Number16, SafeOpaque).read(binary)
 
     if (binary.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)

@@ -1,6 +1,6 @@
 import { Binary } from "@hazae41/binary"
 import { Number16 } from "mods/binary/numbers/number16.js"
-import { Opaque } from "mods/binary/opaque.js"
+import { Opaque, SafeOpaque } from "mods/binary/opaque.js"
 import { LengthedVector } from "mods/binary/vectors/lengthed.js"
 import { Vector } from "mods/binary/vectors/vector.js"
 
@@ -37,9 +37,9 @@ export class ServerDHParams {
   }
 
   static read(binary: Binary) {
-    const dh_p = LengthedVector(Number16, Opaque).read(binary)
-    const dh_g = LengthedVector(Number16, Opaque).read(binary)
-    const dh_Ys = LengthedVector(Number16, Opaque).read(binary)
+    const dh_p = LengthedVector(Number16, SafeOpaque).read(binary)
+    const dh_g = LengthedVector(Number16, SafeOpaque).read(binary)
+    const dh_Ys = LengthedVector(Number16, SafeOpaque).read(binary)
 
     return new this(dh_p, dh_g, dh_Ys)
   }

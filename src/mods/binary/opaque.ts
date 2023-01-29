@@ -4,6 +4,10 @@ import { Lengthed, LengthedClass, Writable } from "mods/binary/fragment.js"
 export class Opaque {
   readonly #class = Opaque
 
+  /**
+   * Bytes fragment with zero-copy reading
+   * @param bytes 
+   */
   constructor(
     readonly bytes: Uint8Array
   ) { }
@@ -38,8 +42,44 @@ export class Opaque {
     return binary.bytes
   }
 
+  /**
+   * Zero-copy read
+   * @param binary 
+   * @param length 
+   * @returns 
+   */
   static read(binary: Binary, length: number) {
     const buffer = binary.read(length)
+
+    return new this(buffer)
+  }
+}
+
+export class SafeOpaque extends Opaque {
+  readonly #class = SafeOpaque
+
+  /**
+   * Bytes fragment with safe reading
+   * @param bytes 
+   */
+  constructor(
+    readonly bytes: Uint8Array
+  ) {
+    super(bytes)
+  }
+
+  get class() {
+    return this.#class
+  }
+
+  /**
+   * Safe read
+   * @param binary 
+   * @param length 
+   * @returns 
+   */
+  static read(binary: Binary, length: number) {
+    const buffer = new Uint8Array(binary.read(length))
 
     return new this(buffer)
   }

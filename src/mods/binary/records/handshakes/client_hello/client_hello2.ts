@@ -4,7 +4,7 @@ import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js"
 import { WritableArray } from "mods/binary/arrays/writable.js"
 import { Number16 } from "mods/binary/numbers/number16.js"
 import { Number8 } from "mods/binary/numbers/number8.js"
-import { Opaque } from "mods/binary/opaque.js"
+import { Opaque, SafeOpaque } from "mods/binary/opaque.js"
 import { Random } from "mods/binary/random.js"
 import { ECPointFormats } from "mods/binary/records/handshakes/extensions/ec_point_formats/ec_point_formats.js"
 import { EllipticCurves } from "mods/binary/records/handshakes/extensions/elliptic_curves/elliptic_curves.js"
@@ -80,7 +80,7 @@ export class ClientHello2 {
     const version = binary.readUint16()
     const random = Random.read(binary)
 
-    const session_id = LengthedVector(Number8, Opaque).read(binary)
+    const session_id = LengthedVector(Number8, SafeOpaque).read(binary)
     const cipher_suites = LengthedVector(Number16, UnlengthedArray(Number16)).read(binary)
     const compression_methods = LengthedVector(Number8, UnlengthedArray(Number8)).read(binary)
 

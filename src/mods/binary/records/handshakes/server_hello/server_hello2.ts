@@ -3,7 +3,7 @@ import { Array } from "mods/binary/arrays/array.js";
 import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { Number8 } from "mods/binary/numbers/number8.js";
-import { Opaque } from "mods/binary/opaque.js";
+import { Opaque, SafeOpaque } from "mods/binary/opaque.js";
 import { Random } from "mods/binary/random.js";
 import { Handshake } from "mods/binary/records/handshakes/handshake.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
@@ -57,7 +57,7 @@ export class ServerHello2 {
 
     const server_version = binary.readUint16()
     const random = Random.read(binary)
-    const session_id = LengthedVector(Number8, Opaque).read(binary)
+    const session_id = LengthedVector(Number8, SafeOpaque).read(binary)
     const cipher_suite = binary.readUint16()
     const compression_methods = LengthedVector(Number8, UnlengthedArray(Number8)).read(binary)
 
