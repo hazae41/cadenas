@@ -1,11 +1,8 @@
-import { List } from "./binary/lists/writable.js"
-import { Number16 } from "./binary/numbers/number16.js"
+import { ClientHello2 } from "./binary/records/handshakes/client_hello/client_hello2.js"
 import { ECPointFormats } from "./binary/records/handshakes/extensions/ec_point_formats/ec_point_formats.js"
 import { EllipticCurves } from "./binary/records/handshakes/extensions/elliptic_curves/elliptic_curves.js"
-import { Extension } from "./binary/records/handshakes/extensions/extension.js"
 import { SignatureAlgorithms } from "./binary/records/handshakes/extensions/signature_algorithms/signature_algorithms.js"
-import { Extensions } from "./binary/records/handshakes/extensions/typed.js"
-import { Vector } from "./binary/vectors/writable.js"
+import { ServerHello2 } from "./binary/records/handshakes/server_hello/server_hello2.js"
 
 export interface ExtensionRecord {
   signature_algorithms?: SignatureAlgorithms,
@@ -13,12 +10,12 @@ export interface ExtensionRecord {
   ec_point_formats?: ECPointFormats
 }
 
-export function getClientExtensionRecord(vector?: Vector<Number16, List<Extension<Extensions>>>) {
+export function getClientExtensionRecord(client_hello: ClientHello2) {
   const record: ExtensionRecord = {}
 
-  if (!vector) return record
+  if (!client_hello.extensions) return record
 
-  for (const extension of vector.value.array) {
+  for (const extension of client_hello.extensions.value.array) {
 
     if (extension.data.value instanceof SignatureAlgorithms) {
       record.signature_algorithms = extension.data.value
@@ -41,14 +38,14 @@ export function getClientExtensionRecord(vector?: Vector<Number16, List<Extensio
   return record
 }
 
-export function getServerExtensionRecord(client_extensions: ExtensionRecord, vector?: Vector<Number16, List<Extension<Extensions>>>) {
+export function getServerExtensionRecord(server_hello: ServerHello2, client_extensions: ExtensionRecord) {
   const server_extensions: ExtensionRecord = {}
 
-  if (!vector) return server_extensions
+  if (!server_hello.extensions) return server_extensions
 
   const types = new Set<number>()
 
-  for (const extension of vector.value.array) {
+  for (const extension of server_hello.extensions.value.array) {
 
     if (types.has(extension.subtype))
       throw new Error(`Duplicated extension type`)

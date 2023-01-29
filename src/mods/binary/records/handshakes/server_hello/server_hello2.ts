@@ -1,5 +1,4 @@
 import { Binary } from "@hazae41/binary";
-import { Writable } from "mods/binary/fragment.js";
 import { UnlengthedList } from "mods/binary/lists/unlengthed.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
@@ -10,9 +9,9 @@ import { Extension } from "mods/binary/records/handshakes/extensions/extension.j
 import { Handshake } from "mods/binary/records/handshakes/handshake.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/writable.js";
-import { TypedExtension } from "../extensions/typed.js";
+import { Extensions, TypedExtension } from "../extensions/typed.js";
 
-export class ServerHello2<E extends Writable = Writable> {
+export class ServerHello2 {
 
   static readonly type = Handshake.types.server_hello
 
@@ -22,7 +21,7 @@ export class ServerHello2<E extends Writable = Writable> {
     readonly session_id: Vector<Number8, Opaque>,
     readonly cipher_suite: number,
     readonly compression_methods: Vector<Number8, List<Number8>>,
-    readonly extensions?: Vector<Number16, List<Extension<E>>>
+    readonly extensions?: Vector<Number16, List<Extension<Extensions>>>
   ) { }
 
   size() {
