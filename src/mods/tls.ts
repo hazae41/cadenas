@@ -18,7 +18,7 @@ import { ClientHello2 } from "mods/binary/records/handshakes/client_hello/client
 import { ClientDiffieHellmanPublicExplicit } from "mods/binary/records/handshakes/client_key_exchange/client_diffie_hellman_public.js"
 import { ClientKeyExchange2DH } from "mods/binary/records/handshakes/client_key_exchange/client_key_exchange2_dh.js"
 import { Finished2 } from "mods/binary/records/handshakes/finished/finished2.js"
-import { Handshake, HandshakeHeader } from "mods/binary/records/handshakes/handshake.js"
+import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ServerHello2 } from "mods/binary/records/handshakes/server_hello/server_hello2.js"
 import { ServerHelloDone2 } from "mods/binary/records/handshakes/server_hello_done/server_hello_done2.js"
 import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
@@ -446,9 +446,8 @@ export class TlsStream extends EventTarget {
       throw new Error(`Invalid state`)
 
     const binary = new Binary(record.fragment.bytes)
-    const header = HandshakeHeader.read(binary, binary.view.length)
-    const fragment = Opaque.read(binary, header.length)
-    const handshake = Handshake.from(header, fragment)
+    const length = record.fragment.bytes.length
+    const handshake = Handshake.read(binary, length)
 
     if (handshake.subtype !== Handshake.types.hello_request)
       this.state.messages.push(new Uint8Array(record.fragment.bytes))

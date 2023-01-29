@@ -3,54 +3,6 @@ import { Writable } from "mods/binary/fragment.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { PlaintextRecord, Record } from "mods/binary/records/record.js"
 
-export class HandshakeHeader {
-  readonly #class = HandshakeHeader
-
-  static readonly type = Record.types.handshake
-
-  constructor(
-    readonly subtype: number,
-    readonly length: number
-  ) { }
-
-  get class() {
-    return this.#class
-  }
-
-  get type() {
-    return this.#class.type
-  }
-
-  size() {
-    return 1 + 3
-  }
-
-  write(binary: Binary) {
-    binary.writeUint8(this.subtype)
-    binary.writeUint24(this.length)
-  }
-
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
-  }
-
-  static read(binary: Binary, length: number) {
-    console.log(binary.after)
-
-    const start = binary.offset
-
-    const type = binary.readUint8()
-    const sublength = binary.readUint24()
-
-    if (binary.offset - start !== length - sublength)
-      throw new Error(`Invalid ${this.name} length`)
-
-    return new this(type, sublength)
-  }
-}
-
 export class Handshake<T extends Writable> {
   readonly #class = Handshake
 
@@ -80,10 +32,6 @@ export class Handshake<T extends Writable> {
 
   get type() {
     return this.#class.type
-  }
-
-  static from<T extends Writable>(header: HandshakeHeader, fragment: T) {
-    return new this(header.subtype, fragment)
   }
 
   size() {
