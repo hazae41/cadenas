@@ -4,7 +4,6 @@ import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchan
 import { DigitallySigned } from "mods/binary/signatures/digitally_signed.js"
 
 export class ServerKeyExchange2Ephemeral {
-  readonly #class = ServerKeyExchange2Ephemeral
 
   static readonly type = Handshake.types.server_key_exchange
 

@@ -1,7 +1,6 @@
 import { Binary } from "@hazae41/binary";
 
 export class NamedCurve {
-  readonly #class = NamedCurve
 
   static readonly types = {
     secp256r1: 23,

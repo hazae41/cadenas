@@ -5,7 +5,6 @@ import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export class ServerDHParams {
-  readonly #class = ServerDHParams
 
   constructor(
     readonly dh_p: Vector<Number16, Opaque>,

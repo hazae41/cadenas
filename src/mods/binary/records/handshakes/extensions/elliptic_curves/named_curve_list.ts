@@ -7,7 +7,6 @@ import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export class NamedCurveList {
-  readonly #class = NamedCurveList
 
   constructor(
     readonly named_curve_list: Vector<Number16, List<NamedCurve>>

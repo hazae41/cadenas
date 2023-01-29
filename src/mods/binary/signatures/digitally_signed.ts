@@ -6,7 +6,6 @@ import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export class DigitallySigned {
-  readonly #class = DigitallySigned
 
   constructor(
     readonly algorithm: SignatureAndHashAlgorithm,

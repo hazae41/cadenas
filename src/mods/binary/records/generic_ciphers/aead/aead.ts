@@ -5,7 +5,6 @@ import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/recor
 import { AEADEncrypter } from "mods/ciphers/encryptions/encryption.js";
 
 export class GenericAEADCipher {
-  readonly #class = GenericAEADCipher
 
   constructor(
     readonly nonce_explicit: Uint8Array,

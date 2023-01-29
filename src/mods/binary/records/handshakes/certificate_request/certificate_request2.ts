@@ -10,7 +10,6 @@ import { LengthedVector } from "mods/binary/vectors/lengthed.js"
 import { Vector } from "mods/binary/vectors/writable.js"
 
 export class ClientCertificateType {
-  readonly #class = ClientCertificateType
 
   static readonly types = {
     rsa_sign: 1,
@@ -46,7 +45,6 @@ export class ClientCertificateType {
 }
 
 export class CertificateRequest2 {
-  readonly #class = CertificateRequest2
 
   static readonly type = Handshake.types.certificate_request
 

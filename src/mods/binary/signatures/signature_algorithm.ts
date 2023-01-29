@@ -1,7 +1,6 @@
 import { Binary } from "@hazae41/binary";
 
 export class SignatureAlgorithm {
-  readonly #class = SignatureAlgorithm
 
   static readonly types = {
     anonymous: 0,

@@ -2,7 +2,6 @@ import { Binary } from "@hazae41/binary"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 
 export class ServerHelloDone2 {
-  readonly #class = ServerHelloDone2
 
   static readonly type = Handshake.types.server_hello_done
 

@@ -13,7 +13,6 @@ import { Vector } from "mods/binary/vectors/writable.js";
 import { OpaqueExtension } from "../extensions/opaque.js";
 
 export class ServerHello2<E extends Writable = Writable> {
-  readonly #class = ServerHello2
 
   static readonly type = Handshake.types.server_hello
 
