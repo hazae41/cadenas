@@ -419,6 +419,14 @@ export class TlsStream extends EventTarget {
     const alert = record.fragment.into(Alert)
 
     console.log(alert)
+
+    if (alert.description === Alert.descriptions.close_notify)
+      return this.input.terminate()
+
+    if (alert.level === Alert.levels.fatal)
+      throw new Error(`Fatal alert ${alert.description}`)
+
+    console.warn(`Warning alert ${alert.description}`)
   }
 
   private async onChangeCipherSpec(record: PlaintextRecord<Opaque>) {
