@@ -61,12 +61,12 @@ export class ServerHello2 {
     const cipher_suite = binary.readUint16()
     const compression_methods = LengthedVector(Number8, UnlengthedArray(Number8)).read(binary)
 
-    if (binary.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
-
     const extensions = binary.offset - start < length
       ? LengthedVector(Number16, Opaque).read(binary)
       : undefined
+
+    if (binary.offset - start !== length)
+      throw new Error(`Invalid ${this.name} length`)
 
     return new this(server_version, random, session_id, cipher_suite, compression_methods, extensions)
   }

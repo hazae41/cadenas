@@ -17,56 +17,6 @@ export namespace Record {
 
 }
 
-export class RecordHeader {
-  readonly #class = RecordHeader
-
-  constructor(
-    readonly subtype: number,
-    readonly version: number,
-    readonly length: number
-  ) { }
-
-  size() {
-    return 1 + 2 + 2
-  }
-
-  write(binary: Binary) {
-    binary.writeUint8(this.subtype)
-    binary.writeUint16(this.version)
-    binary.writeUint16(this.length)
-  }
-
-  export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
-  }
-
-  static tryRead(binary: Binary) {
-    const start = binary.offset
-
-    try {
-      const header = this.read(binary)
-
-      if (binary.remaining < header.length)
-        throw new Error(`Partial record`)
-
-      return header
-    } catch (e: unknown) {
-      binary.offset = start
-    }
-  }
-
-  static read(binary: Binary) {
-    const type = binary.readUint8()
-    const version = binary.readUint16()
-    const length = binary.readUint16()
-
-    return new this(type, version, length)
-  }
-}
-
-
 export class PlaintextRecord<T extends Writable> {
   readonly #class = PlaintextRecord<T>
 
@@ -78,13 +28,6 @@ export class PlaintextRecord<T extends Writable> {
 
   get class() {
     return this.#class
-  }
-
-  static from<T extends Writable>(
-    header: RecordHeader,
-    fragment: T
-  ) {
-    return new this<T>(header.subtype, header.version, fragment)
   }
 
   size() {
@@ -104,18 +47,23 @@ export class PlaintextRecord<T extends Writable> {
     return binary.bytes
   }
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
-
+  static read(binary: Binary) {
     const subtype = binary.readUint8()
     const version = binary.readUint16()
     const size = binary.readUint16()
     const fragment = Opaque.read(binary, size)
 
-    if (binary.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
-
     return new this(subtype, version, fragment)
+  }
+
+  static tryRead(binary: Binary) {
+    const start = binary.offset
+
+    try {
+      return this.read(binary)
+    } catch (e: unknown) {
+      binary.offset = start
+    }
   }
 
   async encrypt(encrypter: Encrypter, sequence: bigint) {
@@ -146,8 +94,13 @@ export class BlockCiphertextRecord {
     return this.#class
   }
 
-  static from(header: RecordHeader, fragment: GenericBlockCipher) {
-    return new this(header.subtype, header.version, fragment)
+  static from(record: PlaintextRecord<Opaque>) {
+    const binary = new Binary(record.fragment.bytes)
+    const length = record.fragment.bytes.length
+
+    const fragment = GenericBlockCipher.read(binary, length)
+
+    return new this(record.subtype, record.version, fragment)
   }
 
   size() {
@@ -186,8 +139,13 @@ export class AEADCiphertextRecord {
     return this.#class
   }
 
-  static from(header: RecordHeader, fragment: GenericAEADCipher) {
-    return new this(header.subtype, header.version, fragment)
+  static from(record: PlaintextRecord<Opaque>) {
+    const binary = new Binary(record.fragment.bytes)
+    const length = record.fragment.bytes.length
+
+    const fragment = GenericAEADCipher.read(binary, length)
+
+    return new this(record.subtype, record.version, fragment)
   }
 
   size() {

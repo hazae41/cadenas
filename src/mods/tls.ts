@@ -12,8 +12,6 @@ import { Number24 } from "mods/binary/numbers/number24.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Alert } from "mods/binary/records/alerts/alert.js"
 import { ChangeCipherSpec } from "mods/binary/records/change_cipher_spec/change_cipher_spec.js"
-import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
-import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { Certificate2 } from "mods/binary/records/handshakes/certificate/certificate2.js"
 import { CertificateRequest2 } from "mods/binary/records/handshakes/certificate_request/certificate_request2.js"
 import { ClientHello2 } from "mods/binary/records/handshakes/client_hello/client_hello2.js"
@@ -26,7 +24,7 @@ import { ServerHelloDone2 } from "mods/binary/records/handshakes/server_hello_do
 import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
 import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
-import { AEADCiphertextRecord, BlockCiphertextRecord, PlaintextRecord, Record, RecordHeader } from "mods/binary/records/record.js"
+import { AEADCiphertextRecord, BlockCiphertextRecord, PlaintextRecord, Record } from "mods/binary/records/record.js"
 import { Vector } from "mods/binary/vectors/vector.js"
 import { WritableVector } from "mods/binary/vectors/writable.js"
 import { Cipher } from "mods/ciphers/cipher.js"
@@ -326,12 +324,12 @@ export class TlsStream extends EventTarget {
     this.rbinary.view = this.buffer.subarray(0, this.wbinary.offset)
 
     while (this.rbinary.remaining) {
-      const header = RecordHeader.tryRead(this.rbinary)
+      const record = PlaintextRecord.tryRead(this.rbinary)
 
-      if (!header) break
+      if (!record) break
 
       try {
-        await this.onRecord(header, this.rbinary)
+        await this.onRecord(record)
       } catch (e: unknown) {
         console.error(e)
         throw e
@@ -378,30 +376,25 @@ export class TlsStream extends EventTarget {
     this.output.enqueue(ciphertext.export())
   }
 
-  private async onRecord(header: RecordHeader, binary: Binary) {
+  private async onRecord(record: PlaintextRecord<Opaque>) {
     if (this.state.server_encrypted)
-      return await this.onCiphertextRecord(header, binary)
-
-    const fragment = Opaque.read(binary, header.length)
-    const record = PlaintextRecord.from(header, fragment)
+      return await this.onCiphertextRecord(record)
 
     return await this.onPlaintextRecord(record)
   }
 
-  private async onCiphertextRecord(header: RecordHeader, binary: Binary) {
+  private async onCiphertextRecord(record: PlaintextRecord<Opaque>) {
     if (!this.state.server_encrypted)
       throw new Error(`Invalid state`)
 
     if (this.state.encrypter.cipher_type === "block") {
-      const gcipher = GenericBlockCipher.read(binary, header.length)
-      const cipher = BlockCiphertextRecord.from(header, gcipher)
+      const cipher = BlockCiphertextRecord.from(record)
       const plain = await cipher.decrypt(this.state.encrypter, this.state.server_sequence++)
       return await this.onPlaintextRecord(plain)
     }
 
     if (this.state.encrypter.cipher_type === "aead") {
-      const gcipher = GenericAEADCipher.read(binary, header.length)
-      const cipher = AEADCiphertextRecord.from(header, gcipher)
+      const cipher = AEADCiphertextRecord.from(record)
       const plain = await cipher.decrypt(this.state.encrypter, this.state.server_sequence++)
       return await this.onPlaintextRecord(plain)
     }
@@ -495,6 +488,10 @@ export class TlsStream extends EventTarget {
       throw new Error(`Unsupported ${server_hello.cipher_suite} cipher suite`)
 
     const server_random = server_hello.random.export()
+
+    // if (server_hello.extensions) {
+    //   server_hello.extensions.value.
+    // }
 
     this.state = { ...state, step: "server_hello", version, cipher, server_random }
   }
