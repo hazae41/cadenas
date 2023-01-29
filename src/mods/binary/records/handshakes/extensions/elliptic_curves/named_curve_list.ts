@@ -25,10 +25,6 @@ export class NamedCurveList {
     return new this(named_curve_list)
   }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return this.named_curve_list.size()
   }

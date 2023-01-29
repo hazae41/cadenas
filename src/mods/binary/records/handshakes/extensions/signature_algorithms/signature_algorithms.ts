@@ -24,10 +24,6 @@ export class SignatureAlgorithms {
     return new this(supported_signature_algorithms)
   }
 
-  get class() {
-    return this.#class
-  }
-
   get type() {
     return this.#class.type
   }

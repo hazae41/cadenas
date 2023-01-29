@@ -9,10 +9,6 @@ export class Number24 {
     readonly value: number
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return this.#class.size
   }

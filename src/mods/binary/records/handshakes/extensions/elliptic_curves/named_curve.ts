@@ -23,10 +23,6 @@ export class NamedCurve {
     readonly subtype: number
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return 2
   }

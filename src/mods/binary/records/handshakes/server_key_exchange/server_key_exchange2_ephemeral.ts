@@ -13,10 +13,6 @@ export class ServerKeyExchange2Ephemeral {
     readonly signed_params: DigitallySigned
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return this.params.size() + this.signed_params.size()
   }

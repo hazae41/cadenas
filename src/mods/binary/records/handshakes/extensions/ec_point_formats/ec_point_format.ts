@@ -1,7 +1,6 @@
 import { Binary } from "@hazae41/binary"
 
 export class ECPointFormat {
-  readonly #class = ECPointFormat
 
   static readonly types = {
     uncompressed: 0,
@@ -16,10 +15,6 @@ export class ECPointFormat {
   constructor(
     readonly subtype: number
   ) { }
-
-  get class() {
-    return this.#class
-  }
 
   size() {
     return 1

@@ -16,10 +16,6 @@ export class Certificate2 {
     readonly certificate_list: Vector<Number24, List<Vector<Number24, Opaque>>>
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   get type() {
     return this.#class.type
   }

@@ -2,8 +2,6 @@ import { Binary } from "@hazae41/binary"
 import { Lengthed, Writable } from "mods/binary/fragment.js"
 
 export class Opaque {
-  readonly #class = Opaque
-
   /**
    * Bytes fragment with zero-copy reading
    * @param bytes 
@@ -14,10 +12,6 @@ export class Opaque {
 
   static empty() {
     return new this(new Uint8Array())
-  }
-
-  get class() {
-    return this.#class
   }
 
   static from(fragment: Writable) {
@@ -56,8 +50,6 @@ export class Opaque {
 }
 
 export class SafeOpaque extends Opaque {
-  readonly #class = SafeOpaque
-
   /**
    * Bytes fragment with safe reading
    * @param bytes 
@@ -66,10 +58,6 @@ export class SafeOpaque extends Opaque {
     readonly bytes: Uint8Array
   ) {
     super(bytes)
-  }
-
-  get class() {
-    return this.#class
   }
 
   /**

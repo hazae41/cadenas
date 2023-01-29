@@ -10,10 +10,6 @@ export class Finished2 {
     readonly verify_data: Uint8Array
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   get type() {
     return this.#class.type
   }

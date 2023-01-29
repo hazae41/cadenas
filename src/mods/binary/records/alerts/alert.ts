@@ -46,10 +46,6 @@ export class Alert {
     readonly description: number
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   get type() {
     return this.#class.type
   }

@@ -22,10 +22,6 @@ export class AES_128_GCM {
     return new this(secrets, encryption, decryption)
   }
 
-  get class() {
-    return this.#class
-  }
-
   get cipher_type() {
     return this.#class.cipher_type
   }

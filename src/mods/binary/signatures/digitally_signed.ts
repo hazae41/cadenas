@@ -13,10 +13,6 @@ export class DigitallySigned {
     readonly signature: Vector<Number16, Opaque>
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return this.algorithm.size() + this.signature.size()
   }

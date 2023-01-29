@@ -18,17 +18,11 @@ export namespace Record {
 }
 
 export class PlaintextRecord<T extends Writable> {
-  readonly #class = PlaintextRecord<T>
-
   constructor(
     readonly subtype: number,
     readonly version: number,
     readonly fragment: T
   ) { }
-
-  get class() {
-    return this.#class
-  }
 
   size() {
     return 1 + 2 + 2 + this.fragment.size()
@@ -82,17 +76,11 @@ export class PlaintextRecord<T extends Writable> {
 }
 
 export class BlockCiphertextRecord {
-  readonly #class = BlockCiphertextRecord
-
   constructor(
     readonly subtype: number,
     readonly version: number,
     readonly fragment: GenericBlockCipher
   ) { }
-
-  get class() {
-    return this.#class
-  }
 
   static from(record: PlaintextRecord<Opaque>) {
     const binary = new Binary(record.fragment.bytes)
@@ -127,17 +115,11 @@ export class BlockCiphertextRecord {
 }
 
 export class AEADCiphertextRecord {
-  readonly #class = AEADCiphertextRecord
-
   constructor(
     readonly subtype: number,
     readonly version: number,
     readonly fragment: GenericAEADCipher
   ) { }
-
-  get class() {
-    return this.#class
-  }
 
   static from(record: PlaintextRecord<Opaque>) {
     const binary = new Binary(record.fragment.bytes)

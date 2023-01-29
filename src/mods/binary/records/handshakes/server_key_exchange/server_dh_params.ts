@@ -13,10 +13,6 @@ export class ServerDHParams {
     readonly dh_Ys: Vector<Number16, Opaque>
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return 0
       + this.dh_p.size()

@@ -2,8 +2,6 @@ import { Binary } from "@hazae41/binary"
 import { Bytes } from "libs/bytes/bytes.js"
 
 export class Random {
-  readonly #class = Random
-
   constructor(
     readonly gmt_unix_time: number,
     readonly random_bytes: Uint8Array
@@ -14,10 +12,6 @@ export class Random {
     const random_bytes = Bytes.random(28)
 
     return new this(gmt_unix_time, random_bytes)
-  }
-
-  get class() {
-    return this.#class
   }
 
   size() {

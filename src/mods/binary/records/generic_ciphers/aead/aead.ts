@@ -12,10 +12,6 @@ export class GenericAEADCipher {
     readonly block: Uint8Array
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return this.nonce_explicit.length + this.block.length
   }

@@ -26,10 +26,6 @@ export class ClientCertificateType {
     readonly type: number
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return 1
   }
@@ -59,10 +55,6 @@ export class CertificateRequest2 {
     readonly supported_signature_algorithms: Vector<Number16, List<SignatureAndHashAlgorithm>>,
     readonly certificate_authorities: Vector<Number16, Opaque>
   ) { }
-
-  get class() {
-    return this.#class
-  }
 
   size() {
     return 0

@@ -14,10 +14,6 @@ export class SignatureAndHashAlgorithm {
     readonly signature: SignatureAlgorithm
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return this.hash.size() + this.signature.size()
   }

@@ -17,16 +17,10 @@ function modulup(x: number, m: number) {
 }
 
 export class GenericBlockCipher {
-  readonly #class = GenericBlockCipher
-
   constructor(
     readonly iv: Uint8Array,
     readonly block: Uint8Array
   ) { }
-
-  get class() {
-    return this.#class
-  }
 
   size() {
     return this.iv.length + this.block.length

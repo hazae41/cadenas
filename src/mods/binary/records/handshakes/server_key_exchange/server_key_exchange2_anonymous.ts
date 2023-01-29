@@ -11,10 +11,6 @@ export class ServerKeyExchange2Anonymous {
     readonly params: ServerDHParams
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return this.params.size()
   }

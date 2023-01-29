@@ -10,10 +10,6 @@ export class HMAC_SHA256 {
     readonly mac_key: CryptoKey
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   get mac_length() {
     return this.#class.mac_length
   }
@@ -44,10 +40,6 @@ export class SHA256 {
   static readonly prf_md = "SHA-256" as const
 
   constructor() { }
-
-  get class() {
-    return this.#class
-  }
 
   get mac_length() {
     return this.#class.mac_length

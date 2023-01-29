@@ -27,10 +27,6 @@ export class HashAlgorithm {
     readonly type: number
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return 1
   }

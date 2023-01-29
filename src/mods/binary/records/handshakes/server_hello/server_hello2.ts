@@ -26,10 +26,6 @@ export class ServerHello2<E extends Writable = Writable> {
     readonly extensions?: Vector<Number16, List<Extension<E>>>
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return 0
       + 2

@@ -24,10 +24,6 @@ export class ServerKeyExchange2None {
 
   constructor() { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return 0
   }

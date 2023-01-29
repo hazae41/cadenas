@@ -28,8 +28,6 @@ export type Encrypter =
   | AEADEncrypter
 
 export interface BlockEncrypter {
-  readonly class: BlockEncryption
-
   readonly cipher_type: "block"
   readonly enc_key_length: number
   readonly fixed_iv_length: number
@@ -42,8 +40,6 @@ export interface BlockEncrypter {
 }
 
 export interface AEADEncrypter {
-  readonly class: AEADEncryption
-
   readonly cipher_type: "aead"
   readonly enc_key_length: number
   readonly fixed_iv_length: number

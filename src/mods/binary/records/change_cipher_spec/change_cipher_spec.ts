@@ -14,10 +14,6 @@ export class ChangeCipherSpec {
     readonly subtype: number = ChangeCipherSpec.types.change_cipher_spec
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   get type() {
     return this.#class.type
   }
@@ -37,7 +33,7 @@ export class ChangeCipherSpec {
   }
 
   record(version: number) {
-    return new PlaintextRecord<ChangeCipherSpec>(this.class.type, version, this)
+    return new PlaintextRecord<ChangeCipherSpec>(this.#class.type, version, this)
   }
 
   static read(binary: Binary, length: number) {

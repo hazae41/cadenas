@@ -8,10 +8,6 @@ export class ServerHelloDone2 {
 
   constructor() { }
 
-  get class() {
-    return this.#class
-  }
-
   size() {
     return 0
   }

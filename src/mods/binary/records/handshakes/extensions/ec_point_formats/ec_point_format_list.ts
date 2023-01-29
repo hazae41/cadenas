@@ -7,8 +7,6 @@ import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export class ECPointFormatList {
-  readonly #class = ECPointFormatList
-
   constructor(
     readonly ec_point_format_list: Vector<Number8, List<ECPointFormat>>
   ) { }
@@ -23,10 +21,6 @@ export class ECPointFormatList {
     const ec_point_format_list = Vector(Number8).from(List.from(ec_point_formats))
 
     return new this(ec_point_format_list)
-  }
-
-  get class() {
-    return this.#class
   }
 
   size() {

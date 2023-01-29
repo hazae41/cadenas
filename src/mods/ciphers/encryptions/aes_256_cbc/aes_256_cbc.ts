@@ -25,10 +25,6 @@ export class AES_256_CBC {
     return new this(macher, encryption, decryption)
   }
 
-  get class() {
-    return this.#class
-  }
-
   get cipher_type() {
     return this.#class.cipher_type
   }

@@ -11,10 +11,6 @@ export class ClientKeyExchange2DH {
     readonly exchange_keys: ClientDiffieHellmanPublicExplicit
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   get type() {
     return this.#class.type
   }

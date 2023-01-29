@@ -26,10 +26,6 @@ export class Handshake<T extends Writable> {
     readonly fragment: T
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   get type() {
     return this.#class.type
   }

@@ -29,10 +29,6 @@ export class ClientHello2 {
     readonly extensions?: Vector<Number16, List<Extension>>
   ) { }
 
-  get class() {
-    return this.#class
-  }
-
   get type() {
     return this.#class.type
   }
