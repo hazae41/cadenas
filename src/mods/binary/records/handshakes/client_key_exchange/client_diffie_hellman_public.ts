@@ -4,7 +4,7 @@ import { Opaque, SafeOpaque } from "mods/binary/opaque.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
-export class ClientDiffieHellmanPublicExplicit {
+export class ClientDiffieHellmanPublic {
 
   constructor(
     readonly dh_Yc: Vector<Number16, Opaque>

@@ -25,6 +25,7 @@ import { Vector } from "mods/binary/vectors/writable.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 import { Encrypter } from "mods/ciphers/encryptions/encryption.js"
 import { Secrets } from "mods/ciphers/secrets.js"
+import { ClientKeyExchange2ECDH } from "./binary/records/handshakes/client_key_exchange/client_key_exchange2_ecdh.js"
 import { ServerECDHParams } from "./binary/records/handshakes/server_key_exchange/server_ecdh_params.js"
 import { getServerKeyExchange2 } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2DHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_dh_signed.js"
@@ -680,7 +681,6 @@ export class TlsStream extends EventTarget {
       const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
 
       state.messages.push(handshake_client_key_exchange.export())
-
       this.output.enqueue(record_client_key_exchange.export())
 
       const secrets = await this.computeSecrets(state, dh_Z)
@@ -714,7 +714,47 @@ export class TlsStream extends EventTarget {
     }
 
     if ("server_ecdh_params" in state) {
-      throw new Error("lol")
+      const yc = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"])
+      const ecdh_Yc = new Uint8Array(await crypto.subtle.exportKey("raw", yc.publicKey))
+
+      const handshake_client_key_exchange = ClientKeyExchange2ECDH.from(ecdh_Yc).handshake()
+      const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
+
+      state.messages.push(handshake_client_key_exchange.export())
+      this.output.enqueue(record_client_key_exchange.export())
+
+      const ecdh_Ys = state.server_ecdh_params.public_point.point.value.bytes
+      const Ys = await crypto.subtle.importKey("raw", ecdh_Ys, { name: "ECDH", namedCurve: "P-256" }, false, [])
+      const ecdh_Z = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: Ys }, yc.privateKey, 256))
+
+      const secrets = await this.computeSecrets(state, ecdh_Z)
+      const encrypter = await state.cipher.init(secrets)
+
+      const change_cipher_spec = new ChangeCipherSpec()
+      const record_change_cipher_spec = change_cipher_spec.record(state.version)
+
+      const state2: ClientChangeCipherSpecState = { ...state, step: "client_change_cipher_spec", encrypter, client_encrypted: true, client_sequence: BigInt(0) }
+
+      this.state = state2
+
+      this.output.enqueue(record_change_cipher_spec.export())
+
+      const { handshake_md, prf_md } = state2.cipher.hash
+
+      const handshake_messages = Bytes.concat(state2.messages)
+      const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest(handshake_md, handshake_messages))
+
+      const verify_data = await PRF(prf_md, secrets.master_secret, "client finished", handshake_messages_hash, 12)
+      const finished = new Finished2(verify_data).handshake().record(state.version)
+      const cfinished = await finished.encrypt(state2.encrypter, state2.client_sequence++)
+
+      this.output.enqueue(cfinished.export())
+
+      const state3: ClientFinishedState = { ...state2, step: "client_finished" }
+
+      this.state = state3
+
+      return
     }
 
     throw new Error(`Invalid state`)
