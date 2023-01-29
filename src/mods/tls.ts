@@ -193,7 +193,7 @@ export class TlsStream extends EventTarget {
   private _input?: TransformStreamDefaultController<Uint8Array>
   private _output?: TransformStreamDefaultController<Uint8Array>
 
-  private buffer = Bytes.allocUnsafe(4 * 4096)
+  private buffer = Bytes.allocUnsafe(64 * 1024)
   private wbinary = new Binary(this.buffer)
   private rbinary = new Binary(this.buffer)
 
@@ -335,7 +335,7 @@ export class TlsStream extends EventTarget {
       try {
         await this.onRecord(record, this.state)
       } catch (e: unknown) {
-        console.error(e)
+        console.error("Cadenas", e)
         throw e
       }
     }
@@ -350,14 +350,14 @@ export class TlsStream extends EventTarget {
     }
 
     if (this.rbinary.remaining && this.wbinary.remaining < 4096) {
-      console.debug(`Reallocating buffer`)
+      console.debug("Cadenas", `Reallocating buffer`)
 
       const remaining = this.buffer.subarray(this.rbinary.offset, this.wbinary.offset)
 
       this.rbinary.offset = 0
       this.wbinary.offset = 0
 
-      this.buffer = Bytes.allocUnsafe(4 * 4096)
+      this.buffer = Bytes.allocUnsafe(64 * 1024)
       this.rbinary.view = this.buffer
       this.wbinary.view = this.buffer
 

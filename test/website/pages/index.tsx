@@ -45,7 +45,7 @@ export default function Home() {
     // const headers = { "Content-Type": "application/json" }
     // const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
 
-    const res = await fetch("https://google.com/", { stream: tls })
+    const res = await fetch("https://twitter.com/", { stream: tls })
     console.log(res)
 
     const text = await res.text()
