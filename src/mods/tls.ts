@@ -630,7 +630,7 @@ export class TlsStream extends EventTarget {
     console.log(server_hello_done)
 
     if ("certificate_request" in state) {
-      const certificate_list = WritableVector(Number24).from(WritableArray().from<Vector<Number24, Opaque>>([]))
+      const certificate_list = WritableVector(Number24).from(WritableArray.from<Vector<Number24, Opaque>>([]))
 
       const certificate = new Certificate2(certificate_list)
       const handshake_certificate = certificate.handshake()

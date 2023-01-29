@@ -43,14 +43,14 @@ export class ClientHello2 {
     const random = Random.default()
 
     const session_id = WritableVector(Number8).from(Opaque.empty())
-    const cipher_suites = WritableVector(Number16).from(WritableArray().from(ciphers.map(it => new Number16(it.id))))
-    const compression_methods = WritableVector(Number8).from(WritableArray().from([new Number8(0)]))
+    const cipher_suites = WritableVector(Number16).from(WritableArray.from(ciphers.map(it => new Number16(it.id))))
+    const compression_methods = WritableVector(Number8).from(WritableArray.from([new Number8(0)]))
 
     const signature_algorithms = SignatureAlgorithms.default().extension()
     const elliptic_curves = EllipticCurves.default().extension()
     const ec_point_formats = ECPointFormats.default().extension()
 
-    const extensions = WritableVector(Number16).from(WritableArray().from([signature_algorithms, elliptic_curves, ec_point_formats]))
+    const extensions = WritableVector(Number16).from(WritableArray.from([signature_algorithms, elliptic_curves, ec_point_formats]))
 
     return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
   }

@@ -21,7 +21,7 @@ export class SignatureAlgorithms {
   static default() {
     const { rsaWithSha256 } = SignatureAndHashAlgorithm.instances
 
-    const supported_signature_algorithms = WritableVector(Number16).from(WritableArray().from([rsaWithSha256]))
+    const supported_signature_algorithms = WritableVector(Number16).from(WritableArray.from([rsaWithSha256]))
 
     return new this(supported_signature_algorithms)
   }

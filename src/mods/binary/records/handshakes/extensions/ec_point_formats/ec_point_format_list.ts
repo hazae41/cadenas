@@ -22,7 +22,7 @@ export class ECPointFormatList {
   }
 
   static from(ec_point_formats: ECPointFormat[]) {
-    const ec_point_format_list = WritableVector(Number8).from(WritableArray().from(ec_point_formats))
+    const ec_point_format_list = WritableVector(Number8).from(WritableArray.from(ec_point_formats))
 
     return new this(ec_point_format_list)
   }

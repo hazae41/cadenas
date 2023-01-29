@@ -22,7 +22,7 @@ export class NamedCurveList {
   }
 
   static from(named_curves: NamedCurve[]) {
-    const named_curve_list = WritableVector(Number16).from(WritableArray().from(named_curves))
+    const named_curve_list = WritableVector(Number16).from(WritableArray.from(named_curves))
 
     return new this(named_curve_list)
   }
