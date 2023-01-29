@@ -6,7 +6,7 @@ import { CloseEvent } from "libs/events/close.js"
 import { ErrorEvent } from "libs/events/error.js"
 import { Future } from "libs/futures/future.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
-import { WritableArray } from "mods/binary/arrays/writable.js"
+import { List } from "mods/binary/lists/writable.js"
 import { Number16 } from "mods/binary/numbers/number16.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
 import { Opaque } from "mods/binary/opaque.js"
@@ -29,8 +29,7 @@ import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchan
 import { getServerKeyExchange2, ServerKeyExchange2None } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2Ephemeral } from "mods/binary/records/handshakes/server_key_exchange/server_key_exchange2_ephemeral.js"
 import { AEADCiphertextRecord, BlockCiphertextRecord, PlaintextRecord, Record } from "mods/binary/records/record.js"
-import { Vector } from "mods/binary/vectors/vector.js"
-import { WritableVector } from "mods/binary/vectors/writable.js"
+import { Vector } from "mods/binary/vectors/writable.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 import { Encrypter } from "mods/ciphers/encryptions/encryption.js"
 import { Secrets } from "mods/ciphers/secrets.js"
@@ -675,7 +674,7 @@ export class TlsStream extends EventTarget {
     console.debug(server_hello_done)
 
     if ("certificate_request" in state) {
-      const certificate_list = WritableVector(Number24).from(WritableArray.from<Vector<Number24, Opaque>>([]))
+      const certificate_list = Vector(Number24).from(List.from<Vector<Number24, Opaque>>([]))
 
       const certificate = new Certificate2(certificate_list)
       const handshake_certificate = certificate.handshake()
@@ -691,7 +690,7 @@ export class TlsStream extends EventTarget {
 
     const { dh_Yc, dh_Z } = await this.computeDiffieHellman(state)
 
-    const dh_yc_vector = WritableVector(Number16).from(new Opaque(dh_Yc))
+    const dh_yc_vector = Vector(Number16).from(new Opaque(dh_Yc))
     const dh_public = new ClientDiffieHellmanPublicExplicit(dh_yc_vector)
 
     const client_key_exchange = new ClientKeyExchange2DH(dh_public)

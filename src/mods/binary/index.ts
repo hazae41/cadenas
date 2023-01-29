@@ -1,5 +1,5 @@
-export * from "./arrays/index.js";
 export * from "./fragment.js";
+export * from "./lists/index.js";
 export * from "./numbers/index.js";
 export * from "./opaque.js";
 export * from "./random.js";

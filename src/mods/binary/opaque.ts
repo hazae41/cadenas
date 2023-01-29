@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Lengthed, LengthedClass, Writable } from "mods/binary/fragment.js"
+import { LengthedClass, Writable } from "mods/binary/fragment.js"
 
 export class Opaque {
   readonly #class = Opaque
@@ -24,7 +24,7 @@ export class Opaque {
     return new this(fragment.export())
   }
 
-  into<T extends Lengthed<T>>(clazz: LengthedClass<T>) {
+  into<T extends Writable>(clazz: LengthedClass<T>) {
     return clazz.read(new Binary(this.bytes), this.bytes.length)
   }
 

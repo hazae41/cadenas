@@ -1,19 +1,17 @@
-import { Binary } from "@hazae41/binary"
-import { Writable } from "mods/binary/fragment.js"
+import { Binary } from "@hazae41/binary";
+import { Writable } from "mods/binary/fragment.js";
 
-export class WritableArray<T extends Writable> {
-  readonly #class = WritableArray
+export interface List<T extends Writable> extends Writable {
+  readonly array: T[]
+}
 
+export class List<T extends Writable> {
   constructor(
     readonly array: T[]
   ) { }
 
   static from<T extends Writable>(array: T[]) {
     return new this(array)
-  }
-
-  get class() {
-    return this.#class
   }
 
   size() {

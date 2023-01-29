@@ -51,7 +51,7 @@ export class Handshake<T extends Writable> {
   }
 
   record(version: number) {
-    return new PlaintextRecord(this.class.type, version, this)
+    return new PlaintextRecord(this.#class.type, version, this)
   }
 
   static read(binary: Binary, length: number) {

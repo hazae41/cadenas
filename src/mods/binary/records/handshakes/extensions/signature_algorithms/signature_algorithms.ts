@@ -1,13 +1,11 @@
 import { Binary } from "@hazae41/binary";
-import { Array } from "mods/binary/arrays/array.js";
-import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js";
-import { WritableArray } from "mods/binary/arrays/writable.js";
+import { UnlengthedList } from "mods/binary/lists/unlengthed.js";
+import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
 import { SignatureAndHashAlgorithm } from "mods/binary/signatures/signature_and_hash_algorithm.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
-import { Vector } from "mods/binary/vectors/vector.js";
-import { WritableVector } from "mods/binary/vectors/writable.js";
+import { Vector } from "mods/binary/vectors/writable.js";
 
 export class SignatureAlgorithms {
   readonly #class = SignatureAlgorithms
@@ -15,13 +13,13 @@ export class SignatureAlgorithms {
   static readonly type = Extension.types.signature_algorithms
 
   constructor(
-    readonly supported_signature_algorithms: Vector<Number16, Array<SignatureAndHashAlgorithm>>
+    readonly supported_signature_algorithms: Vector<Number16, List<SignatureAndHashAlgorithm>>
   ) { }
 
   static default() {
     const { rsaWithSha256 } = SignatureAndHashAlgorithm.instances
 
-    const supported_signature_algorithms = WritableVector(Number16).from(WritableArray.from([rsaWithSha256]))
+    const supported_signature_algorithms = Vector(Number16).from(List.from([rsaWithSha256]))
 
     return new this(supported_signature_algorithms)
   }
@@ -53,7 +51,7 @@ export class SignatureAlgorithms {
   }
 
   static read(binary: Binary) {
-    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedArray(SignatureAndHashAlgorithm)).read(binary)
+    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedList(SignatureAndHashAlgorithm)).read(binary)
 
     return new this(supported_signature_algorithms)
   }

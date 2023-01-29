@@ -1,18 +1,16 @@
 import { Binary } from "@hazae41/binary";
-import { Array } from "mods/binary/arrays/array.js";
-import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js";
-import { WritableArray } from "mods/binary/arrays/writable.js";
+import { UnlengthedList } from "mods/binary/lists/unlengthed.js";
+import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { NamedCurve } from "mods/binary/records/handshakes/extensions/elliptic_curves/named_curve.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
-import { Vector } from "mods/binary/vectors/vector.js";
-import { WritableVector } from "mods/binary/vectors/writable.js";
+import { Vector } from "mods/binary/vectors/writable.js";
 
 export class NamedCurveList {
   readonly #class = NamedCurveList
 
   constructor(
-    readonly named_curve_list: Vector<Number16, Array<NamedCurve>>
+    readonly named_curve_list: Vector<Number16, List<NamedCurve>>
   ) { }
 
   static default() {
@@ -22,7 +20,7 @@ export class NamedCurveList {
   }
 
   static from(named_curves: NamedCurve[]) {
-    const named_curve_list = WritableVector(Number16).from(WritableArray.from(named_curves))
+    const named_curve_list = Vector(Number16).from(List.from(named_curves))
 
     return new this(named_curve_list)
   }
@@ -46,7 +44,7 @@ export class NamedCurveList {
   }
 
   static read(binary: Binary) {
-    const named_curve_list = LengthedVector(Number16, UnlengthedArray(NamedCurve)).read(binary)
+    const named_curve_list = LengthedVector(Number16, UnlengthedList(NamedCurve)).read(binary)
 
     return new this(named_curve_list)
   }

@@ -3,7 +3,7 @@ import { Number16 } from "mods/binary/numbers/number16.js";
 import { Opaque, SafeOpaque } from "mods/binary/opaque.js";
 import { SignatureAndHashAlgorithm } from "mods/binary/signatures/signature_and_hash_algorithm.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
-import { Vector } from "mods/binary/vectors/vector.js";
+import { Vector } from "mods/binary/vectors/writable.js";
 
 export class DigitallySigned {
   readonly #class = DigitallySigned

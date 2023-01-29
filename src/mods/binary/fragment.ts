@@ -6,18 +6,18 @@ export interface Writable {
   export(): Uint8Array
 }
 
-export interface UnlengthedClass<T extends Unlengthed<T> = Unlengthed> {
+export interface UnlengthedClass<T> {
   read(binary: Binary): T
 }
 
-export interface Unlengthed<T extends Unlengthed<T> = any> extends Writable {
+export interface Unlengthed<T = any> {
   readonly class: UnlengthedClass<T>
 }
 
-export interface LengthedClass<T extends Lengthed<T> = Lengthed> {
+export interface LengthedClass<T> {
   read(binary: Binary, length: number): T
 }
 
-export interface Lengthed<T extends Lengthed<T> = any> extends Writable {
+export interface Lengthed<T = any> {
   readonly class: LengthedClass<T>
 }

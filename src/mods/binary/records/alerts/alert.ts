@@ -70,7 +70,7 @@ export class Alert {
   }
 
   record(version: number) {
-    return new PlaintextRecord<Alert>(this.class.type, version, this)
+    return new PlaintextRecord<Alert>(this.#class.type, version, this)
   }
 
   static read(binary: Binary, length: number) {

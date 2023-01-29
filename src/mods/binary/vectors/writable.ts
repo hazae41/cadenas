@@ -2,9 +2,12 @@ import { Binary } from "@hazae41/binary";
 import { Writable } from "mods/binary/fragment.js";
 import { NumberClass, NumberX } from "mods/binary/numbers/number.js";
 
-export const WritableVector = <L extends NumberX>(vlength: NumberClass<L>) => class <T extends Writable> {
-  readonly #class = WritableVector(vlength)
+export interface Vector<L extends NumberX, T extends Writable> extends Writable {
+  readonly vlength: NumberClass<L>
+  readonly value: T
+}
 
+export const Vector = <L extends NumberX>(vlength: NumberClass<L>) => class <T extends Writable> {
   constructor(
     readonly value: T
   ) { }
@@ -15,10 +18,6 @@ export const WritableVector = <L extends NumberX>(vlength: NumberClass<L>) => cl
 
   get vlength() {
     return vlength
-  }
-
-  get class() {
-    return this.#class
   }
 
   size() {

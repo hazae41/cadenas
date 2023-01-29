@@ -1,13 +1,13 @@
 import { Binary } from "@hazae41/binary"
-import { Array } from "mods/binary/arrays/array.js"
-import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js"
+import { UnlengthedList } from "mods/binary/lists/unlengthed.js"
+import { List } from "mods/binary/lists/writable.js"
 import { Number16 } from "mods/binary/numbers/number16.js"
 import { Number8 } from "mods/binary/numbers/number8.js"
 import { Opaque, SafeOpaque } from "mods/binary/opaque.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { SignatureAndHashAlgorithm } from "mods/binary/signatures/signature_and_hash_algorithm.js"
 import { LengthedVector } from "mods/binary/vectors/lengthed.js"
-import { Vector } from "mods/binary/vectors/vector.js"
+import { Vector } from "mods/binary/vectors/writable.js"
 
 export class ClientCertificateType {
   readonly #class = ClientCertificateType
@@ -55,8 +55,8 @@ export class CertificateRequest2 {
   static readonly type = Handshake.types.certificate_request
 
   constructor(
-    readonly certificate_types: Vector<Number8, Array<ClientCertificateType>>,
-    readonly supported_signature_algorithms: Vector<Number16, Array<SignatureAndHashAlgorithm>>,
+    readonly certificate_types: Vector<Number8, List<ClientCertificateType>>,
+    readonly supported_signature_algorithms: Vector<Number16, List<SignatureAndHashAlgorithm>>,
     readonly certificate_authorities: Vector<Number16, Opaque>
   ) { }
 
@@ -86,8 +86,8 @@ export class CertificateRequest2 {
   static read(binary: Binary, length: number) {
     const start = binary.offset
 
-    const certificate_types = LengthedVector(Number8, UnlengthedArray(ClientCertificateType)).read(binary)
-    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedArray(SignatureAndHashAlgorithm)).read(binary)
+    const certificate_types = LengthedVector(Number8, UnlengthedList(ClientCertificateType)).read(binary)
+    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedList(SignatureAndHashAlgorithm)).read(binary)
     const certificate_authorities = LengthedVector(Number16, SafeOpaque).read(binary)
 
     if (binary.offset - start !== length)

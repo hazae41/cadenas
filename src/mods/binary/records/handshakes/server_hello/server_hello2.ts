@@ -1,7 +1,7 @@
 import { Binary } from "@hazae41/binary";
-import { Array } from "mods/binary/arrays/array.js";
-import { UnlengthedArray } from "mods/binary/arrays/unlengthed.js";
 import { Writable } from "mods/binary/fragment.js";
+import { UnlengthedList } from "mods/binary/lists/unlengthed.js";
+import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { Number8 } from "mods/binary/numbers/number8.js";
 import { Opaque, SafeOpaque } from "mods/binary/opaque.js";
@@ -9,7 +9,8 @@ import { Random } from "mods/binary/random.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
 import { Handshake } from "mods/binary/records/handshakes/handshake.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
-import { Vector } from "mods/binary/vectors/vector.js";
+import { Vector } from "mods/binary/vectors/writable.js";
+import { OpaqueExtension } from "../extensions/opaque.js";
 
 export class ServerHello2<E extends Writable = Writable> {
   readonly #class = ServerHello2
@@ -21,8 +22,8 @@ export class ServerHello2<E extends Writable = Writable> {
     readonly random: Random,
     readonly session_id: Vector<Number8, Opaque>,
     readonly cipher_suite: number,
-    readonly compression_methods: Vector<Number8, Array<Number8>>,
-    readonly extensions?: Vector<Number16, Array<Extension<E>>>
+    readonly compression_methods: Vector<Number8, List<Number8>>,
+    readonly extensions?: Vector<Number16, List<Extension<E>>>
   ) { }
 
   get class() {
@@ -61,10 +62,10 @@ export class ServerHello2<E extends Writable = Writable> {
     const random = Random.read(binary)
     const session_id = LengthedVector(Number8, SafeOpaque).read(binary)
     const cipher_suite = binary.readUint16()
-    const compression_methods = LengthedVector(Number8, UnlengthedArray(Number8)).read(binary)
+    const compression_methods = LengthedVector(Number8, UnlengthedList(Number8)).read(binary)
 
     const extensions = binary.offset - start < length
-      ? LengthedVector(Number16, UnlengthedArray(Extension)).read(binary)
+      ? LengthedVector(Number16, UnlengthedList(OpaqueExtension)).read(binary)
       : undefined
 
     if (binary.offset - start !== length)
