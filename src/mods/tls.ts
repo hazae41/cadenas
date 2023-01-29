@@ -418,7 +418,7 @@ export class TlsStream extends EventTarget {
   private async onAlert(record: PlaintextRecord<Opaque>) {
     const alert = record.fragment.into(Alert)
 
-    console.log(alert)
+    console.debug(alert)
 
     if (alert.description === Alert.descriptions.close_notify)
       return this.input.terminate()
@@ -439,7 +439,7 @@ export class TlsStream extends EventTarget {
 
     this.state = { ...this.state, step: "server_change_cipher_spec", server_encrypted: true, server_sequence: BigInt(0) }
 
-    console.log(change_cipher_spec)
+    console.debug(change_cipher_spec)
   }
 
   private async onApplicationData(record: PlaintextRecord<Opaque>) {
@@ -482,7 +482,7 @@ export class TlsStream extends EventTarget {
 
     const server_hello = handshake.fragment.into(ServerHello2)
 
-    console.log(server_hello)
+    console.debug(server_hello)
 
     const version = server_hello.server_version
 
@@ -509,16 +509,16 @@ export class TlsStream extends EventTarget {
 
     const certificate = handshake.fragment.into(Certificate2)
 
-    console.log(certificate)
+    console.debug(certificate)
 
     const server_certificates = certificate.certificate_list.value.array
       .map(it => X509.Certificate.fromBytes(it.value.bytes))
 
     this.state = { ...state, action: "server_certificate", server_certificates }
 
-    // console.log(server_certificates)
-    // console.log(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
-    // console.log(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
+    // console.debug(server_certificates)
+    // console.debug(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
+    // console.debug(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
   }
 
   private async onServerKeyExchange(handshake: Handshake<Opaque>, state: HandshakeState) {
@@ -530,7 +530,7 @@ export class TlsStream extends EventTarget {
     const server_key_exchange = handshake.fragment.into<InstanceType<typeof clazz>>(clazz)
 
     if (server_key_exchange instanceof ServerKeyExchange2Ephemeral) {
-      console.log(server_key_exchange)
+      console.debug(server_key_exchange)
 
       const server_dh_params = server_key_exchange.params
 
@@ -548,7 +548,7 @@ export class TlsStream extends EventTarget {
 
     const certificate_request = handshake.fragment.into(CertificateRequest2)
 
-    console.log(certificate_request)
+    console.debug(certificate_request)
 
     this.state = { ...state, action: "server_certificate_request", certificate_request }
   }
@@ -577,12 +577,12 @@ export class TlsStream extends EventTarget {
     const { cipher, client_random, server_random } = state
     const { prf_md } = state.cipher.hash
 
-    // console.log("premaster_secret", premaster_secret.length, Bytes.toHex(premaster_secret))
+    // console.debug("premaster_secret", premaster_secret.length, Bytes.toHex(premaster_secret))
 
     const master_secret_seed = Bytes.concat([client_random, server_random])
     const master_secret = await PRF(prf_md, premaster_secret, "master secret", master_secret_seed, 48)
 
-    // console.log("master_secret", master_secret.length, Bytes.toHex(master_secret))
+    // console.debug("master_secret", master_secret.length, Bytes.toHex(master_secret))
 
     const key_block_length = 0
       + (2 * cipher.hash.mac_key_length)
@@ -592,7 +592,7 @@ export class TlsStream extends EventTarget {
     const key_block_seed = Bytes.concat([server_random, client_random])
     const key_block = await PRF(prf_md, master_secret, "key expansion", key_block_seed, key_block_length)
 
-    // console.log("key_block", key_block.length, Bytes.toHex(key_block))
+    // console.debug("key_block", key_block.length, Bytes.toHex(key_block))
 
     const key_block_binary = new Binary(key_block)
 
@@ -603,20 +603,20 @@ export class TlsStream extends EventTarget {
     const client_write_MAC_key = key_block_binary.read(mac_key_length)
     const server_write_MAC_key = key_block_binary.read(mac_key_length)
 
-    // console.log("client_write_MAC_key", client_write_MAC_key.length, Bytes.toHex(client_write_MAC_key))
-    // console.log("server_write_MAC_key", server_write_MAC_key.length, Bytes.toHex(server_write_MAC_key))
+    // console.debug("client_write_MAC_key", client_write_MAC_key.length, Bytes.toHex(client_write_MAC_key))
+    // console.debug("server_write_MAC_key", server_write_MAC_key.length, Bytes.toHex(server_write_MAC_key))
 
     const client_write_key = key_block_binary.read(cipher.encryption.enc_key_length)
     const server_write_key = key_block_binary.read(cipher.encryption.enc_key_length)
 
-    // console.log("client_write_key", client_write_key.length, Bytes.toHex(client_write_key))
-    // console.log("server_write_key", server_write_key.length, Bytes.toHex(server_write_key))
+    // console.debug("client_write_key", client_write_key.length, Bytes.toHex(client_write_key))
+    // console.debug("server_write_key", server_write_key.length, Bytes.toHex(server_write_key))
 
     const client_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
     const server_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
 
-    // console.log("client_write_IV", client_write_IV.length, Bytes.toHex(client_write_IV))
-    // console.log("server_write_IV", server_write_IV.length, Bytes.toHex(server_write_IV))
+    // console.debug("client_write_IV", client_write_IV.length, Bytes.toHex(client_write_IV))
+    // console.debug("server_write_IV", server_write_IV.length, Bytes.toHex(server_write_IV))
 
     return {
       master_secret,
@@ -635,7 +635,7 @@ export class TlsStream extends EventTarget {
 
     const server_hello_done = handshake.fragment.into(ServerHelloDone2)
 
-    console.log(server_hello_done)
+    console.debug(server_hello_done)
 
     if ("certificate_request" in state) {
       const certificate_list = WritableVector(Number24).from(WritableArray.from<Vector<Number24, Opaque>>([]))
@@ -697,7 +697,7 @@ export class TlsStream extends EventTarget {
 
     const finished = handshake.fragment.into(Finished2)
 
-    console.log(finished)
+    console.debug(finished)
 
     this.state = { ...state, type: "data" }
 

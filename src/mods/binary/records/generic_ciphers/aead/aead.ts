@@ -60,13 +60,13 @@ export class GenericAEADCipher {
     additional_data.writeUint16(record.version)
     additional_data.writeUint16(record.fragment.size())
 
-    // console.log("-> nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
-    // console.log("-> plaintext", content.length, Bytes.toHex(content))
-    // console.log("-> additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
+    // console.debug("-> nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
+    // console.debug("-> plaintext", content.length, Bytes.toHex(content))
+    // console.debug("-> additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
 
     const ciphertext = await encrypter.encrypt(nonce.bytes, content, additional_data.bytes)
 
-    // console.log("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
+    // console.debug("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
 
     return new this(nonce_explicit, ciphertext)
   }
@@ -82,13 +82,13 @@ export class GenericAEADCipher {
     additional_data.writeUint16(record.version)
     additional_data.writeUint16(record.fragment.size() - 24)
 
-    // console.log("<- nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
-    // console.log("<- ciphertext", this.block.length, Bytes.toHex(this.block))
-    // console.log("<- additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
+    // console.debug("<- nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
+    // console.debug("<- ciphertext", this.block.length, Bytes.toHex(this.block))
+    // console.debug("<- additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
 
     const plaintext = await encrypter.decrypt(nonce.bytes, this.block, additional_data.bytes)
 
-    // console.log("<- plaintext", plaintext.length, Bytes.toHex(plaintext))
+    // console.debug("<- plaintext", plaintext.length, Bytes.toHex(plaintext))
 
     return new Opaque(plaintext)
   }
