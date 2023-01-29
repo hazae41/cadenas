@@ -416,9 +416,9 @@ export class TlsStream extends EventTarget {
   }
 
   private async onAlert(record: PlaintextRecord<Opaque>) {
-    const fragment = record.fragment.into<Alert>(Alert)
+    const alert = record.fragment.into(Alert)
 
-    console.log(fragment)
+    console.log(alert)
   }
 
   private async onChangeCipherSpec(record: PlaintextRecord<Opaque>) {
@@ -427,11 +427,11 @@ export class TlsStream extends EventTarget {
     if (this.state.step !== "client_finished")
       throw new Error(`Invalid state`)
 
-    const fragment = record.fragment.into<ChangeCipherSpec>(ChangeCipherSpec)
+    const change_cipher_spec = record.fragment.into(ChangeCipherSpec)
 
     this.state = { ...this.state, step: "server_change_cipher_spec", server_encrypted: true, server_sequence: BigInt(0) }
 
-    console.log(fragment)
+    console.log(change_cipher_spec)
   }
 
   private async onApplicationData(record: PlaintextRecord<Opaque>) {
@@ -472,7 +472,7 @@ export class TlsStream extends EventTarget {
     if (state.step !== "client_hello")
       throw new Error(`Invalid state`)
 
-    const server_hello = handshake.fragment.into<ServerHello2>(ServerHello2)
+    const server_hello = handshake.fragment.into(ServerHello2)
 
     console.log(server_hello)
 
@@ -499,7 +499,7 @@ export class TlsStream extends EventTarget {
     if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
-    const certificate = handshake.fragment.into<Certificate2>(Certificate2)
+    const certificate = handshake.fragment.into(Certificate2)
 
     console.log(certificate)
 
@@ -538,7 +538,7 @@ export class TlsStream extends EventTarget {
     if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
-    const certificate_request = handshake.fragment.into<CertificateRequest2>(CertificateRequest2)
+    const certificate_request = handshake.fragment.into(CertificateRequest2)
 
     console.log(certificate_request)
 
@@ -625,7 +625,7 @@ export class TlsStream extends EventTarget {
     if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
-    const server_hello_done = handshake.fragment.into<ServerHelloDone2>(ServerHelloDone2)
+    const server_hello_done = handshake.fragment.into(ServerHelloDone2)
 
     console.log(server_hello_done)
 
@@ -687,7 +687,9 @@ export class TlsStream extends EventTarget {
     if (state.step !== "server_change_cipher_spec")
       throw new Error(`Invalid state`)
 
-    console.log("Finished", handshake)
+    const finished = handshake.fragment.into(Finished2)
+
+    console.log(finished)
 
     this.state = { ...state, type: "data" }
 
