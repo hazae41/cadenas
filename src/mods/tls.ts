@@ -17,6 +17,10 @@ import { CertificateRequest2 } from "mods/binary/records/handshakes/certificate_
 import { ClientHello2 } from "mods/binary/records/handshakes/client_hello/client_hello2.js"
 import { ClientDiffieHellmanPublicExplicit } from "mods/binary/records/handshakes/client_key_exchange/client_diffie_hellman_public.js"
 import { ClientKeyExchange2DH } from "mods/binary/records/handshakes/client_key_exchange/client_key_exchange2_dh.js"
+import { ECPointFormats } from "mods/binary/records/handshakes/extensions/ec_point_formats/ec_point_formats.js"
+import { EllipticCurves } from "mods/binary/records/handshakes/extensions/elliptic_curves/elliptic_curves.js"
+import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
+import { SignatureAlgorithms } from "mods/binary/records/handshakes/extensions/signature_algorithms/signature_algorithms.js"
 import { Finished2 } from "mods/binary/records/handshakes/finished/finished2.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ServerHello2 } from "mods/binary/records/handshakes/server_hello/server_hello2.js"
@@ -40,6 +44,12 @@ export interface NoneState {
   type: "none"
   client_encrypted: false
   server_encrypted: false
+}
+
+export interface ExtensionsRecord {
+  signature_algorithms?: SignatureAlgorithms,
+  elliptic_curves?: EllipticCurves,
+  ec_point_formats?: ECPointFormats
 }
 
 export type HandshakeState =
@@ -81,6 +91,7 @@ export interface ServerHelloHandshakeData extends ClientHelloHandshakeData {
   version: number
   cipher: Cipher
   server_random: Uint8Array
+  server_extensions: ExtensionsRecord
 }
 
 export interface ServerHelloHandshakeState extends ServerHelloHandshakeData {
@@ -496,11 +507,37 @@ export class TlsStream extends EventTarget {
 
     const server_random = server_hello.random.export()
 
-    // if (server_hello.extensions) {
-    //   server_hello.extensions.value.
-    // }
+    const server_extensions: {
+      signature_algorithms?: SignatureAlgorithms,
+      elliptic_curves?: EllipticCurves,
+      ec_point_formats?: ECPointFormats
+    } = {}
 
-    this.state = { ...state, step: "server_hello", version, cipher, server_random }
+    state = { ...state, step: "server_hello", version, cipher, server_random, server_extensions }
+
+    if (!server_hello.extensions) {
+      this.state = state
+      return
+    }
+
+    const extension_types = new Set<number>()
+
+    for (const extension of server_hello.extensions.value.array) {
+      if (extension_types.has(extension.extension_type))
+        throw new Error(`Duplicated extension type`)
+      extension_types.add(extension.extension_type)
+
+      if (extension.extension_type === Extension.types.signature_algorithms)
+        server_extensions.signature_algorithms = extension.extension_data.value.into(SignatureAlgorithms)
+      else if (extension.extension_type === Extension.types.elliptic_curves)
+        server_extensions.elliptic_curves = extension.extension_data.value.into(EllipticCurves)
+      else if (extension.extension_type === Extension.types.ec_point_formats)
+        server_extensions.ec_point_formats = extension.extension_data.value.into(ECPointFormats)
+    }
+
+    console.log(server_extensions)
+
+    this.state = state
   }
 
   private async onCertificate(handshake: Handshake<Opaque>, state: HandshakeState) {

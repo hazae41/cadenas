@@ -15,6 +15,10 @@ export class EllipticCurves {
     return new this(NamedCurveList.default())
   }
 
+  get class() {
+    return this.#class
+  }
+
   size() {
     return this.named_curve_list.size()
   }

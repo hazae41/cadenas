@@ -15,6 +15,10 @@ export class ECPointFormats {
     return new this(ECPointFormatList.default())
   }
 
+  get class() {
+    return this.#class
+  }
+
   size() {
     return this.ec_point_format_list.size()
   }
