@@ -7,7 +7,7 @@ import { ECPointFormats } from "./ec_point_formats/ec_point_formats.js"
 import { EllipticCurves } from "./elliptic_curves/elliptic_curves.js"
 import { SignatureAlgorithms } from "./signature_algorithms/signature_algorithms.js"
 
-export type TypedExtensions =
+export type Extensions =
   | SignatureAlgorithms
   | EllipticCurves
   | ECPointFormats
@@ -15,7 +15,7 @@ export type TypedExtensions =
 
 export class TypedExtension {
 
-  private static read_data(type: number, binary: Binary) {
+  private static read2(type: number, binary: Binary) {
     if (type === Extension.types.signature_algorithms)
       return LengthedVector(Number16, SignatureAlgorithms).read(binary)
     if (type === Extension.types.elliptic_curves)
@@ -27,9 +27,9 @@ export class TypedExtension {
   }
 
   static read(binary: Binary) {
-    const extension_type = binary.readUint16()
-    const extension_data = this.read_data(extension_type, binary)
+    const subtype = binary.readUint16()
+    const data = this.read2(subtype, binary)
 
-    return new Extension<TypedExtensions>(extension_type, extension_data)
+    return new Extension<Extensions>(subtype, data)
   }
 }

@@ -17,9 +17,6 @@ import { CertificateRequest2 } from "mods/binary/records/handshakes/certificate_
 import { ClientHello2 } from "mods/binary/records/handshakes/client_hello/client_hello2.js"
 import { ClientDiffieHellmanPublicExplicit } from "mods/binary/records/handshakes/client_key_exchange/client_diffie_hellman_public.js"
 import { ClientKeyExchange2DH } from "mods/binary/records/handshakes/client_key_exchange/client_key_exchange2_dh.js"
-import { ECPointFormats } from "mods/binary/records/handshakes/extensions/ec_point_formats/ec_point_formats.js"
-import { EllipticCurves } from "mods/binary/records/handshakes/extensions/elliptic_curves/elliptic_curves.js"
-import { SignatureAlgorithms } from "mods/binary/records/handshakes/extensions/signature_algorithms/signature_algorithms.js"
 import { Finished2 } from "mods/binary/records/handshakes/finished/finished2.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ServerHello2 } from "mods/binary/records/handshakes/server_hello/server_hello2.js"
@@ -32,6 +29,7 @@ import { Vector } from "mods/binary/vectors/writable.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 import { Encrypter } from "mods/ciphers/encryptions/encryption.js"
 import { Secrets } from "mods/ciphers/secrets.js"
+import { ExtensionRecord, getClientExtensionRecord, getServerExtensionRecord } from "./extensions.js"
 
 export type State =
   | NoneState
@@ -42,12 +40,6 @@ export interface NoneState {
   type: "none"
   client_encrypted: false
   server_encrypted: false
-}
-
-export interface ExtensionsRecord {
-  signature_algorithms?: SignatureAlgorithms,
-  elliptic_curves?: EllipticCurves,
-  ec_point_formats?: ECPointFormats
 }
 
 export type HandshakeState =
@@ -76,6 +68,7 @@ export const HandshakeSteps = {
 export interface ClientHelloHandshakeData {
   messages: Uint8Array[]
   client_random: Uint8Array
+  client_extensions: ExtensionRecord
 }
 
 export interface ClientHelloHandshakeState extends ClientHelloHandshakeData {
@@ -89,7 +82,7 @@ export interface ServerHelloHandshakeData extends ClientHelloHandshakeData {
   version: number
   cipher: Cipher
   server_random: Uint8Array
-  server_extensions: ExtensionsRecord
+  server_extensions: ExtensionRecord
 }
 
 export interface ServerHelloHandshakeState extends ServerHelloHandshakeData {
@@ -304,8 +297,9 @@ export class TlsStream extends EventTarget {
     const client_hello = ClientHello2.default(this.params.ciphers)
 
     const client_random = client_hello.random.export()
+    const client_extensions = getClientExtensionRecord(client_hello.extensions)
 
-    this.state = { ...this.state, type: "handshake", messages: [], step: "client_hello", client_random }
+    this.state = { ...this.state, type: "handshake", messages: [], step: "client_hello", client_random, client_extensions }
 
     const handshake = client_hello.handshake()
     this.state.messages.push(handshake.export())
@@ -504,38 +498,11 @@ export class TlsStream extends EventTarget {
       throw new Error(`Unsupported ${server_hello.cipher_suite} cipher suite`)
 
     const server_random = server_hello.random.export()
-
-    const server_extensions: {
-      signature_algorithms?: SignatureAlgorithms,
-      elliptic_curves?: EllipticCurves,
-      ec_point_formats?: ECPointFormats
-    } = {}
-
-    state = { ...state, step: "server_hello", version, cipher, server_random, server_extensions }
-
-    if (!server_hello.extensions) {
-      this.state = state
-      return
-    }
-
-    const extension_types = new Set<number>()
-
-    for (const extension of server_hello.extensions.value.array) {
-      if (extension_types.has(extension.extension_type))
-        throw new Error(`Duplicated extension type`)
-      extension_types.add(extension.extension_type)
-
-      if (extension.extension_data.value instanceof SignatureAlgorithms)
-        server_extensions.signature_algorithms = extension.extension_data.value
-      else if (extension.extension_data.value instanceof EllipticCurves)
-        server_extensions.elliptic_curves = extension.extension_data.value
-      else if (extension.extension_data.value instanceof ECPointFormats)
-        server_extensions.ec_point_formats = extension.extension_data.value
-    }
+    const server_extensions = getServerExtensionRecord(state.client_extensions, server_hello.extensions)
 
     console.log(server_extensions)
 
-    this.state = state
+    this.state = { ...state, step: "server_hello", version, cipher, server_random, server_extensions }
   }
 
   private async onCertificate(handshake: Handshake<Opaque>, state: HandshakeState) {

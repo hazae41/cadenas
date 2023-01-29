@@ -1,4 +1,5 @@
 import { Binary } from "@hazae41/binary"
+import { Writable } from "mods/binary/fragment.js"
 import { UnlengthedList } from "mods/binary/lists/unlengthed.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number16 } from "mods/binary/numbers/number16.js"
@@ -10,12 +11,13 @@ import { EllipticCurves } from "mods/binary/records/handshakes/extensions/ellipt
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
 import { OpaqueExtension } from "mods/binary/records/handshakes/extensions/opaque.js"
 import { SignatureAlgorithms } from "mods/binary/records/handshakes/extensions/signature_algorithms/signature_algorithms.js"
+import { Extensions } from "mods/binary/records/handshakes/extensions/typed.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { LengthedVector } from "mods/binary/vectors/lengthed.js"
 import { Vector } from "mods/binary/vectors/writable.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 
-export class ClientHello2 {
+export class ClientHello2<E extends Writable = Writable> {
   readonly #class = ClientHello2
 
   static readonly type = Handshake.types.client_hello
@@ -26,7 +28,7 @@ export class ClientHello2 {
     readonly session_id: Vector<Number8, Opaque>,
     readonly cipher_suites: Vector<Number16, List<Number16>>,
     readonly compression_methods: Vector<Number8, List<Number8>>,
-    readonly extensions?: Vector<Number16, List<Extension>>
+    readonly extensions?: Vector<Number16, List<Extension<E>>>
   ) { }
 
   get type() {
@@ -47,7 +49,7 @@ export class ClientHello2 {
 
     const extensions = Vector(Number16).from(List.from([signature_algorithms, elliptic_curves, ec_point_formats]))
 
-    return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
+    return new this<Extensions>(version, random, session_id, cipher_suites, compression_methods, extensions)
   }
 
   size() {

@@ -4,6 +4,7 @@ import { Number16 } from "mods/binary/numbers/number16.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export class Extension<T extends Writable = Writable> {
+
   static readonly types = {
     elliptic_curves: 10,
     ec_point_formats: 11,
@@ -11,8 +12,8 @@ export class Extension<T extends Writable = Writable> {
   } as const
 
   constructor(
-    readonly extension_type: number,
-    readonly extension_data: Vector<Number16, T>
+    readonly subtype: number,
+    readonly data: Vector<Number16, T>
   ) { }
 
   static from<T extends Writable>(extension_type: number, extension: T) {
@@ -22,12 +23,12 @@ export class Extension<T extends Writable = Writable> {
   }
 
   size() {
-    return 2 + this.extension_data.size()
+    return 2 + this.data.size()
   }
 
   write(binary: Binary) {
-    binary.writeUint16(this.extension_type)
-    this.extension_data.write(binary)
+    binary.writeUint16(this.subtype)
+    this.data.write(binary)
   }
 
   export() {
