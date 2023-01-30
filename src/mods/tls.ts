@@ -522,7 +522,7 @@ export class TlsStream extends AsyncEventTarget {
     const server_random = server_hello.random.export()
     const server_extensions = getServerExtensionRecord(server_hello, state.client_extensions)
 
-    console.log(server_extensions)
+    console.debug(server_extensions)
 
     const state2: ServerHelloState = { ...state, step: "server_hello", version, cipher, server_random, server_extensions }
 
