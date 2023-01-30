@@ -2,6 +2,7 @@ import { Binary } from "@hazae41/binary"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
 import { Bytes } from "libs/bytes/bytes.js"
+import { AbortEvent } from "libs/events/abort.js"
 import { CloseEvent } from "libs/events/close.js"
 import { ErrorEvent } from "libs/events/error.js"
 import { Events } from "libs/events/events.js"
@@ -284,7 +285,7 @@ export class TlsStream extends AsyncEventTarget {
     this._output = controller
   }
 
-  async handshake() {
+  async handshake(signal?: AbortSignal) {
     if (this.state.type !== "none")
       throw new Error(`Invalid state`)
 
@@ -305,18 +306,42 @@ export class TlsStream extends AsyncEventTarget {
     const record = handshake.record(0x0301)
     this.output.enqueue(record.export())
 
-    const finished = new Future<Event>()
+    const future = new Future<Event, Error>()
+
+    const onAbort = (event: Event) => {
+      const abortEvent = event as AbortEvent
+
+      const error = new Error(`Aborted`, { cause: abortEvent.target.reason })
+
+      future.err(error)
+    }
+
+    const onClose = (event: Event) => {
+      const closeEvent = event as CloseEvent
+
+      const error = new Error(`Closed`, { cause: closeEvent })
+
+      future.err(error)
+    }
+
+    const onError = (event: Event) => {
+      const errorEvent = event as ErrorEvent
+
+      future.err(errorEvent.error)
+    }
 
     try {
-      this.read.addEventListener("close", finished.err, { passive: true })
-      this.addEventListener("error", finished.err, { passive: true })
-      this.addEventListener("finished", finished.ok, { passive: true })
+      signal?.addEventListener("abort", onAbort, { passive: true })
+      this.read.addEventListener("close", onClose, { passive: true })
+      this.addEventListener("error", onError, { passive: true })
+      this.addEventListener("finished", future.ok, { passive: true })
 
-      await finished.promise
+      await future.promise
     } finally {
-      this.read.removeEventListener("close", finished.err)
-      this.removeEventListener("error", finished.err)
-      this.removeEventListener("finished", finished.ok)
+      signal?.removeEventListener("abort", onAbort)
+      this.read.removeEventListener("close", onClose)
+      this.removeEventListener("error", onError)
+      this.removeEventListener("finished", future.ok)
     }
   }
 
