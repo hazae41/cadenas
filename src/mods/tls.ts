@@ -179,8 +179,7 @@ export type HandshakedState = HandshakedData & {
 
 export interface TlsParams {
   ciphers: Cipher[]
-  signal?: AbortSignal,
-  debug?: boolean
+  signal?: AbortSignal
 }
 
 export class TlsStream extends AsyncEventTarget {
@@ -217,13 +216,14 @@ export class TlsStream extends AsyncEventTarget {
       transform: this.onWrite.bind(this),
     })
 
-    const [readable, trashable] = read.readable.tee()
+    const read2 = new TransformStream<Uint8Array>()
 
-    this.readable = readable
+    this.readable = read2.readable
     this.writable = write.writable
 
     stream.readable
-      .pipeTo(read.writable, { signal })
+      .pipeThrough(read, { signal })
+      .pipeTo(read2.writable)
       .then(this.onReadClose.bind(this))
       .catch(this.onReadError.bind(this))
 
@@ -231,13 +231,6 @@ export class TlsStream extends AsyncEventTarget {
       .pipeTo(stream.writable, { signal })
       .then(this.onWriteClose.bind(this))
       .catch(this.onWriteError.bind(this))
-
-    const trash = new WritableStream()
-
-    trashable
-      .pipeTo(trash, { signal })
-      .then(this.onReadClose.bind(this))
-      .catch(this.onReadError.bind(this))
 
     const onError = this.onError.bind(this)
 
@@ -351,7 +344,7 @@ export class TlsStream extends AsyncEventTarget {
     }
 
     if (this.rbinary.remaining && this.wbinary.remaining < 4096) {
-      console.debug("Cadenas", `Reallocating buffer`)
+      console.debug(`Cadenas`, `Reallocating buffer`)
 
       const remaining = this.buffer.subarray(this.rbinary.offset, this.wbinary.offset)
 
