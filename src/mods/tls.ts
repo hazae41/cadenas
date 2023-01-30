@@ -336,12 +336,7 @@ export class TlsStream extends AsyncEventTarget {
 
       if (!record) break
 
-      try {
-        await this.onRecord(record, this.state)
-      } catch (e: unknown) {
-        console.error("Cadenas", e)
-        throw e
-      }
+      await this.onRecord(record, this.state)
     }
 
     if (!this.rbinary.offset)
