@@ -5,6 +5,7 @@ import { Bytes } from "libs/bytes/bytes.js"
 import { CloseEvent } from "libs/events/close.js"
 import { ErrorEvent } from "libs/events/error.js"
 import { Events } from "libs/events/events.js"
+import { AsyncEventTarget } from "libs/events/target.js"
 import { Future } from "libs/futures/future.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
@@ -182,12 +183,12 @@ export interface TlsParams {
   debug?: boolean
 }
 
-export class TlsStream extends EventTarget {
+export class TlsStream extends AsyncEventTarget {
   readonly readable: ReadableStream<Uint8Array>
   readonly writable: WritableStream<Uint8Array>
 
-  readonly read = new EventTarget()
-  readonly write = new EventTarget()
+  readonly read = new AsyncEventTarget()
+  readonly write = new AsyncEventTarget()
 
   private state: State = { type: "none", client_encrypted: false, server_encrypted: false }
 
@@ -253,33 +254,33 @@ export class TlsStream extends EventTarget {
   }
 
   private async onReadClose() {
-    const event = new CloseEvent("close", {})
-    if (!this.read.dispatchEvent(event)) return
+    const closeEvent = new CloseEvent("close", {})
+    if (!await this.read.dispatchEvent(closeEvent)) return
   }
 
   private async onWriteClose() {
-    const event = new CloseEvent("close", {})
-    if (!this.write.dispatchEvent(event)) return
+    const closeEvent = new CloseEvent("close", {})
+    if (!await this.write.dispatchEvent(closeEvent)) return
   }
 
   private async onReadError(error?: unknown) {
-    const event = new ErrorEvent("error", { error })
-    if (!this.read.dispatchEvent(event)) return
+    const errorEvent = new ErrorEvent("error", { error })
+    if (!await this.read.dispatchEvent(errorEvent)) return
   }
 
   private async onWriteError(error?: unknown) {
-    const event = new ErrorEvent("error", { error })
-    if (!this.write.dispatchEvent(event)) return
+    const errorEvent = new ErrorEvent("error", { error })
+    if (!await this.write.dispatchEvent(errorEvent)) return
   }
 
   private async onError(e: Event) {
-    const event = Events.clone(e) as ErrorEvent
-    if (!this.dispatchEvent(event)) return
+    const errorEvent = e as ErrorEvent
 
-    console.error(event.error)
+    const errorEventClone = Events.clone(errorEvent)
+    if (!await this.dispatchEvent(errorEventClone)) return
 
-    try { this.input.error(event.error) } catch (e: unknown) { }
-    try { this.output.error(event.error) } catch (e: unknown) { }
+    try { this.input.error(errorEvent.error) } catch (e: unknown) { }
+    try { this.output.error(errorEvent.error) } catch (e: unknown) { }
   }
 
   private async onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
@@ -751,6 +752,6 @@ export class TlsStream extends EventTarget {
 
     this.state = state2
 
-    this.dispatchEvent(new Event("finished"))
+    await this.dispatchEvent(new Event("finished"))
   }
 }
