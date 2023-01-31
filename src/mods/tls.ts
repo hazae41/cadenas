@@ -244,28 +244,28 @@ export class TlsStream extends AsyncEventTarget {
   }
 
   private async onReadClose() {
-    // console.debug(`${this.#class.name}.onReadClose`)
+    console.debug(`${this.#class.name}.onReadClose`)
 
     const closeEvent = new CloseEvent("close", {})
     if (!await this.read.dispatchEvent(closeEvent)) return
   }
 
   private async onWriteClose() {
-    // console.debug(`${this.#class.name}.onWriteClose`)
+    console.debug(`${this.#class.name}.onWriteClose`)
 
     const closeEvent = new CloseEvent("close", {})
     if (!await this.write.dispatchEvent(closeEvent)) return
   }
 
   private async onReadError(error?: unknown) {
-    // console.debug(`${this.#class.name}.onReadError`, error)
+    console.debug(`${this.#class.name}.onReadError`, error)
 
     const errorEvent = new ErrorEvent("error", { error })
     if (!await this.read.dispatchEvent(errorEvent)) return
   }
 
   private async onWriteError(error?: unknown) {
-    // console.debug(`${this.#class.name}.onWriteError`, error)
+    console.debug(`${this.#class.name}.onWriteError`, error)
 
     const errorEvent = new ErrorEvent("error", { error })
     if (!await this.write.dispatchEvent(errorEvent)) return
