@@ -26,31 +26,35 @@ async function createHttpStream() {
 export default function Home() {
 
   const onClick = useCallback(async () => {
-    const ws = await createWebSocketStream()
+    try {
+      const ws = await createWebSocketStream()
 
-    const ciphers = [
-      // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-      // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
-      // Ciphers.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
-      // Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
-      // Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
-      // Ciphers.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
-      Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
-    ]
+      const ciphers = [
+        // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+        // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
+        // Ciphers.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
+        // Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+        // Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
+        // Ciphers.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
+        Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+      ]
 
-    const tls = new TlsStream(ws, { ciphers })
+      const tls = new TlsStream(ws, { ciphers })
 
-    await tls.handshake()
+      await tls.handshake()
 
-    const headers = { "Content-Type": "application/json" }
-    const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
-    const res = await fetch("https://eth.llamarpc.com", { stream: tls, method: "POST", headers, body })
+      const headers = { "Content-Type": "application/json" }
+      const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
+      const res = await fetch("https://eth.llamarpc.com", { stream: tls, method: "POST", headers, body })
 
-    // const res = await fetch("https://twitter.com", { stream: tls })
+      // const res = await fetch("https://twitter.com", { stream: tls })
 
-    console.log(res)
-    const text = await res.text()
-    console.log(text)
+      console.log(res)
+      const text = await res.text()
+      console.log(text)
+    } catch (e: unknown) {
+      console.error("lol", e)
+    }
   }, [])
 
   return <button onClick={onClick}>
