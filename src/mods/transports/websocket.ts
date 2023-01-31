@@ -61,21 +61,27 @@ export class WebSocketSource implements UnderlyingSource<Uint8Array> {
   ) { }
 
   async start(controller: ReadableStreamController<Uint8Array>) {
-    const onMessage = (e: MessageEvent) => {
-      const chunk = new Uint8Array(e.data satisfies ArrayBuffer)
+
+    const onMessage = (msgEvent: MessageEvent<ArrayBuffer>) => {
+      const chunk = new Uint8Array(msgEvent.data)
       try { controller.enqueue(chunk) } catch (e: unknown) { }
     }
 
-    const onError = (e: Event) => {
+    const onError = (event: Event) => {
+      const error = new Error(`Errored`, { cause: event })
+      try { controller.error(error) } catch (e: unknown) { }
+
       this.websocket.removeEventListener("message", onMessage)
       this.websocket.removeEventListener("close", onClose)
-      try { controller.error(e) } catch (e: unknown) { }
+      this.websocket.removeEventListener("error", onError)
     }
 
-    const onClose = (e: CloseEvent) => {
-      this.websocket.removeEventListener("message", onMessage)
-      this.websocket.removeEventListener("error", onError)
+    const onClose = (closeEvent: CloseEvent) => {
       try { controller.close() } catch (e: unknown) { }
+
+      this.websocket.removeEventListener("message", onMessage)
+      this.websocket.removeEventListener("close", onClose)
+      this.websocket.removeEventListener("error", onError)
     }
 
     this.websocket.addEventListener("message", onMessage, { passive: true })
@@ -113,14 +119,21 @@ export class WebSocketSink implements UnderlyingSink<Uint8Array> {
   ) { }
 
   async start(controller: WritableStreamDefaultController) {
-    const onError = (e: Event) => {
+
+    const onClose = (closeEvent: CloseEvent) => {
+      const error = new Error(`Closed`, { cause: closeEvent })
+      try { controller.error(error) } catch (e: unknown) { }
+
       this.websocket.removeEventListener("close", onClose)
-      try { controller.error(e) } catch (e: unknown) { }
+      this.websocket.removeEventListener("error", onError)
     }
 
-    const onClose = (e: CloseEvent) => {
+    const onError = (event: Event) => {
+      const error = new Error(`Errored`, { cause: event })
+      try { controller.error(error) } catch (e: unknown) { }
+
+      this.websocket.removeEventListener("close", onClose)
       this.websocket.removeEventListener("error", onError)
-      try { controller.error(e) } catch (e: unknown) { }
     }
 
     this.websocket.addEventListener("error", onError, { passive: true })
