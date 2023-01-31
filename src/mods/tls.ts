@@ -5,10 +5,8 @@ import { Bytes } from "libs/bytes/bytes.js"
 import { AbortEvent } from "libs/events/abort.js"
 import { CloseEvent } from "libs/events/close.js"
 import { ErrorEvent } from "libs/events/error.js"
-import { Events } from "libs/events/events.js"
 import { AsyncEventTarget } from "libs/events/target.js"
 import { Future } from "libs/futures/future.js"
-import { Streams } from "libs/streams/streams.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
@@ -243,11 +241,6 @@ export class TlsStream extends AsyncEventTarget {
       .pipeTo(this.piper.writable)
       .then(() => { })
       .catch(() => { })
-
-    const onError = this.onError.bind(this)
-
-    this.read.addEventListener("error", onError, { passive: true })
-    this.write.addEventListener("error", onError, { passive: true })
   }
 
   private async onReadClose() {
@@ -265,9 +258,6 @@ export class TlsStream extends AsyncEventTarget {
   }
 
   private async onReadError(error?: unknown) {
-    if (Streams.isCloseError(error))
-      return await this.onReadClose()
-
     // console.debug(`${this.#class.name}.onReadError`, error)
 
     const errorEvent = new ErrorEvent("error", { error })
@@ -275,25 +265,10 @@ export class TlsStream extends AsyncEventTarget {
   }
 
   private async onWriteError(error?: unknown) {
-    if (Streams.isCloseError(error))
-      return await this.onWriteClose()
-
     // console.debug(`${this.#class.name}.onWriteError`, error)
 
     const errorEvent = new ErrorEvent("error", { error })
     if (!await this.write.dispatchEvent(errorEvent)) return
-  }
-
-  private async onError(event: Event) {
-    const errorEvent = event as ErrorEvent
-
-    // console.debug(`${this.#class.name}.onError`, errorEvent)
-
-    const errorEventClone = Events.clone(errorEvent)
-    if (!await this.dispatchEvent(errorEventClone)) return
-
-    try { this.input!.error(errorEvent.error) } catch (e: unknown) { }
-    try { this.output!.error(errorEvent.error) } catch (e: unknown) { }
   }
 
   private async onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
@@ -348,14 +323,14 @@ export class TlsStream extends AsyncEventTarget {
     try {
       signal?.addEventListener("abort", onAbort, { passive: true })
       this.read.addEventListener("close", onClose, { passive: true })
-      this.addEventListener("error", onError, { passive: true })
+      this.read.addEventListener("error", onError, { passive: true })
       this.addEventListener("finished", future.ok, { passive: true })
 
       await future.promise
     } finally {
       signal?.removeEventListener("abort", onAbort)
       this.read.removeEventListener("close", onClose)
-      this.removeEventListener("error", onError)
+      this.read.removeEventListener("error", onError)
       this.removeEventListener("finished", future.ok)
     }
   }
