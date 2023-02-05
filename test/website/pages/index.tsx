@@ -1,4 +1,4 @@
-import { BatchedFetchStream, Ciphers, TlsStream, WebSocketStream } from "@hazae41/cadenas"
+import { Ciphers, TlsStream, WebSocketStream } from "@hazae41/cadenas"
 import { fetch } from "@hazae41/fleche"
 import { useCallback } from "react"
 
@@ -14,13 +14,6 @@ async function createWebSocketStream() {
 
   await new Promise(ok => setTimeout(ok, 100))
   return new WebSocketStream(websocket)
-}
-
-async function createHttpStream() {
-  const headers = { "x-session-id": crypto.randomUUID() }
-  const request = new Request("https://meek.bamsoftware.com/", { headers })
-
-  return new BatchedFetchStream(request, { highDelay: 100 })
 }
 
 export default function Home() {
