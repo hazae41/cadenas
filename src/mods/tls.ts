@@ -198,9 +198,7 @@ export class TlsStream extends AsyncEventTarget {
   private input?: TransformStreamDefaultController<Uint8Array>
   private output?: TransformStreamDefaultController<Uint8Array>
 
-  private buffer = Bytes.allocUnsafe(64 * 1024)
-  private wbinary = new Binary(this.buffer)
-  private rbinary = new Binary(this.buffer)
+  private buffer = Binary.allocUnsafe(65535)
 
   private state: State = { type: "none", client_encrypted: false, server_encrypted: false }
 
@@ -338,41 +336,39 @@ export class TlsStream extends AsyncEventTarget {
   private async onRead(chunk: Uint8Array) {
     console.debug(this.#class.name, "<-", chunk)
 
-    this.wbinary.write(chunk)
-    this.rbinary.view = this.buffer.subarray(0, this.wbinary.offset)
+    if (this.buffer.offset)
+      await this.onReadBuffered(chunk)
+    else
+      await this.onReadDirect(chunk)
+  }
 
-    while (this.rbinary.remaining) {
-      const record = PlaintextRecord.tryRead(this.rbinary)
+  private async onReadBuffered(chunk: Uint8Array) {
+    this.buffer.write(chunk)
 
-      if (!record) break
+    const cursor = await this.onReadDirect(this.buffer.before)
+
+    if (!cursor.remaining) {
+      this.buffer.offset = 0
+    }
+
+    return cursor
+  }
+
+  private async onReadDirect(chunk: Uint8Array) {
+    const cursor = new Binary(chunk)
+
+    while (cursor.remaining) {
+      const record = PlaintextRecord.tryRead(cursor)
+
+      if (!record) {
+        this.buffer.write(cursor.after)
+        break
+      }
 
       await this.onRecord(record, this.state)
     }
 
-    if (!this.rbinary.offset)
-      return
-
-    if (this.rbinary.offset === this.wbinary.offset) {
-      this.rbinary.offset = 0
-      this.wbinary.offset = 0
-      return
-    }
-
-    if (this.rbinary.remaining && this.wbinary.remaining < 4096) {
-      // console.debug(`${this.#class.name}`, `Reallocating buffer`)
-
-      const remaining = this.buffer.subarray(this.rbinary.offset, this.wbinary.offset)
-
-      this.rbinary.offset = 0
-      this.wbinary.offset = 0
-
-      this.buffer = Bytes.allocUnsafe(64 * 1024)
-      this.rbinary.view = this.buffer
-      this.wbinary.view = this.buffer
-
-      this.wbinary.write(remaining)
-      return
-    }
+    return cursor
   }
 
   private async onWrite(chunk: Uint8Array) {
