@@ -342,6 +342,11 @@ export class TlsStream extends AsyncEventTarget {
       await this.onReadDirect(chunk)
   }
 
+  /**
+   * Read from buffer
+   * @param chunk 
+   * @returns 
+   */
   private async onReadBuffered(chunk: Uint8Array) {
     this.buffer.write(chunk)
 
@@ -354,6 +359,11 @@ export class TlsStream extends AsyncEventTarget {
     return cursor
   }
 
+  /**
+   * Zero-copy reading
+   * @param chunk 
+   * @returns 
+   */
   private async onReadDirect(chunk: Uint8Array) {
     const cursor = new Binary(chunk)
 
