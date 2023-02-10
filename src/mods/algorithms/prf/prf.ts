@@ -1,4 +1,4 @@
-import { Bytes } from "libs/bytes/bytes.js"
+import { Bytes } from "@hazae41/bytes"
 import { HMAC } from "mods/algorithms/hmac/hmac.js"
 
 /**

@@ -1,7 +1,7 @@
 import { Binary } from "@hazae41/binary"
+import { Bytes } from "@hazae41/bytes"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
-import { Bytes } from "libs/bytes/bytes.js"
 import { AbortEvent } from "libs/events/abort.js"
 import { CloseEvent } from "libs/events/close.js"
 import { ErrorEvent } from "libs/events/error.js"
@@ -336,7 +336,7 @@ export class TlsStream extends AsyncEventTarget {
   }
 
   private async onRead(chunk: Uint8Array) {
-    console.debug("<-", chunk)
+    console.debug(this.#class.name, "<-", chunk)
 
     this.wbinary.write(chunk)
     this.rbinary.view = this.buffer.subarray(0, this.wbinary.offset)

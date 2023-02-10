@@ -24,6 +24,7 @@
   "dependencies": {
     "@hazae41/asn1": "^1.0.17",
     "@hazae41/binary": "^1.1.8",
+    "@hazae41/bytes": "^1.0.3",
     "@hazae41/x509": "^1.0.18"
   },
   "devDependencies": {

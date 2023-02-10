@@ -1,5 +1,5 @@
+import { Bytes } from "@hazae41/bytes"
 import { assert, test } from "@hazae41/phobos"
-import { Bytes } from "libs/bytes/bytes.js"
 import { relative, resolve } from "path"
 import { PRF } from "./prf.js"
 

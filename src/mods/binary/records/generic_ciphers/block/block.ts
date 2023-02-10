@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Bytes } from "libs/bytes/bytes.js"
+import { Bytes } from "@hazae41/bytes"
 import { Writable } from "mods/binary/fragment.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { BlockCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js"

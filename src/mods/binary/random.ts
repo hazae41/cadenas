@@ -1,5 +1,5 @@
 import { Binary } from "@hazae41/binary"
-import { Bytes } from "libs/bytes/bytes.js"
+import { Bytes } from "@hazae41/bytes"
 
 export class Random {
   constructor(
