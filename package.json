@@ -22,21 +22,21 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@hazae41/asn1": "^1.0.17",
-    "@hazae41/binary": "^1.1.8",
+    "@hazae41/asn1": "^1.0.19",
+    "@hazae41/binary": "^1.1.12",
     "@hazae41/bytes": "^1.0.3",
-    "@hazae41/x509": "^1.0.18"
+    "@hazae41/x509": "^1.0.19"
   },
   "devDependencies": {
     "@hazae41/phobos": "^1.0.10",
     "@rollup/plugin-inject": "^5.0.3",
     "@rollup/plugin-typescript": "^11.0.0",
-    "@types/node": "^18.11.18",
+    "@types/node": "^18.13.0",
     "rimraf": "^4.1.2",
-    "rollup": "^3.12.0",
+    "rollup": "^3.15.0",
     "rollup-plugin-dts": "^5.1.1",
-    "rollup-plugin-node-externals": "^5.1.0",
-    "typescript": "^4.9.4"
+    "rollup-plugin-node-externals": "^5.1.2",
+    "typescript": "^4.9.5"
   },
   "exports": {
     ".": {
