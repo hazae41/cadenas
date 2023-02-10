@@ -210,8 +210,6 @@ export class TlsStream extends AsyncEventTarget {
 
     const { signal } = params
 
-    console.log("haha")
-
     this.reader = new TransformStream<Uint8Array>({
       start: this.onReadStart.bind(this),
       transform: this.onRead.bind(this),
