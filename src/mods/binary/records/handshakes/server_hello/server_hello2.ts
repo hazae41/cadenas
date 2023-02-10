@@ -34,35 +34,35 @@ export class ServerHello2 {
       + (this.extensions?.size() ?? 0)
   }
 
-  write(binary: Binary) {
-    binary.writeUint16(this.server_version)
-    this.random.write(binary)
-    this.session_id.write(binary)
-    binary.writeUint16(this.cipher_suite)
-    this.compression_methods.write(binary)
-    this.extensions?.write(binary)
+  write(cursor: Binary) {
+    cursor.writeUint16(this.server_version)
+    this.random.write(cursor)
+    this.session_id.write(cursor)
+    cursor.writeUint16(this.cipher_suite)
+    this.compression_methods.write(cursor)
+    this.extensions?.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
+  static read(cursor: Binary, length: number) {
+    const start = cursor.offset
 
-    const server_version = binary.readUint16()
-    const random = Random.read(binary)
-    const session_id = LengthedVector(Number8, SafeOpaque).read(binary)
-    const cipher_suite = binary.readUint16()
-    const compression_methods = LengthedVector(Number8, UnlengthedList(Number8)).read(binary)
+    const server_version = cursor.readUint16()
+    const random = Random.read(cursor)
+    const session_id = LengthedVector(Number8, SafeOpaque).read(cursor)
+    const cipher_suite = cursor.readUint16()
+    const compression_methods = LengthedVector(Number8, UnlengthedList(Number8)).read(cursor)
 
-    const extensions = binary.offset - start < length
-      ? LengthedVector(Number16, UnlengthedList(TypedExtension)).read(binary)
+    const extensions = cursor.offset - start < length
+      ? LengthedVector(Number16, UnlengthedList(TypedExtension)).read(cursor)
       : undefined
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(server_version, random, session_id, cipher_suite, compression_methods, extensions)

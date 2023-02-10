@@ -54,28 +54,28 @@ export class Alert {
     return 1 + 1
   }
 
-  write(binary: Binary) {
-    binary.writeUint8(this.level)
-    binary.writeUint8(this.description)
+  write(cursor: Binary) {
+    cursor.writeUint8(this.level)
+    cursor.writeUint8(this.description)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
   record(version: number) {
     return new PlaintextRecord<Alert>(this.#class.type, version, this)
   }
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
+  static read(cursor: Binary, length: number) {
+    const start = cursor.offset
 
-    const level = binary.readUint8()
-    const description = binary.readUint8()
+    const level = cursor.readUint8()
+    const description = cursor.readUint8()
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(level, description)

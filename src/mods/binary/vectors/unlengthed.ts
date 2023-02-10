@@ -5,13 +5,13 @@ import { Vector } from "mods/binary/vectors/writable.js";
 
 export const UnlengthedVector = <L extends NumberX, T extends Writable>(vlength: NumberClass<L>, clazz: Unlengthed<T>) => class {
 
-  static read(binary: Binary) {
-    const length = vlength.read(binary).value
-    const start = binary.offset
+  static read(cursor: Binary) {
+    const length = vlength.read(cursor).value
+    const start = cursor.offset
 
-    const value = clazz.read(binary)
+    const value = clazz.read(cursor)
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid vector length`)
 
     return new (Vector(vlength))(value)

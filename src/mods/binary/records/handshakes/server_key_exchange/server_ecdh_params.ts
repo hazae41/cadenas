@@ -13,14 +13,14 @@ export class ServerECDHParams {
     return this.curve_params.size() + this.public_point.size()
   }
 
-  write(binary: Binary) {
-    this.curve_params.write(binary)
-    this.public_point.write(binary)
+  write(cursor: Binary) {
+    this.curve_params.write(cursor)
+    this.public_point.write(cursor)
   }
 
-  static read(binary: Binary) {
-    const curve_params = ECParameters.read(binary)
-    const public_point = ECPoint.read(binary)
+  static read(cursor: Binary) {
+    const curve_params = ECParameters.read(cursor)
+    const public_point = ECPoint.read(cursor)
 
     return new this(curve_params, public_point)
   }

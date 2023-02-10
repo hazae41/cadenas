@@ -6,9 +6,9 @@ import { Extension } from "./extension.js"
 
 export class OpaqueExtension {
 
-  static read(binary: Binary) {
-    const extension_type = binary.readUint16()
-    const extension_data = LengthedVector(Number16, Opaque).read(binary)
+  static read(cursor: Binary) {
+    const extension_type = cursor.readUint16()
+    const extension_data = LengthedVector(Number16, Opaque).read(cursor)
 
     return new Extension(extension_type, extension_data)
   }

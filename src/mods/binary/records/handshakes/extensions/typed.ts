@@ -15,20 +15,20 @@ export type Extensions =
 
 export class TypedExtension {
 
-  private static read2(type: number, binary: Binary) {
+  private static read2(type: number, cursor: Binary) {
     if (type === Extension.types.signature_algorithms)
-      return LengthedVector(Number16, SignatureAlgorithms).read(binary)
+      return LengthedVector(Number16, SignatureAlgorithms).read(cursor)
     if (type === Extension.types.elliptic_curves)
-      return LengthedVector(Number16, EllipticCurves).read(binary)
+      return LengthedVector(Number16, EllipticCurves).read(cursor)
     if (type === Extension.types.ec_point_formats)
-      return LengthedVector(Number16, ECPointFormats).read(binary)
+      return LengthedVector(Number16, ECPointFormats).read(cursor)
 
-    return LengthedVector(Number16, Opaque).read(binary)
+    return LengthedVector(Number16, Opaque).read(cursor)
   }
 
-  static read(binary: Binary) {
-    const subtype = binary.readUint16()
-    const data = this.read2(subtype, binary)
+  static read(cursor: Binary) {
+    const subtype = cursor.readUint16()
+    const data = this.read2(subtype, cursor)
 
     return new Extension<Extensions>(subtype, data)
   }

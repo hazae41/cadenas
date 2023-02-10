@@ -20,18 +20,18 @@ export class ECPoint {
     return this.point.size()
   }
 
-  write(binary: Binary) {
-    this.point.write(binary)
+  write(cursor: Binary) {
+    this.point.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    const point = LengthedVector(Number8, Opaque).read(binary)
+  static read(cursor: Binary) {
+    const point = LengthedVector(Number8, Opaque).read(cursor)
 
     return new this(point)
   }

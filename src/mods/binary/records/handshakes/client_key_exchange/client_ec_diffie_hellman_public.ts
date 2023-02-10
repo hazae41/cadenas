@@ -17,18 +17,18 @@ export class ClientECDiffieHellmanPublic {
     return this.ecdh_Yc.size()
   }
 
-  write(binary: Binary) {
-    this.ecdh_Yc.write(binary)
+  write(cursor: Binary) {
+    this.ecdh_Yc.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    const ecdh_Yc = ECPoint.read(binary)
+  static read(cursor: Binary) {
+    const ecdh_Yc = ECPoint.read(cursor)
 
     return new this(ecdh_Yc)
   }

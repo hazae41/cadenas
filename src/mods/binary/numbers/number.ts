@@ -12,5 +12,5 @@ export interface NumberClass<T> {
   readonly size: number
 
   new(value: number): T
-  read(binary: Binary): T
+  read(cursor: Binary): T
 }

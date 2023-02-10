@@ -24,17 +24,17 @@ export class SignatureAlgorithm {
     return 1
   }
 
-  write(binary: Binary) {
-    binary.writeUint8(this.type)
+  write(cursor: Binary) {
+    cursor.writeUint8(this.type)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    return new this(binary.readUint8())
+  static read(cursor: Binary) {
+    return new this(cursor.readUint8())
   }
 }

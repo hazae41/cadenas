@@ -18,20 +18,20 @@ export class Random {
     return 4 + this.random_bytes.length
   }
 
-  write(binary: Binary) {
-    binary.writeUint32(this.gmt_unix_time)
-    binary.write(this.random_bytes)
+  write(cursor: Binary) {
+    cursor.writeUint32(this.gmt_unix_time)
+    cursor.write(this.random_bytes)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    const gmt_unix_time = binary.readUint32()
-    const random_bytes = new Uint8Array(binary.read(28))
+  static read(cursor: Binary) {
+    const gmt_unix_time = cursor.readUint32()
+    const random_bytes = new Uint8Array(cursor.read(28))
 
     return new this(gmt_unix_time, random_bytes)
   }

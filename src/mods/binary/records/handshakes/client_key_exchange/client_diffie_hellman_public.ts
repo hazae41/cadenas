@@ -20,18 +20,18 @@ export class ClientDiffieHellmanPublic {
     return this.dh_Yc.size()
   }
 
-  write(binary: Binary) {
-    this.dh_Yc.write(binary)
+  write(cursor: Binary) {
+    this.dh_Yc.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    const dh_Yc = LengthedVector(Number16, SafeOpaque).read(binary)
+  static read(cursor: Binary) {
+    const dh_Yc = LengthedVector(Number16, SafeOpaque).read(cursor)
 
     return new this(dh_Yc)
   }

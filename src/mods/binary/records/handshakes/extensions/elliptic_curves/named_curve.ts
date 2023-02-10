@@ -26,18 +26,18 @@ export class NamedCurve {
     return 2
   }
 
-  write(binary: Binary) {
-    binary.writeUint16(this.subtype)
+  write(cursor: Binary) {
+    cursor.writeUint16(this.subtype)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary,) {
-    const subtype = binary.readUint16()
+  static read(cursor: Binary,) {
+    const subtype = cursor.readUint16()
 
     return new this(subtype)
   }

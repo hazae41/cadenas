@@ -16,20 +16,20 @@ export class DigitallySigned {
     return this.algorithm.size() + this.signature.size()
   }
 
-  write(binary: Binary) {
-    this.algorithm.write(binary)
-    this.signature.write(binary)
+  write(cursor: Binary) {
+    this.algorithm.write(cursor)
+    this.signature.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    const algorithm = SignatureAndHashAlgorithm.read(binary)
-    const signature = LengthedVector(Number16, SafeOpaque).read(binary)
+  static read(cursor: Binary) {
+    const algorithm = SignatureAndHashAlgorithm.read(cursor)
+    const signature = LengthedVector(Number16, SafeOpaque).read(cursor)
 
     return new this(algorithm, signature)
   }

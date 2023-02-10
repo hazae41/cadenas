@@ -468,9 +468,9 @@ export class TlsStream extends AsyncEventTarget {
     if (state.type !== "handshake")
       throw new Error(`Invalid state`)
 
-    const binary = new Binary(record.fragment.bytes)
+    const cursor = new Binary(record.fragment.bytes)
     const length = record.fragment.bytes.length
-    const handshake = Handshake.read(binary, length)
+    const handshake = Handshake.read(cursor, length)
 
     if (handshake.subtype !== Handshake.types.hello_request)
       state.messages.push(new Uint8Array(record.fragment.bytes))

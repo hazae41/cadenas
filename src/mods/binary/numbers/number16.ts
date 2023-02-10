@@ -13,17 +13,17 @@ export class Number16 {
     return this.#class.size
   }
 
-  write(binary: Binary) {
-    binary.writeUint16(this.value)
+  write(cursor: Binary) {
+    cursor.writeUint16(this.value)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    return new this(binary.readUint16())
+  static read(cursor: Binary) {
+    return new this(cursor.readUint16())
   }
 }

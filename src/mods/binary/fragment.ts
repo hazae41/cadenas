@@ -2,14 +2,14 @@ import { Binary } from "@hazae41/binary";
 
 export interface Writable {
   size(): number
-  write(binary: Binary): void
+  write(cursor: Binary): void
   export(): Uint8Array
 }
 
 export interface Unlengthed<T> {
-  read(binary: Binary): T
+  read(cursor: Binary): T
 }
 
 export interface Lengthed<T> {
-  read(binary: Binary, length: number): T
+  read(cursor: Binary, length: number): T
 }

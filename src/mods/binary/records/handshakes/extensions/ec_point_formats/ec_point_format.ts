@@ -20,18 +20,18 @@ export class ECPointFormat {
     return 1
   }
 
-  write(binary: Binary) {
-    binary.writeUint8(this.subtype)
+  write(cursor: Binary) {
+    cursor.writeUint8(this.subtype)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary,) {
-    const subtype = binary.readUint8()
+  static read(cursor: Binary,) {
+    const subtype = cursor.readUint8()
 
     return new this(subtype)
   }

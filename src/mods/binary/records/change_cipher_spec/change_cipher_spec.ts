@@ -22,26 +22,26 @@ export class ChangeCipherSpec {
     return 1
   }
 
-  write(binary: Binary) {
-    binary.writeUint8(this.subtype)
+  write(cursor: Binary) {
+    cursor.writeUint8(this.subtype)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
   record(version: number) {
     return new PlaintextRecord<ChangeCipherSpec>(this.#class.type, version, this)
   }
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
+  static read(cursor: Binary, length: number) {
+    const start = cursor.offset
 
-    const subtype = binary.readUint8()
+    const subtype = cursor.readUint8()
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(subtype)

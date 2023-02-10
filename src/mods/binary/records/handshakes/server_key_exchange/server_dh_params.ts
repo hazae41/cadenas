@@ -19,22 +19,22 @@ export class ServerDHParams {
       + this.dh_Ys.size()
   }
 
-  write(binary: Binary) {
-    this.dh_p.write(binary)
-    this.dh_g.write(binary)
-    this.dh_Ys.write(binary)
+  write(cursor: Binary) {
+    this.dh_p.write(cursor)
+    this.dh_g.write(cursor)
+    this.dh_Ys.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    const dh_p = LengthedVector(Number16, SafeOpaque).read(binary)
-    const dh_g = LengthedVector(Number16, SafeOpaque).read(binary)
-    const dh_Ys = LengthedVector(Number16, SafeOpaque).read(binary)
+  static read(cursor: Binary) {
+    const dh_p = LengthedVector(Number16, SafeOpaque).read(cursor)
+    const dh_g = LengthedVector(Number16, SafeOpaque).read(cursor)
+    const dh_Ys = LengthedVector(Number16, SafeOpaque).read(cursor)
 
     return new this(dh_p, dh_g, dh_Ys)
   }

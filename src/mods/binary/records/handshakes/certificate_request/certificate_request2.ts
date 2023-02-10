@@ -29,18 +29,18 @@ export class ClientCertificateType {
     return 1
   }
 
-  write(binary: Binary) {
-    binary.writeUint8(this.type)
+  write(cursor: Binary) {
+    cursor.writeUint8(this.type)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    return new this(binary.readUint8())
+  static read(cursor: Binary) {
+    return new this(cursor.readUint8())
   }
 }
 
@@ -61,26 +61,26 @@ export class CertificateRequest2 {
       + this.certificate_authorities.size()
   }
 
-  write(binary: Binary) {
-    this.certificate_types.write(binary)
-    this.supported_signature_algorithms.write(binary)
-    this.certificate_authorities.write(binary)
+  write(cursor: Binary) {
+    this.certificate_types.write(cursor)
+    this.supported_signature_algorithms.write(cursor)
+    this.certificate_authorities.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
+  static read(cursor: Binary, length: number) {
+    const start = cursor.offset
 
-    const certificate_types = LengthedVector(Number8, UnlengthedList(ClientCertificateType)).read(binary)
-    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedList(SignatureAndHashAlgorithm)).read(binary)
-    const certificate_authorities = LengthedVector(Number16, SafeOpaque).read(binary)
+    const certificate_types = LengthedVector(Number8, UnlengthedList(ClientCertificateType)).read(cursor)
+    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedList(SignatureAndHashAlgorithm)).read(cursor)
+    const certificate_authorities = LengthedVector(Number16, SafeOpaque).read(cursor)
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(certificate_types, supported_signature_algorithms, certificate_authorities)

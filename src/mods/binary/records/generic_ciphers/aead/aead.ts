@@ -15,24 +15,24 @@ export class GenericAEADCipher {
     return this.nonce_explicit.length + this.block.length
   }
 
-  write(binary: Binary) {
-    binary.write(this.nonce_explicit)
-    binary.write(this.block)
+  write(cursor: Binary) {
+    cursor.write(this.nonce_explicit)
+    cursor.write(this.block)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
+  static read(cursor: Binary, length: number) {
+    const start = cursor.offset
 
-    const nonce_explicit = binary.read(8)
-    const block = binary.read(length - 8)
+    const nonce_explicit = cursor.read(8)
+    const block = cursor.read(length - 8)
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(nonce_explicit, block)

@@ -18,14 +18,14 @@ export class PreMasterSecret {
       + this.random.length
   }
 
-  write(binary: Binary) {
-    binary.writeUint16(this.client_version)
-    binary.write(this.random)
+  write(cursor: Binary) {
+    cursor.writeUint16(this.client_version)
+    cursor.write(this.random)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 }

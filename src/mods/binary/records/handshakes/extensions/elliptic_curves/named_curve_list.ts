@@ -28,18 +28,18 @@ export class NamedCurveList {
     return this.named_curve_list.size()
   }
 
-  write(binary: Binary) {
-    this.named_curve_list.write(binary)
+  write(cursor: Binary) {
+    this.named_curve_list.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    const named_curve_list = LengthedVector(Number16, UnlengthedList(NamedCurve)).read(binary)
+  static read(cursor: Binary) {
+    const named_curve_list = LengthedVector(Number16, UnlengthedList(NamedCurve)).read(cursor)
 
     return new this(named_curve_list)
   }

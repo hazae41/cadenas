@@ -25,15 +25,15 @@ export const Vector = <L extends NumberX>(vlength: NumberClass<L>) => class <T e
     return vlength.size + this.value.size()
   }
 
-  write(binary: Binary) {
-    new vlength(this.value.size()).write(binary)
+  write(cursor: Binary) {
+    new vlength(this.value.size()).write(cursor)
 
-    this.value.write(binary)
+    this.value.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 }

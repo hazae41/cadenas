@@ -21,26 +21,26 @@ export class ClientKeyExchange2DH {
     return this.exchange_keys.size()
   }
 
-  write(binary: Binary) {
-    this.exchange_keys.write(binary)
+  write(cursor: Binary) {
+    this.exchange_keys.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
   handshake() {
     return new Handshake<ClientKeyExchange2DH>(this.#class.type, this)
   }
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
+  static read(cursor: Binary, length: number) {
+    const start = cursor.offset
 
-    const exchange_keys = ClientDiffieHellmanPublic.read(binary)
+    const exchange_keys = ClientDiffieHellmanPublic.read(cursor)
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(exchange_keys)

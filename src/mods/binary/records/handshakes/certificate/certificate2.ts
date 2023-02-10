@@ -20,12 +20,12 @@ export class Certificate2 {
     return this.#class.type
   }
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
+  static read(cursor: Binary, length: number) {
+    const start = cursor.offset
 
-    const certificate_list = LengthedVector(Number24, UnlengthedList(LengthedVector(Number24, SafeOpaque))).read(binary)
+    const certificate_list = LengthedVector(Number24, UnlengthedList(LengthedVector(Number24, SafeOpaque))).read(cursor)
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(certificate_list)
@@ -35,14 +35,14 @@ export class Certificate2 {
     return this.certificate_list.size()
   }
 
-  write(binary: Binary) {
-    this.certificate_list.write(binary)
+  write(cursor: Binary) {
+    this.certificate_list.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
   handshake() {

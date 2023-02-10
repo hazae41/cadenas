@@ -26,14 +26,14 @@ export class Extension<T extends Writable = Writable> {
     return 2 + this.data.size()
   }
 
-  write(binary: Binary) {
-    binary.writeUint16(this.subtype)
-    this.data.write(binary)
+  write(cursor: Binary) {
+    cursor.writeUint16(this.subtype)
+    this.data.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 }

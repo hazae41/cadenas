@@ -18,22 +18,22 @@ export class Finished2 {
     return this.verify_data.length
   }
 
-  write(binary: Binary) {
-    binary.write(this.verify_data)
+  write(cursor: Binary) {
+    cursor.write(this.verify_data)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
   handshake() {
     return new Handshake(this.type, this)
   }
 
-  static read(binary: Binary, length: number) {
-    const verify_data = binary.read(length)
+  static read(cursor: Binary, length: number) {
+    const verify_data = cursor.read(length)
 
     return new this(verify_data)
   }

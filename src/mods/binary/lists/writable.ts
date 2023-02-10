@@ -24,14 +24,14 @@ export class List<T extends Writable> {
     return size
   }
 
-  write(binary: Binary) {
+  write(cursor: Binary) {
     for (const element of this.array)
-      element.write(binary)
+      element.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 }

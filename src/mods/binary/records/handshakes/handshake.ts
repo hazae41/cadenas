@@ -34,30 +34,30 @@ export class Handshake<T extends Writable> {
     return 1 + 3 + this.fragment.size()
   }
 
-  write(binary: Binary) {
-    binary.writeUint8(this.subtype)
-    binary.writeUint24(this.fragment.size())
-    this.fragment.write(binary)
+  write(cursor: Binary) {
+    cursor.writeUint8(this.subtype)
+    cursor.writeUint24(this.fragment.size())
+    this.fragment.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
   record(version: number) {
     return new PlaintextRecord(this.#class.type, version, this)
   }
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
+  static read(cursor: Binary, length: number) {
+    const start = cursor.offset
 
-    const subtype = binary.readUint8()
-    const size = binary.readUint24()
-    const fragment = Opaque.read(binary, size)
+    const subtype = cursor.readUint8()
+    const size = cursor.readUint24()
+    const fragment = Opaque.read(cursor, size)
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(subtype, fragment)

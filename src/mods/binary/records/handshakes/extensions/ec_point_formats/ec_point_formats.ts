@@ -19,22 +19,22 @@ export class ECPointFormats {
     return this.ec_point_format_list.size()
   }
 
-  write(binary: Binary) {
-    this.ec_point_format_list.write(binary)
+  write(cursor: Binary) {
+    this.ec_point_format_list.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
   extension() {
     return Extension.from(this.#class.type, this)
   }
 
-  static read(binary: Binary) {
-    const ec_point_format_list = ECPointFormatList.read(binary)
+  static read(cursor: Binary) {
+    const ec_point_format_list = ECPointFormatList.read(cursor)
 
     return new this(ec_point_format_list)
   }

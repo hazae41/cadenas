@@ -61,30 +61,30 @@ export class ClientHello2 {
       + (this.extensions?.size() ?? 0)
   }
 
-  write(binary: Binary) {
-    binary.writeUint16(this.version)
-    this.random.write(binary)
-    this.session_id.write(binary)
-    this.cipher_suites.write(binary)
-    this.compression_methods.write(binary)
-    this.extensions?.write(binary)
+  write(cursor: Binary) {
+    cursor.writeUint16(this.version)
+    this.random.write(cursor)
+    this.session_id.write(cursor)
+    this.cipher_suites.write(cursor)
+    this.compression_methods.write(cursor)
+    this.extensions?.write(cursor)
   }
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
+  static read(cursor: Binary, length: number) {
+    const start = cursor.offset
 
-    const version = binary.readUint16()
-    const random = Random.read(binary)
+    const version = cursor.readUint16()
+    const random = Random.read(cursor)
 
-    const session_id = LengthedVector(Number8, SafeOpaque).read(binary)
-    const cipher_suites = LengthedVector(Number16, UnlengthedList(Number16)).read(binary)
-    const compression_methods = LengthedVector(Number8, UnlengthedList(Number8)).read(binary)
+    const session_id = LengthedVector(Number8, SafeOpaque).read(cursor)
+    const cipher_suites = LengthedVector(Number16, UnlengthedList(Number16)).read(cursor)
+    const compression_methods = LengthedVector(Number8, UnlengthedList(Number8)).read(cursor)
 
-    const extensions = binary.offset - start !== length
-      ? LengthedVector(Number16, UnlengthedList(OpaqueExtension)).read(binary)
+    const extensions = cursor.offset - start !== length
+      ? LengthedVector(Number16, UnlengthedList(OpaqueExtension)).read(cursor)
       : undefined
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
@@ -95,8 +95,8 @@ export class ClientHello2 {
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 }

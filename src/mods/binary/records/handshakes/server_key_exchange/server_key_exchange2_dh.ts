@@ -14,22 +14,22 @@ export class ServerKeyExchange2DH {
     return this.params.size()
   }
 
-  write(binary: Binary) {
-    this.params.write(binary)
+  write(cursor: Binary) {
+    this.params.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
+  static read(cursor: Binary, length: number) {
+    const start = cursor.offset
 
-    const params = ServerDHParams.read(binary)
+    const params = ServerDHParams.read(cursor)
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid ${this.name} length`)
 
     return new this(params)

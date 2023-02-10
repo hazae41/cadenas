@@ -28,35 +28,35 @@ export class PlaintextRecord<T extends Writable> {
     return 1 + 2 + 2 + this.fragment.size()
   }
 
-  write(binary: Binary) {
-    binary.writeUint8(this.subtype)
-    binary.writeUint16(this.version)
-    binary.writeUint16(this.fragment.size())
-    this.fragment.write(binary)
+  write(cursor: Binary) {
+    cursor.writeUint8(this.subtype)
+    cursor.writeUint16(this.version)
+    cursor.writeUint16(this.fragment.size())
+    this.fragment.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    const subtype = binary.readUint8()
-    const version = binary.readUint16()
-    const size = binary.readUint16()
-    const fragment = Opaque.read(binary, size)
+  static read(cursor: Binary) {
+    const subtype = cursor.readUint8()
+    const version = cursor.readUint16()
+    const size = cursor.readUint16()
+    const fragment = Opaque.read(cursor, size)
 
     return new this(subtype, version, fragment)
   }
 
-  static tryRead(binary: Binary) {
-    const start = binary.offset
+  static tryRead(cursor: Binary) {
+    const start = cursor.offset
 
     try {
-      return this.read(binary)
+      return this.read(cursor)
     } catch (e: unknown) {
-      binary.offset = start
+      cursor.offset = start
     }
   }
 
@@ -83,10 +83,10 @@ export class BlockCiphertextRecord {
   ) { }
 
   static from(record: PlaintextRecord<Opaque>) {
-    const binary = new Binary(record.fragment.bytes)
+    const cursor = new Binary(record.fragment.bytes)
     const length = record.fragment.bytes.length
 
-    const fragment = GenericBlockCipher.read(binary, length)
+    const fragment = GenericBlockCipher.read(cursor, length)
 
     return new this(record.subtype, record.version, fragment)
   }
@@ -95,17 +95,17 @@ export class BlockCiphertextRecord {
     return 1 + 2 + 2 + this.fragment.size()
   }
 
-  write(binary: Binary) {
-    binary.writeUint8(this.subtype)
-    binary.writeUint16(this.version)
-    binary.writeUint16(this.fragment.size())
-    this.fragment.write(binary)
+  write(cursor: Binary) {
+    cursor.writeUint8(this.subtype)
+    cursor.writeUint16(this.version)
+    cursor.writeUint16(this.fragment.size())
+    this.fragment.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
   async decrypt(encrypter: BlockEncrypter, sequence: bigint) {
@@ -122,10 +122,10 @@ export class AEADCiphertextRecord {
   ) { }
 
   static from(record: PlaintextRecord<Opaque>) {
-    const binary = new Binary(record.fragment.bytes)
+    const cursor = new Binary(record.fragment.bytes)
     const length = record.fragment.bytes.length
 
-    const fragment = GenericAEADCipher.read(binary, length)
+    const fragment = GenericAEADCipher.read(cursor, length)
 
     return new this(record.subtype, record.version, fragment)
   }
@@ -134,17 +134,17 @@ export class AEADCiphertextRecord {
     return 1 + 2 + 2 + this.fragment.size()
   }
 
-  write(binary: Binary) {
-    binary.writeUint8(this.subtype)
-    binary.writeUint16(this.version)
-    binary.writeUint16(this.fragment.size())
-    this.fragment.write(binary)
+  write(cursor: Binary) {
+    cursor.writeUint8(this.subtype)
+    cursor.writeUint16(this.version)
+    cursor.writeUint16(this.fragment.size())
+    this.fragment.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
   async decrypt(encrypter: AEADEncrypter, sequence: bigint) {

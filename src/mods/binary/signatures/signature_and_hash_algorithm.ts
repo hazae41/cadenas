@@ -17,20 +17,20 @@ export class SignatureAndHashAlgorithm {
     return this.hash.size() + this.signature.size()
   }
 
-  write(binary: Binary) {
-    this.hash.write(binary)
-    this.signature.write(binary)
+  write(cursor: Binary) {
+    this.hash.write(cursor)
+    this.signature.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    const hash = HashAlgorithm.read(binary)
-    const signature = SignatureAlgorithm.read(binary)
+  static read(cursor: Binary) {
+    const hash = HashAlgorithm.read(cursor)
+    const signature = SignatureAlgorithm.read(cursor)
 
     return new this(hash, signature)
   }

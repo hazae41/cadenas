@@ -32,22 +32,22 @@ export class SignatureAlgorithms {
     return this.supported_signature_algorithms.size()
   }
 
-  write(binary: Binary) {
-    this.supported_signature_algorithms.write(binary)
+  write(cursor: Binary) {
+    this.supported_signature_algorithms.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
   extension() {
     return Extension.from(this.#class.type, this)
   }
 
-  static read(binary: Binary) {
-    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedList(SignatureAndHashAlgorithm)).read(binary)
+  static read(cursor: Binary) {
+    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedList(SignatureAndHashAlgorithm)).read(cursor)
 
     return new this(supported_signature_algorithms)
   }

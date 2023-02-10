@@ -4,14 +4,14 @@ import { List } from "mods/binary/lists/writable.js"
 
 export const UnlengthedList = <T extends Writable>(clazz: Unlengthed<T>) => class {
 
-  static read(binary: Binary, length: number) {
-    const start = binary.offset
+  static read(cursor: Binary, length: number) {
+    const start = cursor.offset
     const array = new Array<T>()
 
-    while (binary.offset - start < length)
-      array.push(clazz.read(binary))
+    while (cursor.offset - start < length)
+      array.push(clazz.read(cursor))
 
-    if (binary.offset - start !== length)
+    if (cursor.offset - start !== length)
       throw new Error(`Invalid array length`)
 
     return new List(array)

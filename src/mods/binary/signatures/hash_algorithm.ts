@@ -30,11 +30,11 @@ export class HashAlgorithm {
     return 1
   }
 
-  write(binary: Binary) {
-    binary.writeUint8(this.type)
+  write(cursor: Binary) {
+    cursor.writeUint8(this.type)
   }
 
-  static read(binary: Binary) {
-    return new this(binary.readUint8())
+  static read(cursor: Binary) {
+    return new this(cursor.readUint8())
   }
 }

@@ -13,20 +13,20 @@ export class ECParameters {
     return this.curve_type.size() + this.named_curve.size()
   }
 
-  write(binary: Binary) {
-    this.curve_type.write(binary)
-    this.named_curve.write(binary)
+  write(cursor: Binary) {
+    this.curve_type.write(cursor)
+    this.named_curve.write(cursor)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
-  static read(binary: Binary) {
-    const curve_type = ECCurveType.read(binary)
-    const named_curve = NamedCurve.read(binary)
+  static read(cursor: Binary) {
+    const curve_type = ECCurveType.read(cursor)
+    const named_curve = NamedCurve.read(cursor)
 
     return new this(curve_type, named_curve)
   }

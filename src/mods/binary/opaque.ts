@@ -26,14 +26,14 @@ export class Opaque {
     return this.bytes.length
   }
 
-  write(binary: Binary) {
-    binary.write(this.bytes)
+  write(cursor: Binary) {
+    cursor.write(this.bytes)
   }
 
   export() {
-    const binary = Binary.allocUnsafe(this.size())
-    this.write(binary)
-    return binary.bytes
+    const cursor = Binary.allocUnsafe(this.size())
+    this.write(cursor)
+    return cursor.bytes
   }
 
   /**
@@ -42,8 +42,8 @@ export class Opaque {
    * @param length 
    * @returns 
    */
-  static read(binary: Binary, length: number) {
-    const buffer = binary.read(length)
+  static read(cursor: Binary, length: number) {
+    const buffer = cursor.read(length)
 
     return new this(buffer)
   }
@@ -66,8 +66,8 @@ export class SafeOpaque extends Opaque {
    * @param length 
    * @returns 
    */
-  static read(binary: Binary, length: number) {
-    const buffer = new Uint8Array(binary.read(length))
+  static read(cursor: Binary, length: number) {
+    const buffer = new Uint8Array(cursor.read(length))
 
     return new this(buffer)
   }
