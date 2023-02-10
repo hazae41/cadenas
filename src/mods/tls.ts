@@ -210,6 +210,8 @@ export class TlsStream extends AsyncEventTarget {
 
     const { signal } = params
 
+    console.log("haha")
+
     this.reader = new TransformStream<Uint8Array>({
       start: this.onReadStart.bind(this),
       transform: this.onRead.bind(this),
@@ -349,14 +351,10 @@ export class TlsStream extends AsyncEventTarget {
    */
   private async onReadBuffered(chunk: Uint8Array) {
     this.buffer.write(chunk)
+    const full = this.buffer.before
 
-    const cursor = await this.onReadDirect(this.buffer.before)
-
-    if (!cursor.remaining) {
-      this.buffer.offset = 0
-    }
-
-    return cursor
+    this.buffer.offset = 0
+    await this.onReadDirect(full)
   }
 
   /**
@@ -377,8 +375,6 @@ export class TlsStream extends AsyncEventTarget {
 
       await this.onRecord(record, this.state)
     }
-
-    return cursor
   }
 
   private async onWrite(chunk: Uint8Array) {
