@@ -14,7 +14,7 @@ export type Extensions =
 
 export class TypedExtension {
 
-  private static read2(type: number, cursor: Cursor) {
+  static #subread(type: number, cursor: Cursor) {
     if (type === Extension.types.signature_algorithms)
       return ReadableVector(Number16, SignatureAlgorithms).read(cursor)
     if (type === Extension.types.elliptic_curves)
@@ -27,7 +27,7 @@ export class TypedExtension {
 
   static read(cursor: Cursor) {
     const subtype = cursor.readUint16()
-    const data = this.read2(subtype, cursor)
+    const data = this.#subread(subtype, cursor)
 
     return new Extension<Extensions>(subtype, data)
   }

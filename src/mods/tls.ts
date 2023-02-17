@@ -190,16 +190,16 @@ export class TlsStream extends AsyncEventTarget {
   readonly readable: ReadableStream<Uint8Array>
   readonly writable: WritableStream<Uint8Array>
 
-  private reader: TransformStream<Uint8Array>
-  private writer: TransformStream<Uint8Array>
-  private piper: TransformStream<Uint8Array>
+  #reader: TransformStream<Uint8Array>
+  #writer: TransformStream<Uint8Array>
+  #piper: TransformStream<Uint8Array>
 
-  private input?: TransformStreamDefaultController<Uint8Array>
-  private output?: TransformStreamDefaultController<Uint8Array>
+  #input?: TransformStreamDefaultController<Uint8Array>
+  #output?: TransformStreamDefaultController<Uint8Array>
 
-  private buffer = Cursor.allocUnsafe(65535)
+  #buffer = Cursor.allocUnsafe(65535)
 
-  private state: State = { type: "none", client_encrypted: false, server_encrypted: false }
+  #state: State = { type: "none", client_encrypted: false, server_encrypted: false }
 
   constructor(
     readonly substream: ReadableWritablePair<Uint8Array>,
@@ -209,78 +209,78 @@ export class TlsStream extends AsyncEventTarget {
 
     const { signal } = params
 
-    this.reader = new TransformStream<Uint8Array>({
-      start: this.onReadStart.bind(this),
-      transform: this.onRead.bind(this),
+    this.#reader = new TransformStream<Uint8Array>({
+      start: this.#onReadStart.bind(this),
+      transform: this.#onRead.bind(this),
     })
 
-    this.writer = new TransformStream<Uint8Array>({
-      start: this.onWriteStart.bind(this),
-      transform: this.onWrite.bind(this),
+    this.#writer = new TransformStream<Uint8Array>({
+      start: this.#onWriteStart.bind(this),
+      transform: this.#onWrite.bind(this),
     })
 
-    this.piper = new TransformStream<Uint8Array>()
+    this.#piper = new TransformStream<Uint8Array>()
 
-    this.readable = this.piper.readable
-    this.writable = this.writer.writable
+    this.readable = this.#piper.readable
+    this.writable = this.#writer.writable
 
     substream.readable
-      .pipeTo(this.reader.writable, { signal })
-      .then(this.onReadClose.bind(this))
-      .catch(this.onReadError.bind(this))
+      .pipeTo(this.#reader.writable, { signal })
+      .then(this.#onReadClose.bind(this))
+      .catch(this.#onReadError.bind(this))
 
-    this.writer.readable
+    this.#writer.readable
       .pipeTo(substream.writable, { signal })
-      .then(this.onWriteClose.bind(this))
-      .catch(this.onWriteError.bind(this))
+      .then(this.#onWriteClose.bind(this))
+      .catch(this.#onWriteError.bind(this))
 
-    this.reader.readable
-      .pipeTo(this.piper.writable)
+    this.#reader.readable
+      .pipeTo(this.#piper.writable)
       .then(() => { })
       .catch(() => { })
   }
 
-  private async onReadClose() {
+  async #onReadClose() {
     // console.debug(`${this.#class.name}.onReadClose`)
 
     const closeEvent = new CloseEvent("close", {})
     if (!await this.read.dispatchEvent(closeEvent)) return
   }
 
-  private async onWriteClose() {
+  async #onWriteClose() {
     // console.debug(`${this.#class.name}.onWriteClose`)
 
     const closeEvent = new CloseEvent("close", {})
     if (!await this.write.dispatchEvent(closeEvent)) return
   }
 
-  private async onReadError(error?: unknown) {
+  async #onReadError(error?: unknown) {
     // console.debug(`${this.#class.name}.onReadError`, error)
 
     const errorEvent = new ErrorEvent("error", { error })
     if (!await this.read.dispatchEvent(errorEvent)) return
   }
 
-  private async onWriteError(error?: unknown) {
+  async #onWriteError(error?: unknown) {
     // console.debug(`${this.#class.name}.onWriteError`, error)
 
     const errorEvent = new ErrorEvent("error", { error })
     if (!await this.write.dispatchEvent(errorEvent)) return
   }
 
-  private async onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
-    this.input = controller
+  async #onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
+    this.#input = controller
   }
 
-  private async onWriteStart(controller: TransformStreamDefaultController<Uint8Array>) {
-    this.output = controller
+  async #onWriteStart(controller: TransformStreamDefaultController<Uint8Array>) {
+    this.#output = controller
   }
 
   async handshake(signal?: AbortSignal) {
-    if (this.state.type !== "none")
+    if (this.#state.type !== "none")
       throw new Error(`Invalid state`)
 
-    let state: State = this.state
+    let state: State = this.#state
 
     const client_hello = ClientHello2.default(this.params.ciphers)
 
@@ -292,10 +292,10 @@ export class TlsStream extends AsyncEventTarget {
     const handshake = client_hello.handshake()
     state2.messages.push(Writable.toBytes(handshake))
 
-    this.state = state2
+    this.#state = state2
 
     const record = handshake.record(0x0301)
-    this.output!.enqueue(Writable.toBytes(record))
+    this.#output!.enqueue(Writable.toBytes(record))
 
     const future = new Future<Event, Error>()
 
@@ -332,13 +332,13 @@ export class TlsStream extends AsyncEventTarget {
     }
   }
 
-  private async onRead(chunk: Uint8Array) {
+  async #onRead(chunk: Uint8Array) {
     console.debug(this.#class.name, "<-", chunk)
 
-    if (this.buffer.offset)
-      await this.onReadBuffered(chunk)
+    if (this.#buffer.offset)
+      await this.#onReadBuffered(chunk)
     else
-      await this.onReadDirect(chunk)
+      await this.#onReadDirect(chunk)
   }
 
   /**
@@ -346,12 +346,12 @@ export class TlsStream extends AsyncEventTarget {
    * @param chunk 
    * @returns 
    */
-  private async onReadBuffered(chunk: Uint8Array) {
-    this.buffer.write(chunk)
-    const full = this.buffer.before
+  async #onReadBuffered(chunk: Uint8Array) {
+    this.#buffer.write(chunk)
+    const full = this.#buffer.before
 
-    this.buffer.offset = 0
-    await this.onReadDirect(full)
+    this.#buffer.offset = 0
+    await this.#onReadDirect(full)
   }
 
   /**
@@ -359,25 +359,25 @@ export class TlsStream extends AsyncEventTarget {
    * @param chunk 
    * @returns 
    */
-  private async onReadDirect(chunk: Uint8Array) {
+  async #onReadDirect(chunk: Uint8Array) {
     const cursor = new Cursor(chunk)
 
     while (cursor.remaining) {
       const record = PlaintextRecord.tryRead(cursor)
 
       if (!record) {
-        this.buffer.write(cursor.after)
+        this.#buffer.write(cursor.after)
         break
       }
 
-      await this.onRecord(record, this.state)
+      await this.#onRecord(record, this.#state)
     }
   }
 
-  private async onWrite(chunk: Uint8Array) {
-    if (this.state.type !== "handshaked")
+  async #onWrite(chunk: Uint8Array) {
+    if (this.#state.type !== "handshaked")
       throw new Error(`Invalid state`)
-    const state = this.state
+    const state = this.#state
 
     const { version, encrypter } = state
     const type = Record.types.application_data
@@ -386,52 +386,52 @@ export class TlsStream extends AsyncEventTarget {
     const plaintext = new PlaintextRecord(type, version, fragment)
     const ciphertext = await plaintext.encrypt(encrypter, state.client_sequence++)
 
-    this.output!.enqueue(Writable.toBytes(ciphertext))
+    this.#output!.enqueue(Writable.toBytes(ciphertext))
   }
 
-  private async onRecord(record: PlaintextRecord<Opaque>, state: State) {
+  async #onRecord(record: PlaintextRecord<Opaque>, state: State) {
     if (state.server_encrypted)
-      return await this.onCiphertextRecord(record, state)
+      return await this.#onCiphertextRecord(record, state)
 
-    return await this.onPlaintextRecord(record, state)
+    return await this.#onPlaintextRecord(record, state)
   }
 
-  private async onCiphertextRecord(record: PlaintextRecord<Opaque>, state: State & { server_encrypted: true }) {
+  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: State & { server_encrypted: true }) {
     if (state.encrypter.cipher_type === "block") {
       const cipher = BlockCiphertextRecord.from(record)
       const plain = await cipher.decrypt(state.encrypter, state.server_sequence++)
-      return await this.onPlaintextRecord(plain, state)
+      return await this.#onPlaintextRecord(plain, state)
     }
 
     if (state.encrypter.cipher_type === "aead") {
       const cipher = AEADCiphertextRecord.from(record)
       const plain = await cipher.decrypt(state.encrypter, state.server_sequence++)
-      return await this.onPlaintextRecord(plain, state)
+      return await this.#onPlaintextRecord(plain, state)
     }
 
     throw new Error(`Invalid cipher type`)
   }
 
-  private async onPlaintextRecord(record: PlaintextRecord<Opaque>, state: State) {
+  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: State) {
     if (record.subtype === Alert.type)
-      return await this.onAlert(record, state)
+      return await this.#onAlert(record, state)
     if (record.subtype === Handshake.type)
-      return await this.onHandshake(record, state)
+      return await this.#onHandshake(record, state)
     if (record.subtype === ChangeCipherSpec.type)
-      return await this.onChangeCipherSpec(record, state)
+      return await this.#onChangeCipherSpec(record, state)
     if (record.subtype === Record.types.application_data)
-      return await this.onApplicationData(record, state)
+      return await this.#onApplicationData(record, state)
 
     console.warn(record)
   }
 
-  private async onAlert(record: PlaintextRecord<Opaque>, state: State) {
+  async #onAlert(record: PlaintextRecord<Opaque>, state: State) {
     const alert = record.fragment.into(Alert)
 
     console.debug(alert)
 
     if (alert.description === Alert.descriptions.close_notify) {
-      this.input!.terminate()
+      this.#input!.terminate()
       return
     }
 
@@ -441,7 +441,7 @@ export class TlsStream extends AsyncEventTarget {
     console.warn(`Warning alert ${alert.description}`)
   }
 
-  private async onChangeCipherSpec(record: PlaintextRecord<Opaque>, state: State) {
+  async #onChangeCipherSpec(record: PlaintextRecord<Opaque>, state: State) {
     if (state.type !== "handshake")
       throw new Error(`Invalid state`)
     if (state.step !== "client_finished")
@@ -453,17 +453,17 @@ export class TlsStream extends AsyncEventTarget {
 
     const state2: ServerChangeCipherSpecState = { ...state, step: "server_change_cipher_spec", server_encrypted: true, server_sequence: BigInt(0) }
 
-    this.state = state2
+    this.#state = state2
   }
 
-  private async onApplicationData(record: PlaintextRecord<Opaque>, state: State) {
+  async #onApplicationData(record: PlaintextRecord<Opaque>, state: State) {
     if (state.type !== "handshaked")
       throw new Error(`Invalid state`)
 
-    this.input!.enqueue(record.fragment.bytes)
+    this.#input!.enqueue(record.fragment.bytes)
   }
 
-  private async onHandshake(record: PlaintextRecord<Opaque>, state: State) {
+  async #onHandshake(record: PlaintextRecord<Opaque>, state: State) {
     if (state.type !== "handshake")
       throw new Error(`Invalid state`)
 
@@ -473,22 +473,22 @@ export class TlsStream extends AsyncEventTarget {
       state.messages.push(new Uint8Array(record.fragment.bytes))
 
     if (handshake.subtype === ServerHello2.type)
-      return this.onServerHello(handshake, state)
+      return this.#onServerHello(handshake, state)
     if (handshake.subtype === Certificate2.type)
-      return this.onCertificate(handshake, state)
+      return this.#onCertificate(handshake, state)
     if (handshake.subtype === ServerHelloDone2.type)
-      return this.onServerHelloDone(handshake, state)
+      return this.#onServerHelloDone(handshake, state)
     if (handshake.subtype === Handshake.types.server_key_exchange)
-      return this.onServerKeyExchange(handshake, state)
+      return this.#onServerKeyExchange(handshake, state)
     if (handshake.subtype === CertificateRequest2.type)
-      return this.onCertificateRequest(handshake, state)
+      return this.#onCertificateRequest(handshake, state)
     if (handshake.subtype === Finished2.type)
-      return this.onFinished(handshake, state)
+      return this.#onFinished(handshake, state)
 
     console.warn(handshake)
   }
 
-  private async onServerHello(handshake: Handshake<Opaque>, state: HandshakeState) {
+  async #onServerHello(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "client_hello")
       throw new Error(`Invalid state`)
 
@@ -513,10 +513,10 @@ export class TlsStream extends AsyncEventTarget {
 
     const state2: ServerHelloState = { ...state, step: "server_hello", version, cipher, server_random, server_extensions }
 
-    this.state = state2
+    this.#state = state2
   }
 
-  private async onCertificate(handshake: Handshake<Opaque>, state: HandshakeState) {
+  async #onCertificate(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
@@ -533,10 +533,10 @@ export class TlsStream extends AsyncEventTarget {
 
     const state2: ServerCertificateState = { ...state, action: "server_certificate", server_certificates }
 
-    this.state = state2
+    this.#state = state2
   }
 
-  private async onServerKeyExchange(handshake: Handshake<Opaque>, state: HandshakeState) {
+  async #onServerKeyExchange(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
@@ -551,7 +551,7 @@ export class TlsStream extends AsyncEventTarget {
 
       const state2: ServerKeyExchangeState = { ...state, action: "server_key_exchange", server_dh_params }
 
-      this.state = state2
+      this.#state = state2
 
       return
     }
@@ -563,7 +563,7 @@ export class TlsStream extends AsyncEventTarget {
 
       const state2: ServerKeyExchangeState = { ...state, action: "server_key_exchange", server_ecdh_params }
 
-      this.state = state2
+      this.#state = state2
 
       return
     }
@@ -571,7 +571,7 @@ export class TlsStream extends AsyncEventTarget {
     console.warn(server_key_exchange)
   }
 
-  private async onCertificateRequest(handshake: Handshake<Opaque>, state: HandshakeState) {
+  async #onCertificateRequest(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
@@ -581,10 +581,10 @@ export class TlsStream extends AsyncEventTarget {
 
     const state2: ServerCertificateRequestState = { ...state, action: "server_certificate_request", certificate_request }
 
-    this.state = state2
+    this.#state = state2
   }
 
-  private async computeDiffieHellman(state: ServerKeyExchangeState & { server_dh_params: ServerDHParams }) {
+  async #computeDiffieHellman(state: ServerKeyExchangeState & { server_dh_params: ServerDHParams }) {
     const { dh_g, dh_p, dh_Ys } = state.server_dh_params
 
     const g = Bytes.toBigInt(dh_g.value.bytes)
@@ -604,7 +604,7 @@ export class TlsStream extends AsyncEventTarget {
     return { dh_Yc, dh_Z }
   }
 
-  private async computeSecrets(state: ServerKeyExchangeState, premaster_secret: Uint8Array) {
+  async #computeSecrets(state: ServerKeyExchangeState, premaster_secret: Uint8Array) {
     const { cipher, client_random, server_random } = state
     const { prf_md } = state.cipher.hash
 
@@ -663,7 +663,7 @@ export class TlsStream extends AsyncEventTarget {
     } satisfies Secrets
   }
 
-  private async onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState) {
+  async #onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
@@ -679,21 +679,21 @@ export class TlsStream extends AsyncEventTarget {
       const record_certificate = handshake_certificate.record(state.version)
 
       state.messages.push(Writable.toBytes(handshake_certificate))
-      this.output!.enqueue(Writable.toBytes(record_certificate))
+      this.#output!.enqueue(Writable.toBytes(record_certificate))
     }
 
     let secrets: Secrets
 
     if ("server_dh_params" in state) {
-      const { dh_Yc, dh_Z } = await this.computeDiffieHellman(state)
+      const { dh_Yc, dh_Z } = await this.#computeDiffieHellman(state)
 
       const handshake_client_key_exchange = ClientKeyExchange2DH.from(dh_Yc).handshake()
       const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
 
       state.messages.push(Writable.toBytes(handshake_client_key_exchange))
-      this.output!.enqueue(Writable.toBytes(record_client_key_exchange))
+      this.#output!.enqueue(Writable.toBytes(record_client_key_exchange))
 
-      secrets = await this.computeSecrets(state, dh_Z)
+      secrets = await this.#computeSecrets(state, dh_Z)
     }
 
     else if ("server_ecdh_params" in state) {
@@ -704,13 +704,13 @@ export class TlsStream extends AsyncEventTarget {
       const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
 
       state.messages.push(Writable.toBytes(handshake_client_key_exchange))
-      this.output!.enqueue(Writable.toBytes(record_client_key_exchange))
+      this.#output!.enqueue(Writable.toBytes(record_client_key_exchange))
 
       const ecdh_Ys = state.server_ecdh_params.public_point.point.value.bytes
       const Ys = await crypto.subtle.importKey("raw", ecdh_Ys, { name: "ECDH", namedCurve: "P-256" }, false, [])
       const ecdh_Z = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: Ys }, yc.privateKey, 256))
 
-      secrets = await this.computeSecrets(state, ecdh_Z)
+      secrets = await this.#computeSecrets(state, ecdh_Z)
     }
 
     else throw new Error(`Invalid state`)
@@ -722,9 +722,9 @@ export class TlsStream extends AsyncEventTarget {
 
     const state2: ClientChangeCipherSpecState = { ...state, step: "client_change_cipher_spec", encrypter, client_encrypted: true, client_sequence: BigInt(0) }
 
-    this.state = state2
+    this.#state = state2
 
-    this.output!.enqueue(Writable.toBytes(record_change_cipher_spec))
+    this.#output!.enqueue(Writable.toBytes(record_change_cipher_spec))
 
     const { handshake_md, prf_md } = state2.cipher.hash
 
@@ -735,16 +735,16 @@ export class TlsStream extends AsyncEventTarget {
     const finished = new Finished2(verify_data).handshake().record(state.version)
     const cfinished = await finished.encrypt(state2.encrypter, state2.client_sequence++)
 
-    this.output!.enqueue(Writable.toBytes(cfinished))
+    this.#output!.enqueue(Writable.toBytes(cfinished))
 
     const state3: ClientFinishedState = { ...state2, step: "client_finished" }
 
-    this.state = state3
+    this.#state = state3
 
     return
   }
 
-  private async onFinished(handshake: Handshake<Opaque>, state: HandshakeState) {
+  async #onFinished(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "server_change_cipher_spec")
       throw new Error(`Invalid state`)
 
@@ -754,7 +754,7 @@ export class TlsStream extends AsyncEventTarget {
 
     const state2: HandshakedState = { ...state, type: "handshaked" }
 
-    this.state = state2
+    this.#state = state2
 
     await this.dispatchEvent(new Event("finished"))
   }
