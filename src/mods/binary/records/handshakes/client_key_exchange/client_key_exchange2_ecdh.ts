@@ -29,13 +29,8 @@ export class ClientKeyExchange2ECDH {
     return new Handshake(this.#class.type, this)
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
+  static read(cursor: Cursor) {
     const exchange_keys = ClientECDiffieHellmanPublic.read(cursor)
-
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
 
     return new this(exchange_keys)
   }

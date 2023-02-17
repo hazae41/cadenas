@@ -1,9 +1,8 @@
-import { Cursor } from "@hazae41/binary"
-import { UnlengthedList } from "mods/binary/lists/unlengthed.js"
+import { Cursor, Opaque, SafeOpaque } from "@hazae41/binary"
+import { ReadableList } from "mods/binary/lists/readable.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number16 } from "mods/binary/numbers/number16.js"
 import { Number8 } from "mods/binary/numbers/number8.js"
-import { Opaque, SafeOpaque } from "mods/binary/opaque.js"
 import { Random } from "mods/binary/random.js"
 import { ECPointFormats } from "mods/binary/records/handshakes/extensions/ec_point_formats/ec_point_formats.js"
 import { EllipticCurves } from "mods/binary/records/handshakes/extensions/elliptic_curves/elliptic_curves.js"
@@ -12,7 +11,7 @@ import { OpaqueExtension } from "mods/binary/records/handshakes/extensions/opaqu
 import { SignatureAlgorithms } from "mods/binary/records/handshakes/extensions/signature_algorithms/signature_algorithms.js"
 import { Extensions } from "mods/binary/records/handshakes/extensions/typed.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
-import { LengthedVector } from "mods/binary/vectors/lengthed.js"
+import { ReadableVector } from "mods/binary/vectors/readable.js"
 import { Vector } from "mods/binary/vectors/writable.js"
 import { Cipher } from "mods/ciphers/cipher.js"
 
@@ -70,22 +69,17 @@ export class ClientHello2 {
     this.extensions?.write(cursor)
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
+  static read(cursor: Cursor) {
     const version = cursor.readUint16()
     const random = Random.read(cursor)
 
-    const session_id = LengthedVector(Number8, SafeOpaque).read(cursor)
-    const cipher_suites = LengthedVector(Number16, UnlengthedList(Number16)).read(cursor)
-    const compression_methods = LengthedVector(Number8, UnlengthedList(Number8)).read(cursor)
+    const session_id = ReadableVector(Number8, SafeOpaque).read(cursor)
+    const cipher_suites = ReadableVector(Number16, ReadableList(Number16)).read(cursor)
+    const compression_methods = ReadableVector(Number8, ReadableList(Number8)).read(cursor)
 
-    const extensions = cursor.offset - start !== length
-      ? LengthedVector(Number16, UnlengthedList(OpaqueExtension)).read(cursor)
+    const extensions = cursor.remaining
+      ? ReadableVector(Number16, ReadableList(OpaqueExtension)).read(cursor)
       : undefined
-
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
 
     return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
   }

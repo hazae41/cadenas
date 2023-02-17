@@ -18,13 +18,8 @@ export class ServerKeyExchange2DH {
     this.params.write(cursor)
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
+  static read(cursor: Cursor) {
     const params = ServerDHParams.read(cursor)
-
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
 
     return new this(params)
   }

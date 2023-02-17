@@ -1,9 +1,9 @@
 import { Cursor } from "@hazae41/binary";
-import { UnlengthedList } from "mods/binary/lists/unlengthed.js";
+import { ReadableList } from "mods/binary/lists/readable.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { NamedCurve } from "mods/binary/records/handshakes/extensions/elliptic_curves/named_curve.js";
-import { LengthedVector } from "mods/binary/vectors/lengthed.js";
+import { ReadableVector } from "mods/binary/vectors/readable.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export class NamedCurveList {
@@ -33,7 +33,7 @@ export class NamedCurveList {
   }
 
   static read(cursor: Cursor) {
-    const named_curve_list = LengthedVector(Number16, UnlengthedList(NamedCurve)).read(cursor)
+    const named_curve_list = ReadableVector(Number16, ReadableList(NamedCurve)).read(cursor)
 
     return new this(named_curve_list)
   }

@@ -1,5 +1,4 @@
-import { Cursor, Writable } from "@hazae41/binary"
-import { Opaque } from "mods/binary/opaque.js"
+import { Cursor, Opaque, UnsafeOpaque, Writable } from "@hazae41/binary"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { AEADEncrypter, BlockEncrypter, Encrypter } from "mods/ciphers/encryptions/encryption.js"
@@ -38,7 +37,9 @@ export class PlaintextRecord<T extends Writable> {
     const subtype = cursor.readUint8()
     const version = cursor.readUint16()
     const size = cursor.readUint16()
-    const fragment = Opaque.read(cursor, size)
+
+    const subcursor = new Cursor(cursor.read(size))
+    const fragment = UnsafeOpaque.read(subcursor)
 
     return new this(subtype, version, fragment)
   }
@@ -76,11 +77,7 @@ export class BlockCiphertextRecord {
   ) { }
 
   static from(record: PlaintextRecord<Opaque>) {
-    const cursor = new Cursor(record.fragment.bytes)
-    const length = record.fragment.bytes.length
-
-    const fragment = GenericBlockCipher.read(cursor, length)
-
+    const fragment = record.fragment.into(GenericBlockCipher)
     return new this(record.subtype, record.version, fragment)
   }
 
@@ -109,11 +106,7 @@ export class AEADCiphertextRecord {
   ) { }
 
   static from(record: PlaintextRecord<Opaque>) {
-    const cursor = new Cursor(record.fragment.bytes)
-    const length = record.fragment.bytes.length
-
-    const fragment = GenericAEADCipher.read(cursor, length)
-
+    const fragment = record.fragment.into(GenericAEADCipher)
     return new this(record.subtype, record.version, fragment)
   }
 

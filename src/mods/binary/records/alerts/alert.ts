@@ -63,14 +63,9 @@ export class Alert {
     return new PlaintextRecord<Alert>(this.#class.type, version, this)
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
+  static read(cursor: Cursor) {
     const level = cursor.readUint8()
     const description = cursor.readUint8()
-
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
 
     return new this(level, description)
   }

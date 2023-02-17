@@ -1,4 +1,4 @@
-import { Cursor, Writable } from "@hazae41/binary"
+import { Cursor, Opaque, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
@@ -10,7 +10,6 @@ import { Future } from "libs/futures/future.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
-import { Opaque } from "mods/binary/opaque.js"
 import { Alert } from "mods/binary/records/alerts/alert.js"
 import { ChangeCipherSpec } from "mods/binary/records/change_cipher_spec/change_cipher_spec.js"
 import { Certificate2 } from "mods/binary/records/handshakes/certificate/certificate2.js"
@@ -468,9 +467,7 @@ export class TlsStream extends AsyncEventTarget {
     if (state.type !== "handshake")
       throw new Error(`Invalid state`)
 
-    const cursor = new Cursor(record.fragment.bytes)
-    const length = record.fragment.bytes.length
-    const handshake = Handshake.read(cursor, length)
+    const handshake = record.fragment.into(Handshake)
 
     if (handshake.subtype !== Handshake.types.hello_request)
       state.messages.push(new Uint8Array(record.fragment.bytes))

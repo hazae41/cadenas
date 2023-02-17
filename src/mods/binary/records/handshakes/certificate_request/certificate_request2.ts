@@ -1,12 +1,11 @@
-import { Cursor } from "@hazae41/binary"
-import { UnlengthedList } from "mods/binary/lists/unlengthed.js"
+import { Cursor, Opaque, SafeOpaque } from "@hazae41/binary"
+import { ReadableList } from "mods/binary/lists/readable.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number16 } from "mods/binary/numbers/number16.js"
 import { Number8 } from "mods/binary/numbers/number8.js"
-import { Opaque, SafeOpaque } from "mods/binary/opaque.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { SignatureAndHashAlgorithm } from "mods/binary/signatures/signature_and_hash_algorithm.js"
-import { LengthedVector } from "mods/binary/vectors/lengthed.js"
+import { ReadableVector } from "mods/binary/vectors/readable.js"
 import { Vector } from "mods/binary/vectors/writable.js"
 
 export class ClientCertificateType {
@@ -61,15 +60,10 @@ export class CertificateRequest2 {
     this.certificate_authorities.write(cursor)
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
-    const certificate_types = LengthedVector(Number8, UnlengthedList(ClientCertificateType)).read(cursor)
-    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedList(SignatureAndHashAlgorithm)).read(cursor)
-    const certificate_authorities = LengthedVector(Number16, SafeOpaque).read(cursor)
-
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
+  static read(cursor: Cursor) {
+    const certificate_types = ReadableVector(Number8, ReadableList(ClientCertificateType)).read(cursor)
+    const supported_signature_algorithms = ReadableVector(Number16, ReadableList(SignatureAndHashAlgorithm)).read(cursor)
+    const certificate_authorities = ReadableVector(Number16, SafeOpaque).read(cursor)
 
     return new this(certificate_types, supported_signature_algorithms, certificate_authorities)
   }

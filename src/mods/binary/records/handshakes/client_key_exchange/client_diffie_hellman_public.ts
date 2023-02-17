@@ -1,7 +1,6 @@
-import { Cursor } from "@hazae41/binary";
+import { Cursor, Opaque, SafeOpaque } from "@hazae41/binary";
 import { Number16 } from "mods/binary/numbers/number16.js";
-import { Opaque, SafeOpaque } from "mods/binary/opaque.js";
-import { LengthedVector } from "mods/binary/vectors/lengthed.js";
+import { ReadableVector } from "mods/binary/vectors/readable.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export class ClientDiffieHellmanPublic {
@@ -25,7 +24,7 @@ export class ClientDiffieHellmanPublic {
   }
 
   static read(cursor: Cursor) {
-    const dh_Yc = LengthedVector(Number16, SafeOpaque).read(cursor)
+    const dh_Yc = ReadableVector(Number16, SafeOpaque).read(cursor)
 
     return new this(dh_Yc)
   }

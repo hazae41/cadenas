@@ -1,10 +1,10 @@
 import { Cursor } from "@hazae41/binary";
-import { UnlengthedList } from "mods/binary/lists/unlengthed.js";
+import { ReadableList } from "mods/binary/lists/readable.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
 import { SignatureAndHashAlgorithm } from "mods/binary/signatures/signature_and_hash_algorithm.js";
-import { LengthedVector } from "mods/binary/vectors/lengthed.js";
+import { ReadableVector } from "mods/binary/vectors/readable.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export class SignatureAlgorithms {
@@ -41,7 +41,7 @@ export class SignatureAlgorithms {
   }
 
   static read(cursor: Cursor) {
-    const supported_signature_algorithms = LengthedVector(Number16, UnlengthedList(SignatureAndHashAlgorithm)).read(cursor)
+    const supported_signature_algorithms = ReadableVector(Number16, ReadableList(SignatureAndHashAlgorithm)).read(cursor)
 
     return new this(supported_signature_algorithms)
   }

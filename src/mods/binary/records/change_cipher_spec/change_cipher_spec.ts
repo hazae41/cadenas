@@ -30,13 +30,8 @@ export class ChangeCipherSpec {
     return new PlaintextRecord<ChangeCipherSpec>(this.#class.type, version, this)
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
+  static read(cursor: Cursor) {
     const subtype = cursor.readUint8()
-
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
 
     return new this(subtype)
   }

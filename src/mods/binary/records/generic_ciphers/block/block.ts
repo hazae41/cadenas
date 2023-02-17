@@ -1,6 +1,5 @@
-import { Cursor, Writable } from "@hazae41/binary"
+import { Cursor, Opaque, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
-import { Opaque } from "mods/binary/opaque.js"
 import { BlockCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js"
 import { BlockEncrypter } from "mods/ciphers/encryptions/encryption.js"
 
@@ -30,14 +29,9 @@ export class GenericBlockCipher {
     cursor.write(this.block)
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
+  static read(cursor: Cursor) {
     const iv = cursor.read(16)
-    const block = cursor.read(length - 16)
-
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
+    const block = cursor.read(cursor.remaining)
 
     return new this(iv, block)
   }

@@ -1,9 +1,9 @@
 import { Cursor } from "@hazae41/binary";
-import { UnlengthedList } from "mods/binary/lists/unlengthed.js";
+import { ReadableList } from "mods/binary/lists/readable.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number8 } from "mods/binary/numbers/number8.js";
 import { ECPointFormat } from "mods/binary/records/handshakes/extensions/ec_point_formats/ec_point_format.js";
-import { LengthedVector } from "mods/binary/vectors/lengthed.js";
+import { ReadableVector } from "mods/binary/vectors/readable.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export class ECPointFormatList {
@@ -32,7 +32,7 @@ export class ECPointFormatList {
   }
 
   static read(cursor: Cursor) {
-    const ec_point_format_list = LengthedVector(Number8, UnlengthedList(ECPointFormat)).read(cursor)
+    const ec_point_format_list = ReadableVector(Number8, ReadableList(ECPointFormat)).read(cursor)
 
     return new this(ec_point_format_list)
   }

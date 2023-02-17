@@ -1,10 +1,9 @@
-import { Cursor } from "@hazae41/binary"
-import { UnlengthedList } from "mods/binary/lists/unlengthed.js"
+import { Cursor, Opaque, SafeOpaque } from "@hazae41/binary"
+import { ReadableList } from "mods/binary/lists/readable.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
-import { Opaque, SafeOpaque } from "mods/binary/opaque.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
-import { LengthedVector } from "mods/binary/vectors/lengthed.js"
+import { ReadableVector } from "mods/binary/vectors/readable.js"
 import { Vector } from "mods/binary/vectors/writable.js"
 
 export class Certificate2 {
@@ -20,13 +19,8 @@ export class Certificate2 {
     return this.#class.type
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
-    const certificate_list = LengthedVector(Number24, UnlengthedList(LengthedVector(Number24, SafeOpaque))).read(cursor)
-
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
+  static read(cursor: Cursor) {
+    const certificate_list = ReadableVector(Number24, ReadableList(ReadableVector(Number24, SafeOpaque))).read(cursor)
 
     return new this(certificate_list)
   }

@@ -17,15 +17,10 @@ export class ServerHelloDone2 {
      */
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
+  static read(cursor: Cursor) {
     /**
      * NOOP
      */
-
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
 
     return new this()
   }

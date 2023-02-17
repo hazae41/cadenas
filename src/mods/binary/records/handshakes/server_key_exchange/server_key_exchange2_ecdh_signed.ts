@@ -21,14 +21,9 @@ export class ServerKeyExchange2ECDHSigned {
     this.signed_params.write(cursor)
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
+  static read(cursor: Cursor) {
     const params = ServerECDHParams.read(cursor)
     const signed_params = DigitallySigned.read(cursor)
-
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
 
     return new this(params, signed_params)
   }

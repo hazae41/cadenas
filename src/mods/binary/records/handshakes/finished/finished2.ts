@@ -26,8 +26,8 @@ export class Finished2 {
     return new Handshake(this.type, this)
   }
 
-  static read(cursor: Cursor, length: number) {
-    const verify_data = cursor.read(length)
+  static read(cursor: Cursor) {
+    const verify_data = cursor.read(cursor.remaining)
 
     return new this(verify_data)
   }

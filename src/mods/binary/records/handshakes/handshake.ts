@@ -1,5 +1,4 @@
-import { Cursor, Writable } from "@hazae41/binary"
-import { Opaque } from "mods/binary/opaque.js"
+import { Cursor, Opaque, UnsafeOpaque, Writable } from "@hazae41/binary"
 import { PlaintextRecord, Record } from "mods/binary/records/record.js"
 
 export class Handshake<T extends Writable> {
@@ -43,16 +42,13 @@ export class Handshake<T extends Writable> {
     return new PlaintextRecord(this.#class.type, version, this)
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
+  static read(cursor: Cursor) {
     const subtype = cursor.readUint8()
     const size = cursor.readUint24()
-    const fragment = Opaque.read(cursor, size)
 
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
+    const subcursor = new Cursor(cursor.read(size))
+    const fragment = UnsafeOpaque.read(subcursor)
 
-    return new this(subtype, fragment)
+    return new this<Opaque>(subtype, fragment)
   }
 }

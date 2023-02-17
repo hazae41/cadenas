@@ -1,3 +1,3 @@
-export * from "./unlengthed.js";
+export * from "./readable.js";
 export * from "./writable.js";
 

@@ -1,5 +1,4 @@
-import { Cursor, Writable } from "@hazae41/binary";
-import { Opaque } from "mods/binary/opaque.js";
+import { Cursor, Opaque, Writable } from "@hazae41/binary";
 import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
 import { AEADEncrypter } from "mods/ciphers/encryptions/encryption.js";
 
@@ -19,14 +18,9 @@ export class GenericAEADCipher {
     cursor.write(this.block)
   }
 
-  static read(cursor: Cursor, length: number) {
-    const start = cursor.offset
-
+  static read(cursor: Cursor) {
     const nonce_explicit = cursor.read(8)
-    const block = cursor.read(length - 8)
-
-    if (cursor.offset - start !== length)
-      throw new Error(`Invalid ${this.name} length`)
+    const block = cursor.read(cursor.remaining)
 
     return new this(nonce_explicit, block)
   }

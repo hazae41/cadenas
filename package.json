@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@hazae41/asn1": "^1.1.1",
-    "@hazae41/binary": "^1.2.0",
+    "@hazae41/binary": "^1.2.1",
     "@hazae41/bytes": "^1.0.3",
     "@hazae41/x509": "^1.0.20"
   },

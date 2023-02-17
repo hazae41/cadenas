@@ -1,7 +1,6 @@
-import { Cursor } from "@hazae41/binary";
+import { Cursor, Opaque, SafeOpaque } from "@hazae41/binary";
 import { Number8 } from "mods/binary/numbers/number8.js";
-import { Opaque } from "mods/binary/opaque.js";
-import { LengthedVector } from "mods/binary/vectors/lengthed.js";
+import { ReadableVector } from "mods/binary/vectors/readable.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export class ECPoint {
@@ -25,7 +24,7 @@ export class ECPoint {
   }
 
   static read(cursor: Cursor) {
-    const point = LengthedVector(Number8, Opaque).read(cursor)
+    const point = ReadableVector(Number8, SafeOpaque).read(cursor)
 
     return new this(point)
   }
