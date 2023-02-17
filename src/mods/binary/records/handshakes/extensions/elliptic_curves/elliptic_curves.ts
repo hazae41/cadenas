@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { NamedCurveList } from "mods/binary/records/handshakes/extensions/elliptic_curves/named_curve_list.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
 
@@ -19,12 +19,12 @@ export class EllipticCurves {
     return this.named_curve_list.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.named_curve_list.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
@@ -33,7 +33,7 @@ export class EllipticCurves {
     return Extension.from(this.#class.type, this)
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const named_curve_list = NamedCurveList.read(cursor)
 
     return new this(named_curve_list)

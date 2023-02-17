@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { UnlengthedList } from "mods/binary/lists/unlengthed.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
@@ -28,17 +28,17 @@ export class NamedCurveList {
     return this.named_curve_list.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.named_curve_list.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const named_curve_list = LengthedVector(Number16, UnlengthedList(NamedCurve)).read(cursor)
 
     return new this(named_curve_list)

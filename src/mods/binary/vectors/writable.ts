@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { Writable } from "mods/binary/fragment.js";
 import { NumberClass, NumberX } from "mods/binary/numbers/number.js";
 
@@ -25,14 +25,14 @@ export const Vector = <L extends NumberX>(vlength: NumberClass<L>) => class <T e
     return vlength.size + this.value.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     new vlength(this.value.size()).write(cursor)
 
     this.value.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }

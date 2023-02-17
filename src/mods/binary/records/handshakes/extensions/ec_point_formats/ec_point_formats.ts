@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { ECPointFormatList } from "mods/binary/records/handshakes/extensions/ec_point_formats/ec_point_format_list.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
 
@@ -19,12 +19,12 @@ export class ECPointFormats {
     return this.ec_point_format_list.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.ec_point_format_list.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
@@ -33,7 +33,7 @@ export class ECPointFormats {
     return Extension.from(this.#class.type, this)
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const ec_point_format_list = ECPointFormatList.read(cursor)
 
     return new this(ec_point_format_list)

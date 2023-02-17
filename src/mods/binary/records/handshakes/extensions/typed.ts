@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 import { Number16 } from "mods/binary/numbers/number16.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
@@ -15,7 +15,7 @@ export type Extensions =
 
 export class TypedExtension {
 
-  private static read2(type: number, cursor: Binary) {
+  private static read2(type: number, cursor: Cursor) {
     if (type === Extension.types.signature_algorithms)
       return LengthedVector(Number16, SignatureAlgorithms).read(cursor)
     if (type === Extension.types.elliptic_curves)
@@ -26,7 +26,7 @@ export class TypedExtension {
     return LengthedVector(Number16, Opaque).read(cursor)
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const subtype = cursor.readUint16()
     const data = this.read2(subtype, cursor)
 

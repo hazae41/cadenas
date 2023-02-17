@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { UnlengthedList } from "mods/binary/lists/unlengthed.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
@@ -34,7 +34,7 @@ export class ServerHello2 {
       + (this.extensions?.size() ?? 0)
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.writeUint16(this.server_version)
     this.random.write(cursor)
     this.session_id.write(cursor)
@@ -44,12 +44,12 @@ export class ServerHello2 {
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary, length: number) {
+  static read(cursor: Cursor, length: number) {
     const start = cursor.offset
 
     const server_version = cursor.readUint16()

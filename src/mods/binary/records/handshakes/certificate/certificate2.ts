@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 import { UnlengthedList } from "mods/binary/lists/unlengthed.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
@@ -20,7 +20,7 @@ export class Certificate2 {
     return this.#class.type
   }
 
-  static read(cursor: Binary, length: number) {
+  static read(cursor: Cursor, length: number) {
     const start = cursor.offset
 
     const certificate_list = LengthedVector(Number24, UnlengthedList(LengthedVector(Number24, SafeOpaque))).read(cursor)
@@ -35,12 +35,12 @@ export class Certificate2 {
     return this.certificate_list.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.certificate_list.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }

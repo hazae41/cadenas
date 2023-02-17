@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { ECPoint } from "../server_key_exchange/ec_point.js";
 
 export class ClientECDiffieHellmanPublic {
@@ -17,17 +17,17 @@ export class ClientECDiffieHellmanPublic {
     return this.ecdh_Yc.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.ecdh_Yc.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const ecdh_Yc = ECPoint.read(cursor)
 
     return new this(ecdh_Yc)

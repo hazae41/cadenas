@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { NamedCurve } from "mods/binary/records/handshakes/extensions/elliptic_curves/named_curve.js";
 import { ECCurveType } from "./ec_curve_type.js";
 
@@ -13,18 +13,18 @@ export class ECParameters {
     return this.curve_type.size() + this.named_curve.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.curve_type.write(cursor)
     this.named_curve.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const curve_type = ECCurveType.read(cursor)
     const named_curve = NamedCurve.read(cursor)
 

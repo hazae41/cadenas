@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 
 export class HashAlgorithm {
 
@@ -30,11 +30,11 @@ export class HashAlgorithm {
     return 1
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.writeUint8(this.type)
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     return new this(cursor.readUint8())
   }
 }

@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 import { UnlengthedList } from "mods/binary/lists/unlengthed.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number16 } from "mods/binary/numbers/number16.js"
@@ -29,17 +29,17 @@ export class ClientCertificateType {
     return 1
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.writeUint8(this.type)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     return new this(cursor.readUint8())
   }
 }
@@ -61,19 +61,19 @@ export class CertificateRequest2 {
       + this.certificate_authorities.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.certificate_types.write(cursor)
     this.supported_signature_algorithms.write(cursor)
     this.certificate_authorities.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary, length: number) {
+  static read(cursor: Cursor, length: number) {
     const start = cursor.offset
 
     const certificate_types = LengthedVector(Number8, UnlengthedList(ClientCertificateType)).read(cursor)

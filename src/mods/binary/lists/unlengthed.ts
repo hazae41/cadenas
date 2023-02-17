@@ -1,10 +1,10 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 import { Unlengthed, Writable } from "mods/binary/fragment.js"
 import { List } from "mods/binary/lists/writable.js"
 
 export const UnlengthedList = <T extends Writable>(clazz: Unlengthed<T>) => class {
 
-  static read(cursor: Binary, length: number) {
+  static read(cursor: Cursor, length: number) {
     const start = cursor.offset
     const array = new Array<T>()
 

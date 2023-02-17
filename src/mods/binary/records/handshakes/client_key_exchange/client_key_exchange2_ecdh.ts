@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { Handshake } from "mods/binary/records/handshakes/handshake.js";
 import { ClientECDiffieHellmanPublic } from "./client_ec_diffie_hellman_public.js";
 
@@ -21,12 +21,12 @@ export class ClientKeyExchange2ECDH {
     return this.exchange_keys.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.exchange_keys.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
@@ -35,7 +35,7 @@ export class ClientKeyExchange2ECDH {
     return new Handshake(this.#class.type, this)
   }
 
-  static read(cursor: Binary, length: number) {
+  static read(cursor: Cursor, length: number) {
     const start = cursor.offset
 
     const exchange_keys = ClientECDiffieHellmanPublic.read(cursor)

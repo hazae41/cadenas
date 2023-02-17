@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 
 export class ServerHelloDone2 {
@@ -11,19 +11,19 @@ export class ServerHelloDone2 {
     return 0
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     /**
      * NOOP
      */
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary, length: number) {
+  static read(cursor: Cursor, length: number) {
     const start = cursor.offset
 
     /**

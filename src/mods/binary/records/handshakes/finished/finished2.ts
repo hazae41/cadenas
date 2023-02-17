@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 
 export class Finished2 {
@@ -18,12 +18,12 @@ export class Finished2 {
     return this.verify_data.length
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.write(this.verify_data)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
@@ -32,7 +32,7 @@ export class Finished2 {
     return new Handshake(this.type, this)
   }
 
-  static read(cursor: Binary, length: number) {
+  static read(cursor: Cursor, length: number) {
     const verify_data = cursor.read(length)
 
     return new this(verify_data)

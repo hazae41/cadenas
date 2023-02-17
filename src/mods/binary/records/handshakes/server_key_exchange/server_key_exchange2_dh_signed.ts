@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ServerDHParams } from "mods/binary/records/handshakes/server_key_exchange/server_dh_params.js"
 import { DigitallySigned } from "mods/binary/signatures/digitally_signed.js"
@@ -16,18 +16,18 @@ export class ServerKeyExchange2DHSigned {
     return this.params.size() + this.signed_params.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.params.write(cursor)
     this.signed_params.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary, length: number) {
+  static read(cursor: Cursor, length: number) {
     const start = cursor.offset
 
     const params = ServerDHParams.read(cursor)

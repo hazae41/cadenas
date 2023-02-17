@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 
 export class PreMasterSecret {
 
@@ -18,13 +18,13 @@ export class PreMasterSecret {
       + this.random.length
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.writeUint16(this.client_version)
     cursor.write(this.random)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }

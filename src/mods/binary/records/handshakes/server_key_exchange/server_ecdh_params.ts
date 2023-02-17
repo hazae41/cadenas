@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { ECParameters } from "./ec_parameters.js";
 import { ECPoint } from "./ec_point.js";
 
@@ -13,12 +13,12 @@ export class ServerECDHParams {
     return this.curve_params.size() + this.public_point.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.curve_params.write(cursor)
     this.public_point.write(cursor)
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const curve_params = ECParameters.read(cursor)
     const public_point = ECPoint.read(cursor)
 

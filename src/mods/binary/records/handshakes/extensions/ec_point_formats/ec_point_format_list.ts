@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { UnlengthedList } from "mods/binary/lists/unlengthed.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number8 } from "mods/binary/numbers/number8.js";
@@ -27,17 +27,17 @@ export class ECPointFormatList {
     return this.ec_point_format_list.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.ec_point_format_list.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const ec_point_format_list = LengthedVector(Number8, UnlengthedList(ECPointFormat)).read(cursor)
 
     return new this(ec_point_format_list)

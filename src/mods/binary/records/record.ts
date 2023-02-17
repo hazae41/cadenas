@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 import { Writable } from "mods/binary/fragment.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
@@ -28,7 +28,7 @@ export class PlaintextRecord<T extends Writable> {
     return 1 + 2 + 2 + this.fragment.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.writeUint8(this.subtype)
     cursor.writeUint16(this.version)
     cursor.writeUint16(this.fragment.size())
@@ -36,12 +36,12 @@ export class PlaintextRecord<T extends Writable> {
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const subtype = cursor.readUint8()
     const version = cursor.readUint16()
     const size = cursor.readUint16()
@@ -50,7 +50,7 @@ export class PlaintextRecord<T extends Writable> {
     return new this(subtype, version, fragment)
   }
 
-  static tryRead(cursor: Binary) {
+  static tryRead(cursor: Cursor) {
     const start = cursor.offset
 
     try {
@@ -83,7 +83,7 @@ export class BlockCiphertextRecord {
   ) { }
 
   static from(record: PlaintextRecord<Opaque>) {
-    const cursor = new Binary(record.fragment.bytes)
+    const cursor = new Cursor(record.fragment.bytes)
     const length = record.fragment.bytes.length
 
     const fragment = GenericBlockCipher.read(cursor, length)
@@ -95,7 +95,7 @@ export class BlockCiphertextRecord {
     return 1 + 2 + 2 + this.fragment.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.writeUint8(this.subtype)
     cursor.writeUint16(this.version)
     cursor.writeUint16(this.fragment.size())
@@ -103,7 +103,7 @@ export class BlockCiphertextRecord {
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
@@ -122,7 +122,7 @@ export class AEADCiphertextRecord {
   ) { }
 
   static from(record: PlaintextRecord<Opaque>) {
-    const cursor = new Binary(record.fragment.bytes)
+    const cursor = new Cursor(record.fragment.bytes)
     const length = record.fragment.bytes.length
 
     const fragment = GenericAEADCipher.read(cursor, length)
@@ -134,7 +134,7 @@ export class AEADCiphertextRecord {
     return 1 + 2 + 2 + this.fragment.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.writeUint8(this.subtype)
     cursor.writeUint16(this.version)
     cursor.writeUint16(this.fragment.size())
@@ -142,7 +142,7 @@ export class AEADCiphertextRecord {
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }

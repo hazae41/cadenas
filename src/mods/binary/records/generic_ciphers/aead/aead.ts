@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { Writable } from "mods/binary/fragment.js";
 import { Opaque } from "mods/binary/opaque.js";
 import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
@@ -15,18 +15,18 @@ export class GenericAEADCipher {
     return this.nonce_explicit.length + this.block.length
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.write(this.nonce_explicit)
     cursor.write(this.block)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary, length: number) {
+  static read(cursor: Cursor, length: number) {
     const start = cursor.offset
 
     const nonce_explicit = cursor.read(8)
@@ -39,7 +39,7 @@ export class GenericAEADCipher {
   }
 
   static async encrypt<T extends Writable>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint) {
-    const nonce = Binary.allocUnsafe(encrypter.fixed_iv_length + 8)
+    const nonce = Cursor.allocUnsafe(encrypter.fixed_iv_length + 8)
     nonce.write(encrypter.secrets.client_write_IV)
     nonce.writeUint64(sequence)
 
@@ -49,7 +49,7 @@ export class GenericAEADCipher {
 
     const content = record.fragment.export()
 
-    const additional_data = Binary.allocUnsafe(8 + 1 + 2 + 2)
+    const additional_data = Cursor.allocUnsafe(8 + 1 + 2 + 2)
     additional_data.writeUint64(sequence)
     additional_data.writeUint8(record.subtype)
     additional_data.writeUint16(record.version)
@@ -67,11 +67,11 @@ export class GenericAEADCipher {
   }
 
   async decrypt(record: AEADCiphertextRecord, encrypter: AEADEncrypter, sequence: bigint) {
-    const nonce = Binary.allocUnsafe(encrypter.fixed_iv_length + 8)
+    const nonce = Cursor.allocUnsafe(encrypter.fixed_iv_length + 8)
     nonce.write(encrypter.secrets.server_write_IV)
     nonce.write(this.nonce_explicit)
 
-    const additional_data = Binary.allocUnsafe(8 + 1 + 2 + 2)
+    const additional_data = Cursor.allocUnsafe(8 + 1 + 2 + 2)
     additional_data.writeUint64(sequence)
     additional_data.writeUint8(record.subtype)
     additional_data.writeUint16(record.version)

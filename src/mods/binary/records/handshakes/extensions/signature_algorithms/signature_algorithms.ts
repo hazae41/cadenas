@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { UnlengthedList } from "mods/binary/lists/unlengthed.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
@@ -32,12 +32,12 @@ export class SignatureAlgorithms {
     return this.supported_signature_algorithms.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.supported_signature_algorithms.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
@@ -46,7 +46,7 @@ export class SignatureAlgorithms {
     return Extension.from(this.#class.type, this)
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const supported_signature_algorithms = LengthedVector(Number16, UnlengthedList(SignatureAndHashAlgorithm)).read(cursor)
 
     return new this(supported_signature_algorithms)

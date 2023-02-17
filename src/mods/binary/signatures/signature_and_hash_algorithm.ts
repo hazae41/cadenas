@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { HashAlgorithm } from "mods/binary/signatures/hash_algorithm.js";
 import { SignatureAlgorithm } from "mods/binary/signatures/signature_algorithm.js";
 
@@ -17,18 +17,18 @@ export class SignatureAndHashAlgorithm {
     return this.hash.size() + this.signature.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.hash.write(cursor)
     this.signature.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const hash = HashAlgorithm.read(cursor)
     const signature = SignatureAlgorithm.read(cursor)
 

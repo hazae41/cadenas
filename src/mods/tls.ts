@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
@@ -198,7 +198,7 @@ export class TlsStream extends AsyncEventTarget {
   private input?: TransformStreamDefaultController<Uint8Array>
   private output?: TransformStreamDefaultController<Uint8Array>
 
-  private buffer = Binary.allocUnsafe(65535)
+  private buffer = Cursor.allocUnsafe(65535)
 
   private state: State = { type: "none", client_encrypted: false, server_encrypted: false }
 
@@ -361,7 +361,7 @@ export class TlsStream extends AsyncEventTarget {
    * @returns 
    */
   private async onReadDirect(chunk: Uint8Array) {
-    const cursor = new Binary(chunk)
+    const cursor = new Cursor(chunk)
 
     while (cursor.remaining) {
       const record = PlaintextRecord.tryRead(cursor)
@@ -468,7 +468,7 @@ export class TlsStream extends AsyncEventTarget {
     if (state.type !== "handshake")
       throw new Error(`Invalid state`)
 
-    const cursor = new Binary(record.fragment.bytes)
+    const cursor = new Cursor(record.fragment.bytes)
     const length = record.fragment.bytes.length
     const handshake = Handshake.read(cursor, length)
 
@@ -628,7 +628,7 @@ export class TlsStream extends AsyncEventTarget {
 
     // console.debug("key_block", key_block.length, Bytes.toHex(key_block))
 
-    const key_block_binary = new Binary(key_block)
+    const key_block_binary = new Cursor(key_block)
 
     const mac_key_length = state.cipher.encryption.cipher_type === "block"
       ? cipher.hash.mac.mac_key_length

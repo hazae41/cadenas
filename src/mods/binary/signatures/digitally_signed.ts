@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { Opaque, SafeOpaque } from "mods/binary/opaque.js";
 import { SignatureAndHashAlgorithm } from "mods/binary/signatures/signature_and_hash_algorithm.js";
@@ -16,18 +16,18 @@ export class DigitallySigned {
     return this.algorithm.size() + this.signature.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.algorithm.write(cursor)
     this.signature.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const algorithm = SignatureAndHashAlgorithm.read(cursor)
     const signature = LengthedVector(Number16, SafeOpaque).read(cursor)
 

@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { Writable } from "mods/binary/fragment.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { Vector } from "mods/binary/vectors/writable.js";
@@ -26,13 +26,13 @@ export class Extension<T extends Writable = Writable> {
     return 2 + this.data.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.writeUint16(this.subtype)
     this.data.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }

@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary";
+import { Cursor } from "@hazae41/binary";
 import { Number8 } from "mods/binary/numbers/number8.js";
 import { Opaque } from "mods/binary/opaque.js";
 import { LengthedVector } from "mods/binary/vectors/lengthed.js";
@@ -20,17 +20,17 @@ export class ECPoint {
     return this.point.size()
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     this.point.write(cursor)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const point = LengthedVector(Number8, Opaque).read(cursor)
 
     return new this(point)

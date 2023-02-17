@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 
 export class Number8 {
   readonly #class = Number8
@@ -13,17 +13,17 @@ export class Number8 {
     return this.#class.size
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.writeUint8(this.value)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     return new this(cursor.readUint8())
   }
 }

@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { Writable } from "mods/binary/fragment.js"
 import { Opaque } from "mods/binary/opaque.js"
@@ -26,18 +26,18 @@ export class GenericBlockCipher {
     return this.iv.length + this.block.length
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.write(this.iv)
     cursor.write(this.block)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary, length: number) {
+  static read(cursor: Cursor, length: number) {
     const start = cursor.offset
 
     const iv = cursor.read(16)
@@ -54,7 +54,7 @@ export class GenericBlockCipher {
 
     const content = record.fragment.export()
 
-    const premac = Binary.allocUnsafe(8 + record.size())
+    const premac = Cursor.allocUnsafe(8 + record.size())
     premac.writeUint64(sequence)
     record.write(premac)
 

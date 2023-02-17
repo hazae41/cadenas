@@ -1,4 +1,4 @@
-import { Binary } from "@hazae41/binary"
+import { Cursor } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 
 export class Random {
@@ -18,18 +18,18 @@ export class Random {
     return 4 + this.random_bytes.length
   }
 
-  write(cursor: Binary) {
+  write(cursor: Cursor) {
     cursor.writeUint32(this.gmt_unix_time)
     cursor.write(this.random_bytes)
   }
 
   export() {
-    const cursor = Binary.allocUnsafe(this.size())
+    const cursor = Cursor.allocUnsafe(this.size())
     this.write(cursor)
     return cursor.bytes
   }
 
-  static read(cursor: Binary) {
+  static read(cursor: Cursor) {
     const gmt_unix_time = cursor.readUint32()
     const random_bytes = new Uint8Array(cursor.read(28))
 
