@@ -649,8 +649,8 @@ export class TlsStream extends AsyncEventTarget {
     // console.debug("client_write_IV", client_write_IV.length, Bytes.toHex(client_write_IV))
     // console.debug("server_write_IV", server_write_IV.length, Bytes.toHex(server_write_IV))
 
-    if (key_block_cursor.remaining)
-      throw new Error(`Remaining bytes in key_block_cursor`)
+    // if (key_block_cursor.remaining)
+    //   throw new Error(`Remaining bytes in key_block_cursor`)
 
     return {
       master_secret,
