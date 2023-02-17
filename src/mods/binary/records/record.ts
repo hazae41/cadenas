@@ -1,4 +1,4 @@
-import { Cursor, Opaque, UnsafeOpaque, Writable } from "@hazae41/binary"
+import { Cursor, Opaque, Readable, UnsafeOpaque, Writable } from "@hazae41/binary"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { AEADEncrypter, BlockEncrypter, Encrypter } from "mods/ciphers/encryptions/encryption.js"
@@ -38,8 +38,7 @@ export class PlaintextRecord<T extends Writable> {
     const version = cursor.readUint16()
     const size = cursor.readUint16()
 
-    const subcursor = new Cursor(cursor.read(size))
-    const fragment = UnsafeOpaque.read(subcursor)
+    const fragment = Readable.fromBytes(UnsafeOpaque, cursor.read(size))
 
     return new this(subtype, version, fragment)
   }

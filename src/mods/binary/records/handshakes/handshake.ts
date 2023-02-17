@@ -1,4 +1,4 @@
-import { Cursor, Opaque, UnsafeOpaque, Writable } from "@hazae41/binary"
+import { Cursor, Opaque, Readable, UnsafeOpaque, Writable } from "@hazae41/binary"
 import { PlaintextRecord, Record } from "mods/binary/records/record.js"
 
 export class Handshake<T extends Writable> {
@@ -46,8 +46,7 @@ export class Handshake<T extends Writable> {
     const subtype = cursor.readUint8()
     const size = cursor.readUint24()
 
-    const subcursor = new Cursor(cursor.read(size))
-    const fragment = UnsafeOpaque.read(subcursor)
+    const fragment = Readable.fromBytes(UnsafeOpaque, cursor.read(size))
 
     return new this<Opaque>(subtype, fragment)
   }

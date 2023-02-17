@@ -625,29 +625,32 @@ export class TlsStream extends AsyncEventTarget {
 
     // console.debug("key_block", key_block.length, Bytes.toHex(key_block))
 
-    const key_block_binary = new Cursor(key_block)
+    const key_block_cursor = new Cursor(key_block)
 
     const mac_key_length = state.cipher.encryption.cipher_type === "block"
       ? cipher.hash.mac.mac_key_length
       : 0
 
-    const client_write_MAC_key = key_block_binary.read(mac_key_length)
-    const server_write_MAC_key = key_block_binary.read(mac_key_length)
+    const client_write_MAC_key = key_block_cursor.read(mac_key_length)
+    const server_write_MAC_key = key_block_cursor.read(mac_key_length)
 
     // console.debug("client_write_MAC_key", client_write_MAC_key.length, Bytes.toHex(client_write_MAC_key))
     // console.debug("server_write_MAC_key", server_write_MAC_key.length, Bytes.toHex(server_write_MAC_key))
 
-    const client_write_key = key_block_binary.read(cipher.encryption.enc_key_length)
-    const server_write_key = key_block_binary.read(cipher.encryption.enc_key_length)
+    const client_write_key = key_block_cursor.read(cipher.encryption.enc_key_length)
+    const server_write_key = key_block_cursor.read(cipher.encryption.enc_key_length)
 
     // console.debug("client_write_key", client_write_key.length, Bytes.toHex(client_write_key))
     // console.debug("server_write_key", server_write_key.length, Bytes.toHex(server_write_key))
 
-    const client_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
-    const server_write_IV = key_block_binary.read(cipher.encryption.fixed_iv_length)
+    const client_write_IV = key_block_cursor.read(cipher.encryption.fixed_iv_length)
+    const server_write_IV = key_block_cursor.read(cipher.encryption.fixed_iv_length)
 
     // console.debug("client_write_IV", client_write_IV.length, Bytes.toHex(client_write_IV))
     // console.debug("server_write_IV", server_write_IV.length, Bytes.toHex(server_write_IV))
+
+    if (key_block_cursor.remaining)
+      throw new Error(`Remaining bytes in key_block_cursor`)
 
     return {
       master_secret,
