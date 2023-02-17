@@ -17,12 +17,6 @@ export class Number24 {
     cursor.writeUint24(this.value)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     return new this(cursor.readUint24())
   }

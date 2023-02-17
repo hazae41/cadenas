@@ -33,12 +33,6 @@ export class ClientCertificateType {
     cursor.writeUint8(this.type)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     return new this(cursor.readUint8())
   }
@@ -65,12 +59,6 @@ export class CertificateRequest2 {
     this.certificate_types.write(cursor)
     this.supported_signature_algorithms.write(cursor)
     this.certificate_authorities.write(cursor)
-  }
-
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
   }
 
   static read(cursor: Cursor, length: number) {

@@ -1,5 +1,4 @@
-import { Cursor } from "@hazae41/binary"
-import { Writable } from "mods/binary/fragment.js"
+import { Cursor, Writable } from "@hazae41/binary"
 import { Opaque } from "mods/binary/opaque.js"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
@@ -33,12 +32,6 @@ export class PlaintextRecord<T extends Writable> {
     cursor.writeUint16(this.version)
     cursor.writeUint16(this.fragment.size())
     this.fragment.write(cursor)
-  }
-
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
   }
 
   static read(cursor: Cursor) {
@@ -102,12 +95,6 @@ export class BlockCiphertextRecord {
     this.fragment.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   async decrypt(encrypter: BlockEncrypter, sequence: bigint) {
     const fragment = await this.fragment.decrypt(this, encrypter, sequence)
     return new PlaintextRecord(this.subtype, this.version, fragment)
@@ -139,12 +126,6 @@ export class AEADCiphertextRecord {
     cursor.writeUint16(this.version)
     cursor.writeUint16(this.fragment.size())
     this.fragment.write(cursor)
-  }
-
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
   }
 
   async decrypt(encrypter: AEADEncrypter, sequence: bigint) {

@@ -26,12 +26,6 @@ export class ChangeCipherSpec {
     cursor.writeUint8(this.subtype)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   record(version: number) {
     return new PlaintextRecord<ChangeCipherSpec>(this.#class.type, version, this)
   }

@@ -1,5 +1,5 @@
-import { Cursor } from "@hazae41/binary";
-import { Unlengthed, Writable } from "mods/binary/fragment.js";
+import { Cursor, Writable } from "@hazae41/binary";
+import { Unlengthed } from "mods/binary/fragment.js";
 import { NumberClass, NumberX } from "mods/binary/numbers/number.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 

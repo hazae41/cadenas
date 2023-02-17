@@ -1,5 +1,4 @@
-import { Cursor } from "@hazae41/binary";
-import { Writable } from "mods/binary/fragment.js";
+import { Cursor, Writable } from "@hazae41/binary";
 
 export interface List<T extends Writable> extends Writable {
   readonly array: T[]
@@ -29,9 +28,4 @@ export class List<T extends Writable> {
       element.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
 }

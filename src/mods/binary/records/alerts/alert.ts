@@ -59,12 +59,6 @@ export class Alert {
     cursor.writeUint8(this.description)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   record(version: number) {
     return new PlaintextRecord<Alert>(this.#class.type, version, this)
   }

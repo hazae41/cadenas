@@ -1,4 +1,4 @@
-import { Cursor } from "@hazae41/binary"
+import { Cursor, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
@@ -285,18 +285,18 @@ export class TlsStream extends AsyncEventTarget {
 
     const client_hello = ClientHello2.default(this.params.ciphers)
 
-    const client_random = client_hello.random.export()
+    const client_random = Writable.toBytes(client_hello.random)
     const client_extensions = getClientExtensionRecord(client_hello)
 
     const state2: ClientHelloState = { ...state, type: "handshake", messages: [], step: "client_hello", client_random, client_extensions }
 
     const handshake = client_hello.handshake()
-    state2.messages.push(handshake.export())
+    state2.messages.push(Writable.toBytes(handshake))
 
     this.state = state2
 
     const record = handshake.record(0x0301)
-    this.output!.enqueue(record.export())
+    this.output!.enqueue(Writable.toBytes(record))
 
     const future = new Future<Event, Error>()
 
@@ -387,7 +387,7 @@ export class TlsStream extends AsyncEventTarget {
     const plaintext = new PlaintextRecord(type, version, fragment)
     const ciphertext = await plaintext.encrypt(encrypter, state.client_sequence++)
 
-    this.output!.enqueue(ciphertext.export())
+    this.output!.enqueue(Writable.toBytes(ciphertext))
   }
 
   private async onRecord(record: PlaintextRecord<Opaque>, state: State) {
@@ -509,7 +509,7 @@ export class TlsStream extends AsyncEventTarget {
     if (cipher === undefined)
       throw new Error(`Unsupported ${server_hello.cipher_suite} cipher suite`)
 
-    const server_random = server_hello.random.export()
+    const server_random = Writable.toBytes(server_hello.random)
     const server_extensions = getServerExtensionRecord(server_hello, state.client_extensions)
 
     console.debug(server_extensions)
@@ -678,9 +678,8 @@ export class TlsStream extends AsyncEventTarget {
       const handshake_certificate = certificate.handshake()
       const record_certificate = handshake_certificate.record(state.version)
 
-      state.messages.push(handshake_certificate.export())
-
-      this.output!.enqueue(record_certificate.export())
+      state.messages.push(Writable.toBytes(handshake_certificate))
+      this.output!.enqueue(Writable.toBytes(record_certificate))
     }
 
     let secrets: Secrets
@@ -691,8 +690,8 @@ export class TlsStream extends AsyncEventTarget {
       const handshake_client_key_exchange = ClientKeyExchange2DH.from(dh_Yc).handshake()
       const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
 
-      state.messages.push(handshake_client_key_exchange.export())
-      this.output!.enqueue(record_client_key_exchange.export())
+      state.messages.push(Writable.toBytes(handshake_client_key_exchange))
+      this.output!.enqueue(Writable.toBytes(record_client_key_exchange))
 
       secrets = await this.computeSecrets(state, dh_Z)
     }
@@ -704,8 +703,8 @@ export class TlsStream extends AsyncEventTarget {
       const handshake_client_key_exchange = ClientKeyExchange2ECDH.from(ecdh_Yc).handshake()
       const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
 
-      state.messages.push(handshake_client_key_exchange.export())
-      this.output!.enqueue(record_client_key_exchange.export())
+      state.messages.push(Writable.toBytes(handshake_client_key_exchange))
+      this.output!.enqueue(Writable.toBytes(record_client_key_exchange))
 
       const ecdh_Ys = state.server_ecdh_params.public_point.point.value.bytes
       const Ys = await crypto.subtle.importKey("raw", ecdh_Ys, { name: "ECDH", namedCurve: "P-256" }, false, [])
@@ -725,7 +724,7 @@ export class TlsStream extends AsyncEventTarget {
 
     this.state = state2
 
-    this.output!.enqueue(record_change_cipher_spec.export())
+    this.output!.enqueue(Writable.toBytes(record_change_cipher_spec))
 
     const { handshake_md, prf_md } = state2.cipher.hash
 
@@ -736,7 +735,7 @@ export class TlsStream extends AsyncEventTarget {
     const finished = new Finished2(verify_data).handshake().record(state.version)
     const cfinished = await finished.encrypt(state2.encrypter, state2.client_sequence++)
 
-    this.output!.enqueue(cfinished.export())
+    this.output!.enqueue(Writable.toBytes(cfinished))
 
     const state3: ClientFinishedState = { ...state2, step: "client_finished" }
 

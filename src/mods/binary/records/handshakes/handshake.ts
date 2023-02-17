@@ -1,5 +1,4 @@
-import { Cursor } from "@hazae41/binary"
-import { Writable } from "mods/binary/fragment.js"
+import { Cursor, Writable } from "@hazae41/binary"
 import { Opaque } from "mods/binary/opaque.js"
 import { PlaintextRecord, Record } from "mods/binary/records/record.js"
 
@@ -38,12 +37,6 @@ export class Handshake<T extends Writable> {
     cursor.writeUint8(this.subtype)
     cursor.writeUint24(this.fragment.size())
     this.fragment.write(cursor)
-  }
-
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
   }
 
   record(version: number) {

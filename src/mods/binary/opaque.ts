@@ -1,5 +1,5 @@
-import { Cursor } from "@hazae41/binary"
-import { Lengthed, Writable } from "mods/binary/fragment.js"
+import { Cursor, Writable } from "@hazae41/binary"
+import { Lengthed } from "mods/binary/fragment.js"
 
 export class Opaque {
   /**
@@ -15,7 +15,7 @@ export class Opaque {
   }
 
   static from(fragment: Writable) {
-    return new this(fragment.export())
+    return new this(Writable.toBytes(fragment))
   }
 
   into<T extends Writable>(clazz: Lengthed<T>) {
@@ -28,12 +28,6 @@ export class Opaque {
 
   write(cursor: Cursor) {
     cursor.write(this.bytes)
-  }
-
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
   }
 
   /**

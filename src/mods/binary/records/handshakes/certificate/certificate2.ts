@@ -39,12 +39,6 @@ export class Certificate2 {
     this.certificate_list.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   handshake() {
     return new Handshake<Certificate2>(this.type, this)
   }

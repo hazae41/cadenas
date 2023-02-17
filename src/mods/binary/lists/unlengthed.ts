@@ -1,5 +1,5 @@
-import { Cursor } from "@hazae41/binary"
-import { Unlengthed, Writable } from "mods/binary/fragment.js"
+import { Cursor, Writable } from "@hazae41/binary"
+import { Unlengthed } from "mods/binary/fragment.js"
 import { List } from "mods/binary/lists/writable.js"
 
 export const UnlengthedList = <T extends Writable>(clazz: Unlengthed<T>) => class {

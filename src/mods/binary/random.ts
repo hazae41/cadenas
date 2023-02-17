@@ -23,12 +23,6 @@ export class Random {
     cursor.write(this.random_bytes)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     const gmt_unix_time = cursor.readUint32()
     const random_bytes = new Uint8Array(cursor.read(28))

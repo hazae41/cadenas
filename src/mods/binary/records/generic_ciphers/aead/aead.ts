@@ -1,5 +1,4 @@
-import { Cursor } from "@hazae41/binary";
-import { Writable } from "mods/binary/fragment.js";
+import { Cursor, Writable } from "@hazae41/binary";
 import { Opaque } from "mods/binary/opaque.js";
 import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
 import { AEADEncrypter } from "mods/ciphers/encryptions/encryption.js";
@@ -18,12 +17,6 @@ export class GenericAEADCipher {
   write(cursor: Cursor) {
     cursor.write(this.nonce_explicit)
     cursor.write(this.block)
-  }
-
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
   }
 
   static read(cursor: Cursor, length: number) {
@@ -47,7 +40,7 @@ export class GenericAEADCipher {
     const nonce_implicit = nonce.read(4)
     const nonce_explicit = nonce.read(8)
 
-    const content = record.fragment.export()
+    const content = Writable.toBytes(record.fragment)
 
     const additional_data = Cursor.allocUnsafe(8 + 1 + 2 + 2)
     additional_data.writeUint64(sequence)

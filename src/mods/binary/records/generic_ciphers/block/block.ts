@@ -1,6 +1,5 @@
-import { Cursor } from "@hazae41/binary"
+import { Cursor, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
-import { Writable } from "mods/binary/fragment.js"
 import { Opaque } from "mods/binary/opaque.js"
 import { BlockCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js"
 import { BlockEncrypter } from "mods/ciphers/encryptions/encryption.js"
@@ -31,12 +30,6 @@ export class GenericBlockCipher {
     cursor.write(this.block)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor, length: number) {
     const start = cursor.offset
 
@@ -52,7 +45,7 @@ export class GenericBlockCipher {
   static async encrypt<T extends Writable>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint) {
     const iv = Bytes.random(16)
 
-    const content = record.fragment.export()
+    const content = Writable.toBytes(record.fragment)
 
     const premac = Cursor.allocUnsafe(8 + record.size())
     premac.writeUint64(sequence)
