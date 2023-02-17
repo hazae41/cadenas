@@ -25,12 +25,6 @@ export class ServerDHParams {
     this.dh_Ys.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     const dh_p = LengthedVector(Number16, SafeOpaque).read(cursor)
     const dh_g = LengthedVector(Number16, SafeOpaque).read(cursor)

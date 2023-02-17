@@ -43,12 +43,6 @@ export class ServerHello2 {
     this.extensions?.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor, length: number) {
     const start = cursor.offset
 

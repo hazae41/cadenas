@@ -31,12 +31,6 @@ export class ECPointFormatList {
     this.ec_point_format_list.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     const ec_point_format_list = LengthedVector(Number8, UnlengthedList(ECPointFormat)).read(cursor)
 

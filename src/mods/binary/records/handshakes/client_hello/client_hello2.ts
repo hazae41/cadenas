@@ -94,9 +94,4 @@ export class ClientHello2 {
     return new Handshake(this.type, this)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
 }

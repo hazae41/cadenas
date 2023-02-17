@@ -29,10 +29,4 @@ export class Extension<T extends Writable = Writable> {
     cursor.writeUint16(this.subtype)
     this.data.write(cursor)
   }
-
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
 }

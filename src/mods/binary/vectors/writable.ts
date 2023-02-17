@@ -30,9 +30,4 @@ export const Vector = <L extends NumberX>(vlength: NumberClass<L>) => class <T e
     this.value.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
 }

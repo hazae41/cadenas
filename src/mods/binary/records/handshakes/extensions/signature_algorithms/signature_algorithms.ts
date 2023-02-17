@@ -36,12 +36,6 @@ export class SignatureAlgorithms {
     this.supported_signature_algorithms.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   extension() {
     return Extension.from(this.#class.type, this)
   }

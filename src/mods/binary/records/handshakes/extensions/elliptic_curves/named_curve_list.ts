@@ -32,12 +32,6 @@ export class NamedCurveList {
     this.named_curve_list.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     const named_curve_list = LengthedVector(Number16, UnlengthedList(NamedCurve)).read(cursor)
 

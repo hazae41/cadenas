@@ -23,12 +23,6 @@ export class EllipticCurves {
     this.named_curve_list.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   extension() {
     return Extension.from(this.#class.type, this)
   }

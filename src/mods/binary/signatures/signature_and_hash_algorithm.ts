@@ -22,12 +22,6 @@ export class SignatureAndHashAlgorithm {
     this.signature.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     const hash = HashAlgorithm.read(cursor)
     const signature = SignatureAlgorithm.read(cursor)

@@ -21,12 +21,6 @@ export class ClientECDiffieHellmanPublic {
     this.ecdh_Yc.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     const ecdh_Yc = ECPoint.read(cursor)
 

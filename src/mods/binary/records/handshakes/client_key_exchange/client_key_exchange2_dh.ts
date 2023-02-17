@@ -25,12 +25,6 @@ export class ClientKeyExchange2DH {
     this.exchange_keys.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   handshake() {
     return new Handshake<ClientKeyExchange2DH>(this.#class.type, this)
   }

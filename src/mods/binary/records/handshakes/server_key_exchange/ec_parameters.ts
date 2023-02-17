@@ -18,12 +18,6 @@ export class ECParameters {
     this.named_curve.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     const curve_type = ECCurveType.read(cursor)
     const named_curve = NamedCurve.read(cursor)

@@ -30,12 +30,6 @@ export class NamedCurve {
     cursor.writeUint16(this.subtype)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor,) {
     const subtype = cursor.readUint16()
 

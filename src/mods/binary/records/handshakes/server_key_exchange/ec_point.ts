@@ -24,12 +24,6 @@ export class ECPoint {
     this.point.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     const point = LengthedVector(Number8, Opaque).read(cursor)
 

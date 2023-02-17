@@ -21,12 +21,6 @@ export class DigitallySigned {
     this.signature.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     const algorithm = SignatureAndHashAlgorithm.read(cursor)
     const signature = LengthedVector(Number16, SafeOpaque).read(cursor)

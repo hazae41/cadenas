@@ -24,12 +24,6 @@ export class ClientDiffieHellmanPublic {
     this.dh_Yc.write(cursor)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   static read(cursor: Cursor) {
     const dh_Yc = LengthedVector(Number16, SafeOpaque).read(cursor)
 

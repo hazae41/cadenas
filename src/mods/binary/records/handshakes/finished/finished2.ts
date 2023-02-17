@@ -22,12 +22,6 @@ export class Finished2 {
     cursor.write(this.verify_data)
   }
 
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
-
   handshake() {
     return new Handshake(this.type, this)
   }

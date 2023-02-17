@@ -22,10 +22,4 @@ export class PreMasterSecret {
     cursor.writeUint16(this.client_version)
     cursor.write(this.random)
   }
-
-  export() {
-    const cursor = Cursor.allocUnsafe(this.size())
-    this.write(cursor)
-    return cursor.bytes
-  }
 }
