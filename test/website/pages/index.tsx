@@ -1,26 +1,13 @@
-import { Ciphers, TlsStream, WebSocketStream } from "@hazae41/cadenas"
+import { Ciphers, TlsStream } from "@hazae41/cadenas"
 import { fetch } from "@hazae41/fleche"
 import { useCallback } from "react"
-
-async function createWebSocketStream() {
-  const websocket = new WebSocket("ws://localhost:8080")
-
-  websocket.binaryType = "arraybuffer"
-
-  await new Promise((ok, err) => {
-    websocket.addEventListener("open", ok)
-    websocket.addEventListener("error", err)
-  })
-
-  await new Promise(ok => setTimeout(ok, 100))
-  return new WebSocketStream(websocket)
-}
+import { createWebSocketStream } from "../src/transports/websocket"
 
 export default function Home() {
 
   const onClick = useCallback(async () => {
     try {
-      const tcp = await createWebSocketStream()
+      const tcp = await createWebSocketStream("ws://localhost:8080")
 
       const ciphers = [
         // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
