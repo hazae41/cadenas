@@ -1,5 +1,5 @@
 <div align="center">
-<img src="https://user-images.githubusercontent.com/4405263/219942661-b57880eb-c58d-49c6-a003-9e3e91588a55.png" />
+<img src="https://user-images.githubusercontent.com/4405263/219942873-3a630e9e-07c0-405a-99c5-e85f8f32bfc1.png" />
 </div>
 
 ```bash
@@ -20,7 +20,7 @@ This is experimental software in early development
 - Zero-copy reading and writing
 - Transport agnostic (HTTP, WebSocket)
 - WebStreams based backpressure
-- (WIP) TLS 1.2
+- TLS 1.2
 
 ### [Upcoming Features](https://github.com/sponsors/hazae41)
 - TLS 1.3
