@@ -1,9 +1,6 @@
 <div align="center">
-<img width="500" src="https://user-images.githubusercontent.com/4405263/211199183-682b00d5-c8eb-40cb-8e4c-acda138ba871.png" />
+<img src="https://user-images.githubusercontent.com/4405263/219941819-d85770d1-9b1c-4602-be6f-08ea2152211f.png" />
 </div>
-<h3 align="center">
-Zero-copy TLS protocol for the web 🏎️
-</h3>
 
 ```bash
 npm i @hazae41/cadenas
