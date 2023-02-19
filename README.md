@@ -8,12 +8,14 @@ npm i @hazae41/cadenas
 
 [**Node Package 📦**](https://www.npmjs.com/package/@hazae41/cadenas)
 
-### DO NOT USE
+## DO NOT USE
 
 This is experimental software in early development
 
 1. It has security issues
 2. Things change quickly
+
+## Features
 
 ### Current features
 - 100% TypeScript and ESM
