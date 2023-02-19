@@ -27,3 +27,14 @@ This is experimental software in early development
 ### [Upcoming Features](https://github.com/sponsors/hazae41)
 - TLS 1.3
 - Zero RTT
+
+## Usage
+
+```typescript
+import { TlsStream, Ciphers } from "@hazae41/cadenas"
+
+const tcp: ReadableWritablePair<Uint8Array, Uint8Array> = ...
+
+const ciphers = [Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384]
+const tls = new TlsStream(tcp, { ciphers })
+```

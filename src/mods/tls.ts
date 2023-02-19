@@ -202,7 +202,7 @@ export class TlsStream extends AsyncEventTarget {
   #state: State = { type: "none", client_encrypted: false, server_encrypted: false }
 
   constructor(
-    readonly substream: ReadableWritablePair<Uint8Array>,
+    readonly substream: ReadableWritablePair<Uint8Array, Uint8Array>,
     readonly params: TlsParams
   ) {
     super()
@@ -240,6 +240,42 @@ export class TlsStream extends AsyncEventTarget {
       .catch(() => { })
   }
 
+  async wait(type: string, signal?: AbortSignal) {
+    const future = new Future<Event, Error>()
+
+    const onAbort = (event: Event) => {
+      const abortEvent = event as AbortEvent
+      const error = new Error(`Aborted`, { cause: abortEvent.target.reason })
+      future.err(error)
+    }
+
+    const onClose = (event: Event) => {
+      const closeEvent = event as CloseEvent
+      const error = new Error(`Closed`, { cause: closeEvent })
+      future.err(error)
+    }
+
+    const onError = (event: Event) => {
+      const errorEvent = event as ErrorEvent
+      const error = new Error(`Errored`, { cause: errorEvent })
+      future.err(error)
+    }
+
+    try {
+      signal?.addEventListener("abort", onAbort, { passive: true })
+      this.read.addEventListener("close", onClose, { passive: true })
+      this.read.addEventListener("error", onError, { passive: true })
+      this.addEventListener(type, future.ok, { passive: true })
+
+      return await future.promise
+    } finally {
+      signal?.removeEventListener("abort", onAbort)
+      this.read.removeEventListener("close", onClose)
+      this.read.removeEventListener("error", onError)
+      this.removeEventListener(type, future.ok)
+    }
+  }
+
   async #onReadClose() {
     // console.debug(`${this.#class.name}.onReadClose`)
 
@@ -274,62 +310,24 @@ export class TlsStream extends AsyncEventTarget {
 
   async #onWriteStart(controller: TransformStreamDefaultController<Uint8Array>) {
     this.#output = controller
-  }
 
-  async handshake(signal?: AbortSignal) {
     if (this.#state.type !== "none")
       throw new Error(`Invalid state`)
-
-    let state: State = this.#state
 
     const client_hello = ClientHello2.default(this.params.ciphers)
 
     const client_random = Writable.toBytes(client_hello.random)
     const client_extensions = getClientExtensionRecord(client_hello)
 
-    const state2: ClientHelloState = { ...state, type: "handshake", messages: [], step: "client_hello", client_random, client_extensions }
-
     const handshake = client_hello.handshake()
-    state2.messages.push(Writable.toBytes(handshake))
+    const messages = [Writable.toBytes(handshake)]
 
-    this.#state = state2
+    this.#state = { ...this.#state, type: "handshake", messages, step: "client_hello", client_random, client_extensions }
 
     const record = handshake.record(0x0301)
     this.#output!.enqueue(Writable.toBytes(record))
 
-    const future = new Future<Event, Error>()
-
-    const onAbort = (event: Event) => {
-      const abortEvent = event as AbortEvent
-      const error = new Error(`Aborted`, { cause: abortEvent.target.reason })
-      future.err(error)
-    }
-
-    const onClose = (event: Event) => {
-      const closeEvent = event as CloseEvent
-      const error = new Error(`Closed`, { cause: closeEvent })
-      future.err(error)
-    }
-
-    const onError = (event: Event) => {
-      const errorEvent = event as ErrorEvent
-      const error = new Error(`Errored`, { cause: errorEvent })
-      future.err(error)
-    }
-
-    try {
-      signal?.addEventListener("abort", onAbort, { passive: true })
-      this.read.addEventListener("close", onClose, { passive: true })
-      this.read.addEventListener("error", onError, { passive: true })
-      this.addEventListener("finished", future.ok, { passive: true })
-
-      await future.promise
-    } finally {
-      signal?.removeEventListener("abort", onAbort)
-      this.read.removeEventListener("close", onClose)
-      this.read.removeEventListener("error", onError)
-      this.removeEventListener("finished", future.ok)
-    }
+    await this.wait("finished")
   }
 
   async #onRead(chunk: Uint8Array) {
@@ -451,9 +449,7 @@ export class TlsStream extends AsyncEventTarget {
 
     console.debug(change_cipher_spec)
 
-    const state2: ServerChangeCipherSpecState = { ...state, step: "server_change_cipher_spec", server_encrypted: true, server_sequence: BigInt(0) }
-
-    this.#state = state2
+    this.#state = { ...state, step: "server_change_cipher_spec", server_encrypted: true, server_sequence: BigInt(0) }
   }
 
   async #onApplicationData(record: PlaintextRecord<Opaque>, state: State) {
@@ -511,9 +507,7 @@ export class TlsStream extends AsyncEventTarget {
 
     console.debug(server_extensions)
 
-    const state2: ServerHelloState = { ...state, step: "server_hello", version, cipher, server_random, server_extensions }
-
-    this.#state = state2
+    this.#state = { ...state, step: "server_hello", version, cipher, server_random, server_extensions }
   }
 
   async #onCertificate(handshake: Handshake<Opaque>, state: HandshakeState) {
@@ -531,9 +525,7 @@ export class TlsStream extends AsyncEventTarget {
     // console.debug(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
     // console.debug(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
 
-    const state2: ServerCertificateState = { ...state, action: "server_certificate", server_certificates }
-
-    this.#state = state2
+    this.#state = { ...state, action: "server_certificate", server_certificates }
   }
 
   async #onServerKeyExchange(handshake: Handshake<Opaque>, state: HandshakeState) {
@@ -549,9 +541,7 @@ export class TlsStream extends AsyncEventTarget {
 
       const server_dh_params = server_key_exchange.params
 
-      const state2: ServerKeyExchangeState = { ...state, action: "server_key_exchange", server_dh_params }
-
-      this.#state = state2
+      this.#state = { ...state, action: "server_key_exchange", server_dh_params }
 
       return
     }
@@ -561,9 +551,7 @@ export class TlsStream extends AsyncEventTarget {
 
       const server_ecdh_params = server_key_exchange.params
 
-      const state2: ServerKeyExchangeState = { ...state, action: "server_key_exchange", server_ecdh_params }
-
-      this.#state = state2
+      this.#state = { ...state, action: "server_key_exchange", server_ecdh_params }
 
       return
     }
@@ -579,9 +567,7 @@ export class TlsStream extends AsyncEventTarget {
 
     console.debug(certificate_request)
 
-    const state2: ServerCertificateRequestState = { ...state, action: "server_certificate_request", certificate_request }
-
-    this.#state = state2
+    this.#state = { ...state, action: "server_certificate_request", certificate_request }
   }
 
   async #computeDiffieHellman(state: ServerKeyExchangeState & { server_dh_params: ServerDHParams }) {
@@ -737,11 +723,7 @@ export class TlsStream extends AsyncEventTarget {
 
     this.#output!.enqueue(Writable.toBytes(cfinished))
 
-    const state3: ClientFinishedState = { ...state2, step: "client_finished" }
-
-    this.#state = state3
-
-    return
+    this.#state = { ...state2, step: "client_finished" }
   }
 
   async #onFinished(handshake: Handshake<Opaque>, state: HandshakeState) {
@@ -752,9 +734,7 @@ export class TlsStream extends AsyncEventTarget {
 
     console.debug(finished)
 
-    const state2: HandshakedState = { ...state, type: "handshaked" }
-
-    this.#state = state2
+    this.#state = { ...state, type: "handshaked" }
 
     await this.dispatchEvent(new Event("finished"))
   }
