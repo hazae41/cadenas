@@ -331,7 +331,7 @@ export class TlsStream extends AsyncEventTarget {
   }
 
   async #onRead(chunk: Uint8Array) {
-    console.debug(this.#class.name, "<-", chunk)
+    // console.debug(this.#class.name, "<-", chunk)
 
     if (this.#buffer.offset)
       await this.#onReadBuffered(chunk)
