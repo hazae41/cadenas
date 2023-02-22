@@ -7,6 +7,7 @@ import { CloseEvent } from "libs/events/close.js"
 import { ErrorEvent } from "libs/events/error.js"
 import { AsyncEventTarget } from "libs/events/target.js"
 import { Future } from "libs/futures/future.js"
+import { StreamPair } from "libs/streams/pair.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
@@ -181,21 +182,17 @@ export interface TlsParams {
   signal?: AbortSignal
 }
 
-export class TlsStream extends AsyncEventTarget {
+export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"> {
   readonly #class = TlsStream
 
   readonly read = new AsyncEventTarget()
   readonly write = new AsyncEventTarget()
 
+  readonly #reader: StreamPair<Uint8Array, Uint8Array>
+  readonly #writer: StreamPair<Uint8Array, Uint8Array>
+
   readonly readable: ReadableStream<Uint8Array>
   readonly writable: WritableStream<Uint8Array>
-
-  #reader: TransformStream<Uint8Array>
-  #writer: TransformStream<Uint8Array>
-  #piper: TransformStream<Uint8Array>
-
-  #input?: TransformStreamDefaultController<Uint8Array>
-  #output?: TransformStreamDefaultController<Uint8Array>
 
   #buffer = Cursor.allocUnsafe(65535)
 
@@ -209,38 +206,34 @@ export class TlsStream extends AsyncEventTarget {
 
     const { signal } = params
 
-    this.#reader = new TransformStream<Uint8Array>({
-      start: this.#onReadStart.bind(this),
-      transform: this.#onRead.bind(this),
+    this.#reader = new StreamPair({}, {
+      write: this.#onReaderWrite.bind(this)
     })
 
-    this.#writer = new TransformStream<Uint8Array>({
-      start: this.#onWriteStart.bind(this),
-      transform: this.#onWrite.bind(this),
+    this.#writer = new StreamPair({
+      start: this.#onWriterStart.bind(this)
+    }, {
+      write: this.#onWriterWrite.bind(this)
     })
 
-    this.#piper = new TransformStream<Uint8Array>()
+    const readers = this.#reader.pipe()
+    const writers = this.#writer.pipe()
 
-    this.readable = this.#piper.readable
-    this.writable = this.#writer.writable
+    this.readable = readers.readable
+    this.writable = writers.writable
 
     substream.readable
-      .pipeTo(this.#reader.writable, { signal })
+      .pipeTo(readers.writable, { signal })
       .then(this.#onReadClose.bind(this))
       .catch(this.#onReadError.bind(this))
 
-    this.#writer.readable
+    writers.readable
       .pipeTo(substream.writable, { signal })
       .then(this.#onWriteClose.bind(this))
       .catch(this.#onWriteError.bind(this))
-
-    this.#reader.readable
-      .pipeTo(this.#piper.writable)
-      .then(() => { })
-      .catch(() => { })
   }
 
-  async wait(type: string, signal?: AbortSignal) {
+  async wait(type: "handshaked", signal?: AbortSignal) {
     const future = new Future<Event, Error>()
 
     const onAbort = (event: Event) => {
@@ -304,15 +297,9 @@ export class TlsStream extends AsyncEventTarget {
     if (!await this.write.dispatchEvent(errorEvent)) return
   }
 
-  async #onReadStart(controller: TransformStreamDefaultController<Uint8Array>) {
-    this.#input = controller
-  }
-
-  async #onWriteStart(controller: TransformStreamDefaultController<Uint8Array>) {
-    this.#output = controller
-
+  async #onWriterStart(controller: ReadableStreamDefaultController<Uint8Array>) {
     if (this.#state.type !== "none")
-      throw new Error(`Invalid state`)
+      throw new Error(`Invalid ${this.#class.name} state`)
 
     const client_hello = ClientHello2.default(this.params.ciphers)
 
@@ -325,12 +312,12 @@ export class TlsStream extends AsyncEventTarget {
     this.#state = { ...this.#state, type: "handshake", messages, step: "client_hello", client_random, client_extensions }
 
     const record = handshake.record(0x0301)
-    this.#output!.enqueue(Writable.toBytes(record))
+    controller.enqueue(Writable.toBytes(record))
 
-    await this.wait("finished")
+    await this.wait("handshaked")
   }
 
-  async #onRead(chunk: Uint8Array) {
+  async #onReaderWrite(chunk: Uint8Array) {
     // console.debug(this.#class.name, "<-", chunk)
 
     if (this.#buffer.offset)
@@ -372,9 +359,9 @@ export class TlsStream extends AsyncEventTarget {
     }
   }
 
-  async #onWrite(chunk: Uint8Array) {
+  async #onWriterWrite(chunk: Uint8Array) {
     if (this.#state.type !== "handshaked")
-      throw new Error(`Invalid state`)
+      throw new Error(`Invalid ${this.#class.name} state`)
     const state = this.#state
 
     const { version, encrypter } = state
@@ -384,7 +371,7 @@ export class TlsStream extends AsyncEventTarget {
     const plaintext = new PlaintextRecord(type, version, fragment)
     const ciphertext = await plaintext.encrypt(encrypter, state.client_sequence++)
 
-    this.#output!.enqueue(Writable.toBytes(ciphertext))
+    this.#writer.enqueue(Writable.toBytes(ciphertext))
   }
 
   async #onRecord(record: PlaintextRecord<Opaque>, state: State) {
@@ -429,7 +416,7 @@ export class TlsStream extends AsyncEventTarget {
     console.debug(alert)
 
     if (alert.description === Alert.descriptions.close_notify) {
-      this.#input!.terminate()
+      this.#reader.terminate()
       return
     }
 
@@ -456,7 +443,7 @@ export class TlsStream extends AsyncEventTarget {
     if (state.type !== "handshaked")
       throw new Error(`Invalid state`)
 
-    this.#input!.enqueue(record.fragment.bytes)
+    this.#reader.enqueue(record.fragment.bytes)
   }
 
   async #onHandshake(record: PlaintextRecord<Opaque>, state: State) {
@@ -665,7 +652,7 @@ export class TlsStream extends AsyncEventTarget {
       const record_certificate = handshake_certificate.record(state.version)
 
       state.messages.push(Writable.toBytes(handshake_certificate))
-      this.#output!.enqueue(Writable.toBytes(record_certificate))
+      this.#writer.enqueue(Writable.toBytes(record_certificate))
     }
 
     let secrets: Secrets
@@ -677,7 +664,7 @@ export class TlsStream extends AsyncEventTarget {
       const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
 
       state.messages.push(Writable.toBytes(handshake_client_key_exchange))
-      this.#output!.enqueue(Writable.toBytes(record_client_key_exchange))
+      this.#writer.enqueue(Writable.toBytes(record_client_key_exchange))
 
       secrets = await this.#computeSecrets(state, dh_Z)
     }
@@ -690,7 +677,7 @@ export class TlsStream extends AsyncEventTarget {
       const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
 
       state.messages.push(Writable.toBytes(handshake_client_key_exchange))
-      this.#output!.enqueue(Writable.toBytes(record_client_key_exchange))
+      this.#writer.enqueue(Writable.toBytes(record_client_key_exchange))
 
       const ecdh_Ys = state.server_ecdh_params.public_point.point.value.bytes
       const Ys = await crypto.subtle.importKey("raw", ecdh_Ys, { name: "ECDH", namedCurve: "P-256" }, false, [])
@@ -710,7 +697,7 @@ export class TlsStream extends AsyncEventTarget {
 
     this.#state = state2
 
-    this.#output!.enqueue(Writable.toBytes(record_change_cipher_spec))
+    this.#writer.enqueue(Writable.toBytes(record_change_cipher_spec))
 
     const { handshake_md, prf_md } = state2.cipher.hash
 
@@ -721,7 +708,7 @@ export class TlsStream extends AsyncEventTarget {
     const finished = new Finished2(verify_data).handshake().record(state.version)
     const cfinished = await finished.encrypt(state2.encrypter, state2.client_sequence++)
 
-    this.#output!.enqueue(Writable.toBytes(cfinished))
+    this.#writer.enqueue(Writable.toBytes(cfinished))
 
     this.#state = { ...state2, step: "client_finished" }
   }
@@ -736,6 +723,6 @@ export class TlsStream extends AsyncEventTarget {
 
     this.#state = { ...state, type: "handshaked" }
 
-    await this.dispatchEvent(new Event("finished"))
+    await this.dispatchEvent(new Event("handshaked"))
   }
 }
