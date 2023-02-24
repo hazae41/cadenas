@@ -271,27 +271,37 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
   async #onReadClose() {
     console.debug(`${this.#class.name}.onReadClose`)
 
+    this.#reader.close()
+
     const closeEvent = new CloseEvent("close", {})
     if (!await this.read.dispatchEvent(closeEvent)) return
+  }
+
+  async #onReadError(reason?: unknown) {
+    console.debug(`${this.#class.name}.onReadError`, reason)
+
+    this.#reader.close(reason)
+
+    const error = new Error(`Errored`, { cause: reason })
+    const errorEvent = new ErrorEvent("error", { error })
+    if (!await this.read.dispatchEvent(errorEvent)) return
   }
 
   async #onWriteClose() {
     console.debug(`${this.#class.name}.onWriteClose`)
 
+    this.#writer.close()
+
     const closeEvent = new CloseEvent("close", {})
     if (!await this.write.dispatchEvent(closeEvent)) return
   }
 
-  async #onReadError(error?: unknown) {
-    console.debug(`${this.#class.name}.onReadError`, error)
+  async #onWriteError(reason?: unknown) {
+    console.debug(`${this.#class.name}.onWriteError`, reason)
 
-    const errorEvent = new ErrorEvent("error", { error })
-    if (!await this.read.dispatchEvent(errorEvent)) return
-  }
+    this.#writer.close(reason)
 
-  async #onWriteError(error?: unknown) {
-    console.debug(`${this.#class.name}.onWriteError`, error)
-
+    const error = new Error(`Errored`, { cause: reason })
     const errorEvent = new ErrorEvent("error", { error })
     if (!await this.write.dispatchEvent(errorEvent)) return
   }

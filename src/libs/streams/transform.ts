@@ -2,6 +2,8 @@ export class SuperTransformStream<I, O>  {
 
   readonly transformer: SuperTransformer<I, O>
 
+  #closed?: { reason?: any }
+
   constructor(
     readonly subtransformer: Transformer<I, O>,
     readonly writableStrategy?: QueuingStrategy<I>,
@@ -25,6 +27,14 @@ export class SuperTransformStream<I, O>  {
 
   terminate() {
     return this.transformer.controller.terminate()
+  }
+
+  get closed() {
+    return this.#closed
+  }
+
+  close(reason?: any) {
+    this.#closed = { reason }
   }
 
 }
