@@ -7,7 +7,7 @@ import { CloseEvent } from "libs/events/close.js"
 import { ErrorEvent } from "libs/events/error.js"
 import { AsyncEventTarget } from "libs/events/target.js"
 import { Future } from "libs/futures/future.js"
-import { StreamPair } from "libs/streams/pair.js"
+import { SuperTransformStream } from "libs/streams/transform.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
@@ -188,8 +188,8 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
   readonly read = new AsyncEventTarget()
   readonly write = new AsyncEventTarget()
 
-  readonly #reader: StreamPair<Opaque, Opaque>
-  readonly #writer: StreamPair<Writable, Writable>
+  readonly #reader: SuperTransformStream<Opaque, Opaque>
+  readonly #writer: SuperTransformStream<Writable, Writable>
 
   readonly readable: ReadableStream<Opaque>
   readonly writable: WritableStream<Writable>
@@ -206,28 +206,27 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
 
     const { signal } = params
 
-    this.#reader = new StreamPair({}, {
-      write: this.#onReaderWrite.bind(this)
+    this.#reader = new SuperTransformStream({
+      transform: this.#onReaderWrite.bind(this)
     })
 
-    this.#writer = new StreamPair({
-      start: this.#onWriterStart.bind(this)
-    }, {
-      write: this.#onWriterWrite.bind(this)
+    this.#writer = new SuperTransformStream({
+      start: this.#onWriterStart.bind(this),
+      transform: this.#onWriterWrite.bind(this)
     })
 
-    const readers = this.#reader.pipe()
-    const writers = this.#writer.pipe()
+    const read = this.#reader.create()
+    const write = this.#writer.create()
 
-    this.readable = readers.readable
-    this.writable = writers.writable
+    this.readable = read.readable
+    this.writable = write.writable
 
     substream.readable
-      .pipeTo(readers.writable, { signal })
+      .pipeTo(read.writable, { signal })
       .then(this.#onReadClose.bind(this))
       .catch(this.#onReadError.bind(this))
 
-    writers.readable
+    write.readable
       .pipeTo(substream.writable, { signal })
       .then(this.#onWriteClose.bind(this))
       .catch(this.#onWriteError.bind(this))
@@ -297,7 +296,7 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
     if (!await this.write.dispatchEvent(errorEvent)) return
   }
 
-  async #onWriterStart(controller: ReadableStreamDefaultController<Writable>) {
+  async #onWriterStart() {
     if (this.#state.type !== "none")
       throw new Error(`Invalid ${this.#class.name} state`)
 
@@ -312,7 +311,7 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
     this.#state = { ...this.#state, type: "handshake", messages, step: "client_hello", client_random, client_extensions }
 
     const record = handshake.record(0x0301)
-    controller.enqueue(record)
+    this.#writer.enqueue(record)
 
     await this.wait("handshaked")
   }
