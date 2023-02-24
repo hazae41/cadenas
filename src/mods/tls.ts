@@ -281,6 +281,7 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
     console.debug(`${this.#class.name}.onReadError`, reason)
 
     this.#reader.close(reason)
+    this.#writer.error(reason)
 
     const error = new Error(`Errored`, { cause: reason })
     const errorEvent = new ErrorEvent("error", { error })
@@ -300,6 +301,7 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
     console.debug(`${this.#class.name}.onWriteError`, reason)
 
     this.#writer.close(reason)
+    this.#reader.error(reason)
 
     const error = new Error(`Errored`, { cause: reason })
     const errorEvent = new ErrorEvent("error", { error })
