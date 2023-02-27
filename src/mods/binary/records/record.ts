@@ -16,6 +16,7 @@ export namespace Record {
 }
 
 export class PlaintextRecord<T extends Writable> {
+
   constructor(
     readonly subtype: number,
     readonly version: number,
