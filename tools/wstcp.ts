@@ -45,7 +45,6 @@ async function onsocket(socket: WebSocket, target: Deno.Conn) {
 
   while (true) {
     try {
-      console.log("reading...")
       const output = await read(target)
 
       if (!output) {
