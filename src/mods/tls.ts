@@ -31,7 +31,7 @@ import { ServerKeyExchange2DHSigned } from "./binary/records/handshakes/server_k
 import { ServerKeyExchange2ECDHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_ecdh_signed.js"
 import { ExtensionRecord, getClientExtensionRecord, getServerExtensionRecord } from "./extensions.js"
 
-export type State =
+export type TlsClientDuplexState =
   | NoneState
   | HandshakeState
   | HandshakedState
@@ -174,19 +174,19 @@ export type HandshakedState = HandshakedData & {
   server_encrypted: true
 }
 
-export interface TlsStreamParams {
+export interface TlsClientDuplexParams {
   ciphers: Cipher[]
   signal?: AbortSignal
 }
 
-export type TlsStreamReadEvents = CloseAndErrorEvents & {
+export type TlsClientDuplexReadEvents = CloseAndErrorEvents & {
   handshaked: Event
 }
 
 export class TlsClientDuplex {
   readonly #class = TlsClientDuplex
 
-  readonly read = new AsyncEventTarget<TlsStreamReadEvents>()
+  readonly read = new AsyncEventTarget<TlsClientDuplexReadEvents>()
   readonly write = new AsyncEventTarget<CloseAndErrorEvents>()
 
   readonly #reader: SuperTransformStream<Opaque, Opaque>
@@ -197,11 +197,11 @@ export class TlsClientDuplex {
 
   #buffer = Cursor.allocUnsafe(65535)
 
-  #state: State = { type: "none", client_encrypted: false, server_encrypted: false }
+  #state: TlsClientDuplexState = { type: "none", client_encrypted: false, server_encrypted: false }
 
   constructor(
     readonly subduplex: ReadableWritablePair<Opaque, Writable>,
-    readonly params: TlsStreamParams
+    readonly params: TlsClientDuplexParams
   ) {
     const { signal } = params
 
@@ -348,14 +348,14 @@ export class TlsClientDuplex {
     this.#writer.enqueue(ciphertext)
   }
 
-  async #onRecord(record: PlaintextRecord<Opaque>, state: State) {
+  async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (state.server_encrypted)
       return await this.#onCiphertextRecord(record, state)
 
     return await this.#onPlaintextRecord(record, state)
   }
 
-  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: State & { server_encrypted: true }) {
+  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }) {
     if (state.encrypter.cipher_type === "block") {
       const cipher = BlockCiphertextRecord.from(record)
       const plain = await cipher.decrypt(state.encrypter, state.server_sequence++)
@@ -371,7 +371,7 @@ export class TlsClientDuplex {
     throw new Error(`Invalid cipher type`)
   }
 
-  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: State) {
+  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (record.subtype === Alert.type)
       return await this.#onAlert(record, state)
     if (record.subtype === Handshake.type)
@@ -384,7 +384,7 @@ export class TlsClientDuplex {
     console.warn(record)
   }
 
-  async #onAlert(record: PlaintextRecord<Opaque>, state: State) {
+  async #onAlert(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     const alert = record.fragment.into(Alert)
 
     console.debug(alert)
@@ -400,7 +400,7 @@ export class TlsClientDuplex {
     console.warn(`Warning alert ${alert.description}`)
   }
 
-  async #onChangeCipherSpec(record: PlaintextRecord<Opaque>, state: State) {
+  async #onChangeCipherSpec(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (state.type !== "handshake")
       throw new Error(`Invalid state`)
     if (state.step !== "client_finished")
@@ -413,14 +413,14 @@ export class TlsClientDuplex {
     this.#state = { ...state, step: "server_change_cipher_spec", server_encrypted: true, server_sequence: BigInt(0) }
   }
 
-  async #onApplicationData(record: PlaintextRecord<Opaque>, state: State) {
+  async #onApplicationData(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (state.type !== "handshaked")
       throw new Error(`Invalid state`)
 
     this.#reader.enqueue(record.fragment)
   }
 
-  async #onHandshake(record: PlaintextRecord<Opaque>, state: State) {
+  async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (state.type !== "handshake")
       throw new Error(`Invalid state`)
 
