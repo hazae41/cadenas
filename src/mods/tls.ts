@@ -183,8 +183,8 @@ export type TlsStreamReadEvents = CloseAndErrorEvents & {
   handshaked: Event
 }
 
-export class TlsStream {
-  readonly #class = TlsStream
+export class TlsClientDuplex {
+  readonly #class = TlsClientDuplex
 
   readonly read = new AsyncEventTarget<TlsStreamReadEvents>()
   readonly write = new AsyncEventTarget<CloseAndErrorEvents>()
@@ -200,7 +200,7 @@ export class TlsStream {
   #state: State = { type: "none", client_encrypted: false, server_encrypted: false }
 
   constructor(
-    readonly substream: ReadableWritablePair<Opaque, Writable>,
+    readonly subduplex: ReadableWritablePair<Opaque, Writable>,
     readonly params: TlsStreamParams
   ) {
     const { signal } = params
@@ -220,13 +220,13 @@ export class TlsStream {
     this.readable = read.readable
     this.writable = write.writable
 
-    substream.readable
+    subduplex.readable
       .pipeTo(read.writable, { signal })
       .then(this.#onReadClose.bind(this))
       .catch(this.#onReadError.bind(this))
 
     write.readable
-      .pipeTo(substream.writable, { signal })
+      .pipeTo(subduplex.writable, { signal })
       .then(this.#onWriteClose.bind(this))
       .catch(this.#onWriteError.bind(this))
 

@@ -1,4 +1,4 @@
-import { Ciphers, TlsStream } from "@hazae41/cadenas"
+import { Ciphers, TlsClientDuplex } from "@hazae41/cadenas"
 import { fetch } from "@hazae41/fleche"
 import { useCallback } from "react"
 import { createWebSocketStream } from "../src/transports/websocket"
@@ -19,7 +19,7 @@ export default function Home() {
         Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
       ]
 
-      const tls = new TlsStream(tcp, { ciphers })
+      const tls = new TlsClientDuplex(tcp, { ciphers })
 
       // const headers = new Headers({ "Content-Type": "application/json" })
       // const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
