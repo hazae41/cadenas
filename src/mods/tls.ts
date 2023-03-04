@@ -2,11 +2,8 @@ import { Cursor, Opaque, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
-import { AbortEvent } from "libs/events/abort.js"
-import { CloseEvent } from "libs/events/close.js"
-import { ErrorEvent } from "libs/events/error.js"
+import { CloseAndErrorEvents, Events } from "libs/events/events.js"
 import { AsyncEventTarget } from "libs/events/target.js"
-import { Future } from "libs/futures/future.js"
 import { SuperTransformStream } from "libs/streams/transform.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
@@ -177,16 +174,20 @@ export type HandshakedState = HandshakedData & {
   server_encrypted: true
 }
 
-export interface TlsParams {
+export interface TlsStreamParams {
   ciphers: Cipher[]
   signal?: AbortSignal
 }
 
-export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"> {
+export type TlsStreamReadEvents = CloseAndErrorEvents & {
+  handshaked: Event
+}
+
+export class TlsStream {
   readonly #class = TlsStream
 
-  readonly read = new AsyncEventTarget()
-  readonly write = new AsyncEventTarget()
+  readonly read = new AsyncEventTarget<TlsStreamReadEvents>()
+  readonly write = new AsyncEventTarget<CloseAndErrorEvents>()
 
   readonly #reader: SuperTransformStream<Opaque, Opaque>
   readonly #writer: SuperTransformStream<Writable, Writable>
@@ -200,10 +201,8 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
 
   constructor(
     readonly substream: ReadableWritablePair<Opaque, Writable>,
-    readonly params: TlsParams
+    readonly params: TlsStreamParams
   ) {
-    super()
-
     const { signal } = params
 
     this.#reader = new SuperTransformStream({
@@ -230,42 +229,7 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
       .pipeTo(substream.writable, { signal })
       .then(this.#onWriteClose.bind(this))
       .catch(this.#onWriteError.bind(this))
-  }
 
-  async wait(type: "handshaked", signal?: AbortSignal) {
-    const future = new Future<Event, Error>()
-
-    const onAbort = (event: Event) => {
-      const abortEvent = event as AbortEvent
-      const error = new Error(`Aborted`, { cause: abortEvent.target.reason })
-      future.err(error)
-    }
-
-    const onClose = (event: Event) => {
-      const closeEvent = event as CloseEvent
-      const error = new Error(`Closed`, { cause: closeEvent })
-      future.err(error)
-    }
-
-    const onError = (event: Event) => {
-      const errorEvent = event as ErrorEvent
-      const error = new Error(`Errored`, { cause: errorEvent })
-      future.err(error)
-    }
-
-    try {
-      signal?.addEventListener("abort", onAbort, { passive: true })
-      this.read.addEventListener("close", onClose, { passive: true })
-      this.read.addEventListener("error", onError, { passive: true })
-      this.addEventListener(type, future.ok, { passive: true })
-
-      return await future.promise
-    } finally {
-      signal?.removeEventListener("abort", onAbort)
-      this.read.removeEventListener("close", onClose)
-      this.read.removeEventListener("error", onError)
-      this.removeEventListener(type, future.ok)
-    }
   }
 
   async #onReadClose() {
@@ -274,7 +238,7 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
     this.#reader.close()
 
     const closeEvent = new CloseEvent("close", {})
-    if (!await this.read.dispatchEvent(closeEvent)) return
+    await this.read.dispatchEvent(closeEvent, "close")
   }
 
   async #onReadError(reason?: unknown) {
@@ -285,7 +249,7 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
 
     const error = new Error(`Errored`, { cause: reason })
     const errorEvent = new ErrorEvent("error", { error })
-    if (!await this.read.dispatchEvent(errorEvent)) return
+    await this.read.dispatchEvent(errorEvent, "error")
   }
 
   async #onWriteClose() {
@@ -294,7 +258,7 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
     this.#writer.close()
 
     const closeEvent = new CloseEvent("close", {})
-    if (!await this.write.dispatchEvent(closeEvent)) return
+    await this.write.dispatchEvent(closeEvent, "close")
   }
 
   async #onWriteError(reason?: unknown) {
@@ -305,7 +269,7 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
 
     const error = new Error(`Errored`, { cause: reason })
     const errorEvent = new ErrorEvent("error", { error })
-    if (!await this.write.dispatchEvent(errorEvent)) return
+    await this.write.dispatchEvent(errorEvent, "error")
   }
 
   async #onWriterStart() {
@@ -325,7 +289,7 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
     const record = handshake.record(0x0301)
     this.#writer.enqueue(record)
 
-    await this.wait("handshaked")
+    await Events.wait(this.read, "handshaked")
   }
 
   async #onReaderWrite(chunk: Opaque) {
@@ -733,6 +697,7 @@ export class TlsStream extends AsyncEventTarget<"close" | "error" | "handshaked"
 
     this.#state = { ...state, type: "handshaked" }
 
-    await this.dispatchEvent(new Event("handshaked"))
+    const event = new Event("handshaked")
+    await this.read.dispatchEvent(event, "handshaked")
   }
 }

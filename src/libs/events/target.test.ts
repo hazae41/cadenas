@@ -7,9 +7,9 @@ const { pathname } = new URL(import.meta.url)
 console.log(relative(directory, pathname.replace(".mjs", ".ts")))
 
 test("AsyncEventTarget", async ({ test }) => {
-  const target = new AsyncEventTarget()
+  const target = new AsyncEventTarget<{ test: Event }>()
 
-  const stack = []
+  const stack = new Array<string>()
 
   target.addEventListener("test", async () => {
     stack.push("first")
@@ -20,7 +20,7 @@ test("AsyncEventTarget", async ({ test }) => {
   }, { passive: true })
 
   const event = new Event("test")
-  await target.dispatchEvent(event)
+  await target.dispatchEvent(event, "test")
 
   stack.push("done")
 

@@ -18,7 +18,9 @@ async function onconn(conn: Deno.Conn) {
     try {
       const { socket, response } = Deno.upgradeWebSocket(request);
 
-      onsocket(socket)
+      const target = await Deno.connect({ hostname: "twitter.com", port: 443, transport: "tcp" })
+
+      onsocket(socket, target)
 
       await respondWith(response)
     } catch (_: unknown) {
@@ -27,16 +29,13 @@ async function onconn(conn: Deno.Conn) {
   }
 }
 
-async function onsocket(socket: WebSocket) {
+async function onsocket(socket: WebSocket, target: Deno.Conn) {
   socket.binaryType = "arraybuffer"
-
-  const target = await Deno.connect({ hostname: "twitter.com", port: 443, transport: "tcp" })
 
   socket.addEventListener("message", async e => {
     try {
       const buffer = new Uint8Array(e.data)
       console.debug("->", buffer)
-      // await new Promise(ok => setTimeout(ok, 100))
       await writeAll(target, buffer)
     } catch (_: unknown) {
       socket.close()
@@ -46,6 +45,7 @@ async function onsocket(socket: WebSocket) {
 
   while (true) {
     try {
+      console.log("reading...")
       const output = await read(target)
 
       if (!output) {
@@ -54,7 +54,6 @@ async function onsocket(socket: WebSocket) {
       }
 
       console.debug("<-", output)
-      // await new Promise(ok => setTimeout(ok, 100))
       socket.send(output)
     } catch (_: unknown) {
       socket.close()

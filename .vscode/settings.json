@@ -2,6 +2,6 @@
   "deno.enable": true,
   "deno.unstable": true,
   "deno.enablePaths": [
-    "./tools",
+    "./tools"
   ]
 }
