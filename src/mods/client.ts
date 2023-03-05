@@ -36,7 +36,7 @@ export type TlsClientDuplexState =
   | HandshakeState
   | HandshakedState
 
-export interface NoneState {
+export type NoneState = {
   type: "none"
   client_encrypted: false
   server_encrypted: false
@@ -482,7 +482,7 @@ export class TlsClientDuplex {
     const server_certificates = certificate.certificate_list.value.array
       .map(it => X509.Certificate.fromBytes(it.value.bytes))
 
-    // console.debug(server_certificates)
+    console.debug(server_certificates)
     // console.debug(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
     // console.debug(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
 
