@@ -214,8 +214,8 @@ export class TlsClientDuplex {
       transform: this.#onWriterWrite.bind(this)
     })
 
-    const read = this.#reader.create()
-    const write = this.#writer.create()
+    const read = this.#reader.start()
+    const write = this.#writer.start()
 
     this.readable = read.readable
     this.writable = write.writable
@@ -235,7 +235,7 @@ export class TlsClientDuplex {
   async #onReadClose() {
     console.debug(`${this.#class.name}.onReadClose`)
 
-    this.#reader.close()
+    this.#reader.closed = {}
 
     const closeEvent = new CloseEvent("close", {})
     await this.read.dispatchEvent(closeEvent, "close")
@@ -244,7 +244,7 @@ export class TlsClientDuplex {
   async #onReadError(reason?: unknown) {
     console.debug(`${this.#class.name}.onReadError`, reason)
 
-    this.#reader.close(reason)
+    this.#reader.closed = { reason }
     this.#writer.error(reason)
 
     const error = new Error(`Errored`, { cause: reason })
@@ -255,7 +255,7 @@ export class TlsClientDuplex {
   async #onWriteClose() {
     console.debug(`${this.#class.name}.onWriteClose`)
 
-    this.#writer.close()
+    this.#writer.closed = {}
 
     const closeEvent = new CloseEvent("close", {})
     await this.write.dispatchEvent(closeEvent, "close")
@@ -264,7 +264,7 @@ export class TlsClientDuplex {
   async #onWriteError(reason?: unknown) {
     console.debug(`${this.#class.name}.onWriteError`, reason)
 
-    this.#writer.close(reason)
+    this.#writer.closed = { reason }
     this.#reader.error(reason)
 
     const error = new Error(`Errored`, { cause: reason })
