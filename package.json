@@ -24,6 +24,7 @@
   "dependencies": {
     "@hazae41/binary": "^1.2.10",
     "@hazae41/bytes": "^1.0.4",
+    "@hazae41/cascade": "^1.0.0",
     "@hazae41/future": "^1.0.1",
     "@hazae41/x509": "^1.0.24"
   },
