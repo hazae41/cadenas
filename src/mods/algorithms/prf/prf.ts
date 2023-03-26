@@ -3,6 +3,7 @@ import { HMAC } from "mods/algorithms/hmac/hmac.js"
 
 /**
  * Naive implementation, just for testing
+ * 
  * Could be improved using greedy or iteration
  * @param hash 
  * @param secret 
@@ -18,6 +19,7 @@ async function A(key: CryptoKey, seed: Uint8Array, index: number): Promise<Uint8
 
 /**
  * Naive implementation, just for testing
+ * 
  * Could be improved using greedy
  * @param hash 
  * @param secret 

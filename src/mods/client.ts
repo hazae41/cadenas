@@ -1,10 +1,10 @@
 import { Cursor, Opaque, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
+import { SuperTransformStream } from "@hazae41/cascade"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
 import { CloseAndErrorEvents, Events } from "libs/events/events.js"
 import { AsyncEventTarget } from "libs/events/target.js"
-import { SuperTransformStream } from "@hazae41/cascade"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
@@ -29,7 +29,9 @@ import { ServerECDHParams } from "./binary/records/handshakes/server_key_exchang
 import { getServerKeyExchange2 } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2DHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_dh_signed.js"
 import { ServerKeyExchange2ECDHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_ecdh_signed.js"
+import { Secp256r1 } from "./ciphers/curves/secp256r1.js"
 import { ExtensionRecord, getClientExtensionRecord, getServerExtensionRecord } from "./extensions.js"
+import { NamedCurve } from "./index.js"
 
 export type TlsClientDuplexState =
   | NoneState
@@ -551,6 +553,13 @@ export class TlsClientDuplex {
     return { dh_Yc, dh_Z }
   }
 
+  async #computeEllipticCurveDiffieHellman(state: ServerKeyExchangeState & { server_ecdh_params: ServerECDHParams }) {
+    if (state.server_ecdh_params.curve_params.named_curve === NamedCurve.instances.secp256r1)
+      return new Secp256r1().diffie_hellman(state.server_ecdh_params)
+
+    throw new Error(`Invalid curve`)
+  }
+
   async #computeSecrets(state: ServerKeyExchangeState, premaster_secret: Uint8Array) {
     const { cipher, client_random, server_random } = state
     const { prf_md } = state.cipher.hash
@@ -644,18 +653,13 @@ export class TlsClientDuplex {
     }
 
     else if ("server_ecdh_params" in state) {
-      const yc = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"])
-      const ecdh_Yc = new Uint8Array(await crypto.subtle.exportKey("raw", yc.publicKey))
+      const { ecdh_Yc, ecdh_Z } = await this.#computeEllipticCurveDiffieHellman(state)
 
       const handshake_client_key_exchange = ClientKeyExchange2ECDH.from(ecdh_Yc).handshake()
       const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
 
       state.messages.push(Writable.toBytes(handshake_client_key_exchange))
       this.#writer.enqueue(record_client_key_exchange)
-
-      const ecdh_Ys = state.server_ecdh_params.public_point.point.value.bytes
-      const Ys = await crypto.subtle.importKey("raw", ecdh_Ys, { name: "ECDH", namedCurve: "P-256" }, false, [])
-      const ecdh_Z = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: Ys }, yc.privateKey, 256))
 
       secrets = await this.#computeSecrets(state, ecdh_Z)
     }
