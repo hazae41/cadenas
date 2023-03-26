@@ -32,7 +32,7 @@
     "@hazae41/phobos": "^1.0.10",
     "@rollup/plugin-inject": "^5.0.3",
     "@rollup/plugin-typescript": "^11.0.0",
-    "@types/node": "^18.15.7",
+    "@types/node": "^18.15.10",
     "rimraf": "^4.4.1",
     "rollup": "^3.20.2",
     "rollup-plugin-dts": "^5.3.0",
