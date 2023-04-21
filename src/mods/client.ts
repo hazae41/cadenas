@@ -1,10 +1,9 @@
 import { Cursor, Opaque, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { SuperTransformStream } from "@hazae41/cascade"
+import { AsyncEventTarget, CloseAndErrorEvents, Plume } from "@hazae41/plume"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
-import { CloseAndErrorEvents, Events } from "libs/events/events.js"
-import { AsyncEventTarget } from "libs/events/target.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
@@ -14,6 +13,7 @@ import { Certificate2 } from "mods/binary/records/handshakes/certificate/certifi
 import { CertificateRequest2 } from "mods/binary/records/handshakes/certificate_request/certificate_request2.js"
 import { ClientHello2 } from "mods/binary/records/handshakes/client_hello/client_hello2.js"
 import { ClientKeyExchange2DH } from "mods/binary/records/handshakes/client_key_exchange/client_key_exchange2_dh.js"
+import { NamedCurve } from "mods/binary/records/handshakes/extensions/elliptic_curves/named_curve.js"
 import { Finished2 } from "mods/binary/records/handshakes/finished/finished2.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ServerHello2 } from "mods/binary/records/handshakes/server_hello/server_hello2.js"
@@ -31,7 +31,6 @@ import { ServerKeyExchange2DHSigned } from "./binary/records/handshakes/server_k
 import { ServerKeyExchange2ECDHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_ecdh_signed.js"
 import { Secp256r1 } from "./ciphers/curves/secp256r1.js"
 import { ExtensionRecord, getClientExtensionRecord, getServerExtensionRecord } from "./extensions.js"
-import { NamedCurve } from "./index.js"
 
 export type TlsClientDuplexState =
   | NoneState
@@ -291,7 +290,7 @@ export class TlsClientDuplex {
     const record = handshake.record(0x0301)
     this.#writer.enqueue(record)
 
-    await Events.wait(this.read, "handshaked")
+    await Plume.waitCloseOrError(this.read, "handshaked")
   }
 
   async #onReaderWrite(chunk: Opaque) {
