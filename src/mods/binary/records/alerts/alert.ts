@@ -1,5 +1,6 @@
-import { Cursor } from "@hazae41/binary"
-import { PlaintextRecord, Record } from "mods/binary/records/record.js"
+import { Cursor, CursorReadUnknownError, CursorWriteUnknownError } from "@hazae41/cursor"
+import { Ok, Result } from "@hazae41/result"
+import { Record } from "mods/binary/records/record.js"
 
 export class Alert {
   readonly #class = Alert
@@ -50,23 +51,30 @@ export class Alert {
     return this.#class.type
   }
 
-  size() {
-    return 1 + 1
+  trySize(): Result<number, never> {
+    return new Ok(1 + 1)
   }
 
-  write(cursor: Cursor) {
-    cursor.writeUint8(this.level)
-    cursor.writeUint8(this.description)
+  tryWrite(cursor: Cursor): Result<void, CursorWriteUnknownError> {
+    return Result.unthrowSync(t => {
+      cursor.tryWriteUint8(this.level).throw(t)
+      cursor.tryWriteUint8(this.description).throw(t)
+
+      return Ok.void()
+    })
   }
 
-  record(version: number) {
-    return new PlaintextRecord<Alert>(this.#class.type, version, this)
+  // record(version: number) {
+  //   return new PlaintextRecord<Alert>(this.type, version, this)
+  // }
+
+  static tryRead(cursor: Cursor): Result<Alert, CursorReadUnknownError> {
+    return Result.unthrowSync(t => {
+      const level = cursor.tryReadUint8().throw(t)
+      const description = cursor.tryReadUint8().throw(t)
+
+      return new Ok(new Alert(level, description))
+    })
   }
 
-  static read(cursor: Cursor) {
-    const level = cursor.readUint8()
-    const description = cursor.readUint8()
-
-    return new this(level, description)
-  }
 }
