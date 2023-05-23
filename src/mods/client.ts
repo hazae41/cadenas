@@ -1,7 +1,8 @@
 import { Cursor, Opaque, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
-import { SuperTransformStream } from "@hazae41/cascade"
-import { AsyncEventTarget, CloseAndErrorEvents, Plume } from "@hazae41/plume"
+import { Cascade, SuperTransformStream } from "@hazae41/cascade"
+import { Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
+import { Err, Ok } from "@hazae41/result"
 import { Certificate, X509 } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
@@ -180,15 +181,15 @@ export interface TlsClientDuplexParams {
   signal?: AbortSignal
 }
 
-export type TlsClientDuplexReadEvents = CloseAndErrorEvents & {
+export type TlsClientDuplexReadEvents = StreamEvents & {
   handshaked: Event
 }
 
 export class TlsClientDuplex {
   readonly #class = TlsClientDuplex
 
-  readonly read = new AsyncEventTarget<TlsClientDuplexReadEvents>()
-  readonly write = new AsyncEventTarget<CloseAndErrorEvents>()
+  readonly read = new SuperEventTarget<TlsClientDuplexReadEvents>()
+  readonly write = new SuperEventTarget<StreamEvents>()
 
   readonly #reader: SuperTransformStream<Opaque, Opaque>
   readonly #writer: SuperTransformStream<Writable, Writable>
@@ -225,52 +226,59 @@ export class TlsClientDuplex {
       .pipeTo(read.writable, { signal })
       .then(this.#onReadClose.bind(this))
       .catch(this.#onReadError.bind(this))
+      .catch(console.error)
 
     write.readable
       .pipeTo(subduplex.writable, { signal })
       .then(this.#onWriteClose.bind(this))
       .catch(this.#onWriteError.bind(this))
-
+      .catch(console.error)
   }
 
-  async #onReadClose() {
+  async #onReadClose(): Promise<Ok<void>> {
     console.debug(`${this.#class.name}.onReadClose`)
 
     this.#reader.closed = {}
 
-    const closeEvent = new CloseEvent("close", {})
-    await this.read.dispatchEvent(closeEvent, "close")
+    await this.read.emit("close", undefined)
+
+    return Ok.void()
   }
 
-  async #onReadError(reason?: unknown) {
-    console.debug(`${this.#class.name}.onReadError`, reason)
-
-    this.#reader.closed = { reason }
-    this.#writer.error(reason)
-
-    const error = new Error(`Errored`, { cause: reason })
-    const errorEvent = new ErrorEvent("error", { error })
-    await this.read.dispatchEvent(errorEvent, "error")
-  }
-
-  async #onWriteClose() {
+  async #onWriteClose(): Promise<Ok<void>> {
     console.debug(`${this.#class.name}.onWriteClose`)
 
     this.#writer.closed = {}
 
-    const closeEvent = new CloseEvent("close", {})
-    await this.write.dispatchEvent(closeEvent, "close")
+    await this.write.emit("close", undefined)
+
+    return Ok.void()
   }
 
-  async #onWriteError(reason?: unknown) {
-    console.debug(`${this.#class.name}.onWriteError`, reason)
+  async #onReadError(reason?: unknown): Promise<Err<unknown>> {
+    const error = Cascade.filter(reason)
+
+    console.debug(`${this.#class.name}.onReadError`, { error: error.inner })
+
+    this.#reader.closed = { reason }
+    this.#writer.controller.inner.error(reason)
+
+    await this.read.emit("error", error.inner)
+
+    return Cascade.rethrow(error)
+  }
+
+  async #onWriteError(reason?: unknown): Promise<Err<unknown>> {
+    const error = Cascade.filter(reason)
+
+    console.debug(`${this.#class.name}.onWriteError`, { error: error.inner })
 
     this.#writer.closed = { reason }
-    this.#reader.error(reason)
+    this.#reader.controller.inner.error(reason)
 
-    const error = new Error(`Errored`, { cause: reason })
-    const errorEvent = new ErrorEvent("error", { error })
-    await this.write.dispatchEvent(errorEvent, "error")
+    await this.write.emit("error", error.inner)
+
+    return Cascade.rethrow(error)
   }
 
   async #onWriterStart() {
@@ -279,18 +287,20 @@ export class TlsClientDuplex {
 
     const client_hello = ClientHello2.default(this.params.ciphers)
 
-    const client_random = Writable.toBytes(client_hello.random)
+    const client_random = Writable.tryWriteToBytes(client_hello.random).unwrap()
     const client_extensions = getClientExtensionRecord(client_hello)
 
     const handshake = client_hello.handshake()
-    const messages = [Writable.toBytes(handshake)]
+    const messages = [Writable.tryWriteToBytes(handshake).unwrap()]
 
     this.#state = { ...this.#state, type: "handshake", messages, step: "client_hello", client_random, client_extensions }
 
     const record = handshake.record(0x0301)
     this.#writer.enqueue(record)
 
-    await Plume.waitCloseOrError(this.read, "handshaked")
+    await Plume.tryWaitStream(this.read, "handshaked")
+
+    return Ok.void()
   }
 
   async #onReaderWrite(chunk: Opaque) {
@@ -300,6 +310,8 @@ export class TlsClientDuplex {
       await this.#onReadBuffered(chunk.bytes)
     else
       await this.#onReadDirect(chunk.bytes)
+
+    return Ok.void()
   }
 
   /**
@@ -347,6 +359,8 @@ export class TlsClientDuplex {
     const ciphertext = await plaintext.encrypt(encrypter, state.client_sequence++)
 
     this.#writer.enqueue(ciphertext)
+
+    return Ok.void()
   }
 
   async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {

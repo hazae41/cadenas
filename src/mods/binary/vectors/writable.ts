@@ -1,18 +1,20 @@
-import { Cursor, Writable } from "@hazae41/binary";
+import { Writable } from "@hazae41/binary";
+import { Cursor, CursorWriteUnknownError } from "@hazae41/cursor";
+import { Ok, Result } from "@hazae41/result";
 import { NumberClass, NumberX } from "mods/binary/numbers/number.js";
 
-export interface Vector<L extends NumberX, T extends Writable> extends Writable {
+export interface Vector<L extends NumberX, T extends Writable.Infer<T>> extends Writable<Writable.SizeError<T>, Writable.SizeError<T> | Writable.WriteError<T> | CursorWriteUnknownError> {
   readonly vlength: NumberClass<L>
   readonly value: T
 }
 
-export const Vector = <L extends NumberX>(vlength: NumberClass<L>) => class <T extends Writable> {
+export const Vector = <L extends NumberX>(vlength: NumberClass<L>) => class <T extends Writable.Infer<T>> {
 
   constructor(
     readonly value: T
   ) { }
 
-  static from<T extends Writable>(value: T) {
+  static from<T extends Writable.Infer<T>>(value: T) {
     return new this(value)
   }
 
@@ -20,14 +22,22 @@ export const Vector = <L extends NumberX>(vlength: NumberClass<L>) => class <T e
     return vlength
   }
 
-  size() {
-    return vlength.size + this.value.size()
+  trySize(): Result<number, Writable.SizeError<T>> {
+    return Result.unthrowSync(t => {
+      const size = this.value.trySize().throw(t)
+      return new Ok(vlength.size + size)
+    })
   }
 
-  write(cursor: Cursor) {
-    new vlength(this.value.size()).write(cursor)
+  tryWrite(cursor: Cursor): Result<void, Writable.SizeError<T> | Writable.WriteError<T> | CursorWriteUnknownError> {
+    return Result.unthrowSync(t => {
+      const size = this.value.trySize().throw(t)
+      new vlength(size).tryWrite(cursor).throw(t)
 
-    this.value.write(cursor)
+      this.value.tryWrite(cursor).throw(t)
+
+      return Ok.void()
+    })
   }
 
 }

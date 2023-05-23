@@ -1,4 +1,5 @@
-import { Cursor } from "@hazae41/binary"
+import { Cursor, CursorReadUnknownError, CursorWriteUnknownError } from "@hazae41/cursor"
+import { Ok, Result } from "@hazae41/result"
 
 export class Number16 {
   readonly #class = Number16
@@ -9,15 +10,20 @@ export class Number16 {
     readonly value: number
   ) { }
 
-  size() {
-    return this.#class.size
+  static new(value: number) {
+    return new Number16(value)
   }
 
-  write(cursor: Cursor) {
-    cursor.writeUint16(this.value)
+  trySize(): Result<number, never> {
+    return new Ok(this.#class.size)
   }
 
-  static read(cursor: Cursor) {
-    return new this(cursor.readUint16())
+  tryWrite(cursor: Cursor): Result<void, CursorWriteUnknownError> {
+    return cursor.tryWriteUint8(this.value)
   }
+
+  static tryRead(cursor: Cursor): Result<Number16, CursorReadUnknownError> {
+    return cursor.tryReadUint8().mapSync(Number16.new)
+  }
+
 }
