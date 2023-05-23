@@ -64,10 +64,6 @@ export class Alert {
     })
   }
 
-  // record(version: number) {
-  //   return new PlaintextRecord<Alert>(this.type, version, this)
-  // }
-
   static tryRead(cursor: Cursor): Result<Alert, CursorReadUnknownError> {
     return Result.unthrowSync(t => {
       const level = cursor.tryReadUint8().throw(t)
@@ -76,5 +72,10 @@ export class Alert {
       return new Ok(new Alert(level, description))
     })
   }
+
+  // record(version: number) {
+  //   return new PlaintextRecord<Alert>(this.type, version, this)
+  // }
+
 
 }

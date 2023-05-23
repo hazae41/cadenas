@@ -1,56 +1,67 @@
-import { Cursor, Opaque, Writable } from "@hazae41/binary";
+import { Opaque, Writable } from "@hazae41/binary";
+import { Bytes } from "@hazae41/bytes";
+import { Cursor, CursorReadLengthOverflowError, CursorWriteLengthOverflowError } from "@hazae41/cursor";
+import { Ok, Result } from "@hazae41/result";
 import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
 import { AEADEncrypter } from "mods/ciphers/encryptions/encryption.js";
 
 export class GenericAEADCipher {
 
   constructor(
-    readonly nonce_explicit: Uint8Array,
-    readonly block: Uint8Array
+    readonly nonce_explicit: Bytes<8>,
+    readonly block: Bytes
   ) { }
 
   size() {
     return this.nonce_explicit.length + this.block.length
   }
 
-  write(cursor: Cursor) {
-    cursor.write(this.nonce_explicit)
-    cursor.write(this.block)
+  tryWrite(cursor: Cursor): Result<void, CursorWriteLengthOverflowError> {
+    return Result.unthrowSync(t => {
+      cursor.tryWrite(this.nonce_explicit).throw(t)
+      cursor.tryWrite(this.block).throw(t)
+
+      return Ok.void()
+    })
   }
 
-  static read(cursor: Cursor) {
-    const nonce_explicit = cursor.read(8)
-    const block = cursor.read(cursor.remaining)
+  static tryRead(cursor: Cursor): Result<GenericAEADCipher, CursorReadLengthOverflowError> {
+    return Result.unthrowSync(t => {
+      const nonce_explicit = cursor.tryRead(8).throw(t)
+      const block = cursor.tryRead(cursor.remaining).throw(t)
 
-    return new this(nonce_explicit, block)
+      return new Ok(new GenericAEADCipher(nonce_explicit, block))
+    })
   }
 
-  static async encrypt<T extends Writable>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint) {
-    const nonce = Cursor.allocUnsafe(encrypter.fixed_iv_length + 8)
-    nonce.write(encrypter.secrets.client_write_IV)
-    nonce.writeUint64(sequence)
+  static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint) {
+    return await Result.unthrow(async t => {
+      const nonce = Cursor.allocUnsafe(encrypter.fixed_iv_length + 8)
+      nonce.tryWrite(encrypter.secrets.client_write_IV).throw(t)
+      nonce.tryWriteUint64(sequence).throw(t)
 
-    nonce.offset = 0
-    const nonce_implicit = nonce.read(4)
-    const nonce_explicit = nonce.read(8)
+      nonce.offset = 0
+      const nonce_implicit = nonce.tryRead(4).throw(t)
+      const nonce_explicit = nonce.tryRead(8).throw(t)
 
-    const content = Writable.toBytes(record.fragment)
+      const content = Writable.tryWriteToBytes(record.fragment).throw(t)
 
-    const additional_data = Cursor.allocUnsafe(8 + 1 + 2 + 2)
-    additional_data.writeUint64(sequence)
-    additional_data.writeUint8(record.subtype)
-    additional_data.writeUint16(record.version)
-    additional_data.writeUint16(record.fragment.size())
+      const additional_data = Cursor.allocUnsafe(8 + 1 + 2 + 2)
+      additional_data.tryWriteUint64(sequence).throw(t)
+      additional_data.tryWriteUint8(record.subtype).throw(t)
+      additional_data.tryWriteUint16(record.version).throw(t)
+      additional_data.tryWriteUint16(record.fragment.trySize().throw(t)).throw(t)
 
-    // console.debug("-> nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
-    // console.debug("-> plaintext", content.length, Bytes.toHex(content))
-    // console.debug("-> additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
+      // console.debug("-> nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
+      // console.debug("-> plaintext", content.length, Bytes.toHex(content))
+      // console.debug("-> additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
 
-    const ciphertext = await encrypter.encrypt(nonce.bytes, content, additional_data.bytes)
+      const ciphertext = await encrypter.encrypt(nonce.bytes, content, additional_data.bytes)
 
-    // console.debug("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
+      // console.debug("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
 
-    return new this(nonce_explicit, ciphertext)
+      return new Ok(new GenericAEADCipher(nonce_explicit, ciphertext))
+    })
   }
 
   async decrypt(record: AEADCiphertextRecord, encrypter: AEADEncrypter, sequence: bigint) {

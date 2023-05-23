@@ -1,5 +1,6 @@
-import { Cursor } from "@hazae41/binary";
-import { PlaintextRecord, Record } from "mods/binary/records/record.js";
+import { Cursor, CursorReadUnknownError, CursorWriteUnknownError } from "@hazae41/cursor";
+import { Ok, Result } from "@hazae41/result";
+import { Record } from "mods/binary/records/record.js";
 
 export class ChangeCipherSpec {
   readonly #class = ChangeCipherSpec
@@ -14,25 +15,24 @@ export class ChangeCipherSpec {
     readonly subtype: number = ChangeCipherSpec.types.change_cipher_spec
   ) { }
 
+  static new(subtype?: number) {
+    return new ChangeCipherSpec(subtype)
+  }
+
   get type() {
     return this.#class.type
   }
 
-  size() {
-    return 1
+  trySize(): Result<number, never> {
+    return new Ok(1)
   }
 
-  write(cursor: Cursor) {
-    cursor.writeUint8(this.subtype)
+  tryWrite(cursor: Cursor): Result<void, CursorWriteUnknownError> {
+    return cursor.tryWriteUint8(this.subtype)
   }
 
-  record(version: number) {
-    return new PlaintextRecord<ChangeCipherSpec>(this.#class.type, version, this)
+  static tryRead(cursor: Cursor): Result<ChangeCipherSpec, CursorReadUnknownError> {
+    return cursor.tryReadUint8().mapSync(ChangeCipherSpec.new)
   }
 
-  static read(cursor: Cursor) {
-    const subtype = cursor.readUint8()
-
-    return new this(subtype)
-  }
 }

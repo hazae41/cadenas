@@ -15,7 +15,7 @@ export namespace Record {
 
 }
 
-export class PlaintextRecord<T extends Writable> {
+export class PlaintextRecord<T extends Writable.Infer<T>> {
 
   constructor(
     readonly subtype: number,
