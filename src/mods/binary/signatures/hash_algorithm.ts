@@ -1,4 +1,5 @@
-import { Cursor } from "@hazae41/binary";
+import { Cursor, CursorReadUnknownError, CursorWriteUnknownError } from "@hazae41/cursor";
+import { Ok, Result } from "@hazae41/result";
 
 export class HashAlgorithm {
 
@@ -13,28 +14,33 @@ export class HashAlgorithm {
   } as const
 
   static readonly instances = {
-    none: new this(this.types.none),
-    md5: new this(this.types.md5),
-    sha1: new this(this.types.sha1),
-    sha224: new this(this.types.sha224),
-    sha256: new this(this.types.sha256),
-    sha384: new this(this.types.sha384),
-    sha512: new this(this.types.sha512)
+    none: new HashAlgorithm(HashAlgorithm.types.none),
+    md5: new HashAlgorithm(HashAlgorithm.types.md5),
+    sha1: new HashAlgorithm(HashAlgorithm.types.sha1),
+    sha224: new HashAlgorithm(HashAlgorithm.types.sha224),
+    sha256: new HashAlgorithm(HashAlgorithm.types.sha256),
+    sha384: new HashAlgorithm(HashAlgorithm.types.sha384),
+    sha512: new HashAlgorithm(HashAlgorithm.types.sha512)
   } as const
 
   constructor(
     readonly type: number
   ) { }
 
-  size() {
-    return 1
+  static new(type: number) {
+    return new HashAlgorithm(type)
   }
 
-  write(cursor: Cursor) {
-    cursor.writeUint8(this.type)
+  trySize(): Result<number, never> {
+    return new Ok(1)
   }
 
-  static read(cursor: Cursor) {
-    return new this(cursor.readUint8())
+  tryWrite(cursor: Cursor): Result<void, CursorWriteUnknownError> {
+    return cursor.tryWriteUint8(this.type)
   }
+
+  static tryRead(cursor: Cursor): Result<HashAlgorithm, CursorReadUnknownError> {
+    return cursor.tryReadUint8().mapSync(HashAlgorithm.new)
+  }
+
 }

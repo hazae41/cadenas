@@ -3,7 +3,7 @@ import { Cursor, CursorWriteUnknownError } from "@hazae41/cursor";
 import { Ok, Result } from "@hazae41/result";
 import { NumberClass, NumberX } from "mods/binary/numbers/number.js";
 
-export interface Vector<L extends NumberX, T extends Writable.Infer<T>> extends Writable<Writable.SizeError<T>, Writable.SizeError<T> | Writable.WriteError<T> | CursorWriteUnknownError> {
+export interface Vector<L extends NumberX, T extends Writable> extends Writable<Writable.SizeError<T>, Writable.SizeError<T> | Writable.WriteError<T> | CursorWriteUnknownError> {
   readonly vlength: NumberClass<L>
   readonly value: T
 }

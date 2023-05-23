@@ -1,4 +1,5 @@
-import { Cursor } from "@hazae41/binary";
+import { Cursor, CursorReadUnknownError, CursorWriteUnknownError } from "@hazae41/cursor"
+import { Ok, Result } from "@hazae41/result"
 
 export class SignatureAlgorithm {
 
@@ -10,25 +11,30 @@ export class SignatureAlgorithm {
   } as const
 
   static readonly instances = {
-    anonymous: new this(this.types.anonymous),
-    rsa: new this(this.types.rsa),
-    dsa: new this(this.types.dsa),
-    ecdsa: new this(this.types.ecdsa)
+    anonymous: new SignatureAlgorithm(SignatureAlgorithm.types.anonymous),
+    rsa: new SignatureAlgorithm(SignatureAlgorithm.types.rsa),
+    dsa: new SignatureAlgorithm(SignatureAlgorithm.types.dsa),
+    ecdsa: new SignatureAlgorithm(SignatureAlgorithm.types.ecdsa)
   } as const
 
   constructor(
     readonly type: number
   ) { }
 
-  size() {
-    return 1
+  static new(type: number) {
+    return new SignatureAlgorithm(type)
   }
 
-  write(cursor: Cursor) {
-    cursor.writeUint8(this.type)
+  trySize(): Result<number, never> {
+    return new Ok(1)
   }
 
-  static read(cursor: Cursor) {
-    return new this(cursor.readUint8())
+  tryWrite(cursor: Cursor): Result<void, CursorWriteUnknownError> {
+    return cursor.tryWriteUint8(this.type)
   }
+
+  static tryRead(cursor: Cursor): Result<SignatureAlgorithm, CursorReadUnknownError> {
+    return cursor.tryReadUint8().mapSync(SignatureAlgorithm.new)
+  }
+
 }
