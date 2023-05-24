@@ -16,9 +16,9 @@ export class ClientDiffieHellmanPublic {
   }
 
   static from(bytes: Uint8Array) {
-    const dh_Yc = Vector(Number16).from(new Opaque(bytes))
+    const dh_Yc = Vector(Number16).from(Opaque.new(bytes))
 
-    return new this(dh_Yc)
+    return new ClientDiffieHellmanPublic(dh_Yc)
   }
 
   trySize(): Result<number, never> {

@@ -1,4 +1,6 @@
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
+import { Result } from "@hazae41/result";
 import { ECPoint } from "../server_key_exchange/ec_point.js";
 
 export class ClientECDiffieHellmanPublic {
@@ -7,23 +9,24 @@ export class ClientECDiffieHellmanPublic {
     readonly ecdh_Yc: ECPoint
   ) { }
 
+  static new(ecdh_Yc: ECPoint) {
+    return new ClientECDiffieHellmanPublic(ecdh_Yc)
+  }
+
   static from(bytes: Uint8Array) {
-    const ecdh_Yc = ECPoint.from(bytes)
-
-    return new this(ecdh_Yc)
+    return new ClientECDiffieHellmanPublic(ECPoint.from(bytes))
   }
 
-  trySize() {
-    return this.ecdh_Yc.size()
+  trySize(): Result<number, never> {
+    return this.ecdh_Yc.trySize()
   }
 
-  write(cursor: Cursor) {
-    this.ecdh_Yc.write(cursor)
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
+    return this.ecdh_Yc.tryWrite(cursor)
   }
 
-  static read(cursor: Cursor) {
-    const ecdh_Yc = ECPoint.read(cursor)
-
-    return new this(ecdh_Yc)
+  static tryRead(cursor: Cursor): Result<ClientECDiffieHellmanPublic, BinaryReadError> {
+    return ECPoint.tryRead(cursor).mapSync(ClientECDiffieHellmanPublic.new)
   }
+
 }

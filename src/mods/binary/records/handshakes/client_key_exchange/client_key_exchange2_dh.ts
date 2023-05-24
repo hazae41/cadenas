@@ -1,4 +1,6 @@
-import { Cursor } from "@hazae41/binary";
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
+import { Cursor } from "@hazae41/cursor";
+import { Result } from "@hazae41/result";
 import { ClientDiffieHellmanPublic } from "mods/binary/records/handshakes/client_key_exchange/client_diffie_hellman_public.js";
 import { Handshake } from "mods/binary/records/handshakes/handshake.js";
 
@@ -11,27 +13,24 @@ export class ClientKeyExchange2DH {
     readonly exchange_keys: ClientDiffieHellmanPublic
   ) { }
 
+  static new(exchange_keys: ClientDiffieHellmanPublic) {
+    return new ClientKeyExchange2DH(exchange_keys)
+  }
+
   static from(bytes: Uint8Array) {
-    const exchange_keys = ClientDiffieHellmanPublic.from(bytes)
-
-    return new this(exchange_keys)
+    return new ClientKeyExchange2DH(ClientDiffieHellmanPublic.from(bytes))
   }
 
-  size() {
-    return this.exchange_keys.size()
+  trySize(): Result<number, never> {
+    return this.exchange_keys.trySize()
   }
 
-  write(cursor: Cursor) {
-    this.exchange_keys.write(cursor)
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
+    return this.exchange_keys.tryWrite(cursor)
   }
 
-  handshake() {
-    return new Handshake<ClientKeyExchange2DH>(this.#class.type, this)
+  static tryRead(cursor: Cursor): Result<ClientKeyExchange2DH, BinaryReadError> {
+    return ClientDiffieHellmanPublic.tryRead(cursor).mapSync(ClientKeyExchange2DH.new)
   }
 
-  static read(cursor: Cursor) {
-    const exchange_keys = ClientDiffieHellmanPublic.read(cursor)
-
-    return new this(exchange_keys)
-  }
 }
