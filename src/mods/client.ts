@@ -4,7 +4,7 @@ import { Cascade, SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Some } from "@hazae41/option"
 import { Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
-import { Err, Ok } from "@hazae41/result"
+import { Debug, Err, Ok } from "@hazae41/result"
 import { Certificate } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
@@ -208,6 +208,8 @@ export class TlsClientDuplex {
     readonly params: TlsClientDuplexParams
   ) {
     const { signal } = params
+
+    Debug.debug = true
 
     this.#reader = new SuperTransformStream({
       transform: this.#onReaderWrite.bind(this)
