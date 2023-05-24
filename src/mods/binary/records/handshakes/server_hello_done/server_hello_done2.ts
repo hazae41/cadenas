@@ -1,27 +1,21 @@
-import { Cursor } from "@hazae41/binary"
+import { Cursor } from "@hazae41/cursor"
+import { Ok, Result } from "@hazae41/result"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 
 export class ServerHelloDone2 {
 
   static readonly type = Handshake.types.server_hello_done
 
-  constructor() { }
-
-  size() {
-    return 0
+  trySize(): Result<0, never> {
+    return new Ok(0)
   }
 
-  write(cursor: Cursor) {
-    /**
-     * NOOP
-     */
+  tryWrite(cursor: Cursor): Result<void, never> {
+    return Ok.void()
   }
 
-  static read(cursor: Cursor) {
-    /**
-     * NOOP
-     */
-
-    return new this()
+  static tryRead(cursor: Cursor): Result<ServerHelloDone2, never> {
+    return new Ok(new ServerHelloDone2())
   }
+
 }

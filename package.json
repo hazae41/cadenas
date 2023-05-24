@@ -27,6 +27,7 @@
     "@hazae41/cascade": "^1.1.18",
     "@hazae41/cursor": "^1.1.14",
     "@hazae41/future": "^1.0.3",
+    "@hazae41/option": "^1.0.9",
     "@hazae41/plume": "^2.0.4",
     "@hazae41/result": "^1.0.33",
     "@hazae41/x509": "^1.1.1"

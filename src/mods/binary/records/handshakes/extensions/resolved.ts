@@ -9,15 +9,15 @@ import { ECPointFormats } from "./ec_point_formats/ec_point_formats.js"
 import { EllipticCurves } from "./elliptic_curves/elliptic_curves.js"
 import { SignatureAlgorithms } from "./signature_algorithms/signature_algorithms.js"
 
-export type Extensions =
+export type ResolvedExtension =
   | SignatureAlgorithms
   | EllipticCurves
   | ECPointFormats
   | Opaque
 
-export class TypedExtension {
+export namespace ResolvedExtension {
 
-  static #tryRead2(type: number, cursor: Cursor): Result<Vector<Number16, Extensions>, BinaryReadError> {
+  function tryResolve(type: number, cursor: Cursor): Result<Vector<Number16, ResolvedExtension>, BinaryReadError> {
     if (type === Extension.types.signature_algorithms)
       return ReadableVector(Number16, SignatureAlgorithms).tryRead(cursor)
     if (type === Extension.types.elliptic_curves)
@@ -28,12 +28,12 @@ export class TypedExtension {
     return ReadableVector(Number16, UnsafeOpaque).tryRead(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<Extension<Extensions>, BinaryReadError> {
+  export function tryRead(cursor: Cursor): Result<Extension<ResolvedExtension>, BinaryReadError> {
     return Result.unthrowSync(t => {
       const type = cursor.tryReadUint16().throw(t)
-      const data = this.#tryRead2(type, cursor).throw(t)
+      const data = tryResolve(type, cursor).throw(t)
 
-      return new Ok(new Extension<Extensions>(type, data))
+      return new Ok(new Extension<ResolvedExtension>(type, data))
     })
   }
 

@@ -1,4 +1,6 @@
-import { Cursor } from "@hazae41/binary"
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary"
+import { Cursor } from "@hazae41/cursor"
+import { Ok, Result } from "@hazae41/result"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 
 export class Finished2 {
@@ -10,25 +12,24 @@ export class Finished2 {
     readonly verify_data: Uint8Array
   ) { }
 
+  static new(verify_data: Uint8Array) {
+    return new Finished2(verify_data)
+  }
+
   get type() {
     return this.#class.type
   }
 
-  size() {
-    return this.verify_data.length
+  trySize(): Result<number, never> {
+    return new Ok(this.verify_data.length)
   }
 
-  write(cursor: Cursor) {
-    cursor.write(this.verify_data)
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
+    return cursor.tryWrite(this.verify_data)
   }
 
-  handshake() {
-    return new Handshake(this.type, this)
+  static tryRead(cursor: Cursor): Result<Finished2, BinaryReadError> {
+    return cursor.tryRead(cursor.remaining).mapSync(Finished2.new)
   }
 
-  static read(cursor: Cursor) {
-    const verify_data = cursor.read(cursor.remaining)
-
-    return new this(verify_data)
-  }
 }

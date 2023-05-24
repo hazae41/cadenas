@@ -4,6 +4,10 @@ import { Ok, Result } from "@hazae41/result";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
+export interface Extensionable<T extends Writable> extends Writable.Infer<T> {
+  readonly type: number
+}
+
 export class Extension<T extends Writable.Infer<T>> {
 
   static readonly types = {
@@ -17,10 +21,10 @@ export class Extension<T extends Writable.Infer<T>> {
     readonly data: Vector<Number16, T>
   ) { }
 
-  static from<T extends Writable.Infer<T>>(extension_type: number, extension: T) {
+  static from<T extends Extensionable<T>>(extension: T) {
     const extension_data = Vector(Number16).from(extension)
 
-    return new this(extension_type, extension_data)
+    return new Extension(extension.type, extension_data)
   }
 
   trySize(): Result<number, Writable.SizeError<T>> {

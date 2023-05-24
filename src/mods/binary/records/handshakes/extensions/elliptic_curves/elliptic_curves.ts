@@ -21,6 +21,10 @@ export class EllipticCurves {
     return new this(NamedCurveList.default())
   }
 
+  get type() {
+    return this.#class.type
+  }
+
   trySize(): Result<number, never> {
     return this.named_curve_list.trySize()
   }

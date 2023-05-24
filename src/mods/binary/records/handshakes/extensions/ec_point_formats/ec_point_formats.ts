@@ -21,6 +21,10 @@ export class ECPointFormats {
     return new this(ECPointFormatList.default())
   }
 
+  get type() {
+    return this.#class.type
+  }
+
   trySize(): Result<number, never> {
     return this.ec_point_format_list.trySize()
   }
