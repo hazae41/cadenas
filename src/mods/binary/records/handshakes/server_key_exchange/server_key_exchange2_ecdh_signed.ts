@@ -1,4 +1,6 @@
-import { Cursor } from "@hazae41/binary"
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary"
+import { Cursor } from "@hazae41/cursor"
+import { Ok, Result } from "@hazae41/result"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { DigitallySigned } from "mods/binary/signatures/digitally_signed.js"
 import { ServerECDHParams } from "./server_ecdh_params.js"
@@ -12,19 +14,28 @@ export class ServerKeyExchange2ECDHSigned {
     readonly signed_params: DigitallySigned
   ) { }
 
-  size() {
-    return this.params.size() + this.signed_params.size()
+  trySize(): Result<number, never> {
+    return new Ok(0
+      + this.params.trySize().get()
+      + this.signed_params.trySize().get())
   }
 
-  write(cursor: Cursor) {
-    this.params.write(cursor)
-    this.signed_params.write(cursor)
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
+    return Result.unthrowSync(t => {
+      this.params.tryWrite(cursor).throw(t)
+      this.signed_params.tryWrite(cursor).throw(t)
+
+      return Ok.void()
+    })
   }
 
-  static read(cursor: Cursor) {
-    const params = ServerECDHParams.read(cursor)
-    const signed_params = DigitallySigned.read(cursor)
+  static tryRead(cursor: Cursor): Result<ServerKeyExchange2ECDHSigned, BinaryReadError> {
+    return Result.unthrowSync(t => {
+      const params = ServerECDHParams.tryRead(cursor).throw(t)
+      const signed_params = DigitallySigned.tryRead(cursor).throw(t)
 
-    return new this(params, signed_params)
+      return new Ok(new ServerKeyExchange2ECDHSigned(params, signed_params))
+    })
   }
+
 }
