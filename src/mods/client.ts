@@ -4,7 +4,7 @@ import { Cascade, SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Some } from "@hazae41/option"
 import { Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
-import { Err, Ok } from "@hazae41/result"
+import { Err, Ok, Panic } from "@hazae41/result"
 import { Certificate } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
@@ -33,7 +33,8 @@ import { ReadableServerKeyExchange2 } from "./binary/records/handshakes/server_k
 import { ServerKeyExchange2DHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_dh_signed.js"
 import { ServerKeyExchange2ECDHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_ecdh_signed.js"
 import { Secp256r1 } from "./ciphers/curves/secp256r1.js"
-import { ExtensionRecord, getClientExtensionRecord, getServerExtensionRecord } from "./extensions.js"
+import { InvalidStateError, UnsupportedCipherError, UnsupportedVersionError } from "./errors.js"
+import { Extensions } from "./extensions.js"
 
 export type TlsClientDuplexState =
   | NoneState
@@ -60,7 +61,7 @@ export type HandshakeState =
 export type ClientHelloData = {
   messages: Uint8Array[]
   client_random: Uint8Array
-  client_extensions: ExtensionRecord
+  client_extensions: Extensions
 }
 
 export type ClientHelloState = ClientHelloData & {
@@ -74,7 +75,7 @@ export type ServerHelloData = ClientHelloData & {
   version: number
   cipher: Cipher
   server_random: Uint8Array
-  server_extensions: ExtensionRecord
+  server_extensions: Extensions
 }
 
 export type ServerHelloState = ServerHelloData & {
@@ -287,12 +288,12 @@ export class TlsClientDuplex {
 
   async #onWriterStart() {
     if (this.#state.type !== "none")
-      throw new Error(`Invalid ${this.#class.name} state`)
+      return new Err(new InvalidStateError())
 
     const client_hello = ClientHello2.default(this.params.ciphers)
 
     const client_random = Writable.tryWriteToBytes(client_hello.random).unwrap()
-    const client_extensions = getClientExtensionRecord(client_hello)
+    const client_extensions = Extensions.getClientExtensions(client_hello)
 
     const handshake = Handshake.from(client_hello)
     const messages = [Writable.tryWriteToBytes(handshake).unwrap()]
@@ -355,7 +356,8 @@ export class TlsClientDuplex {
 
   async #onWriterWrite(chunk: Writable) {
     if (this.#state.type !== "handshaked")
-      throw new Error(`Invalid ${this.#class.name} state`)
+      return new Err(new InvalidStateError())
+
     const state = this.#state
 
     const { version, encrypter } = state
@@ -389,7 +391,7 @@ export class TlsClientDuplex {
       return await this.#onPlaintextRecord(plain.unwrap(), state)
     }
 
-    throw new Error(`Invalid cipher type`)
+    throw new Panic(`Invalid cipher type`)
   }
 
   async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
@@ -410,40 +412,41 @@ export class TlsClientDuplex {
 
     console.debug(alert)
 
-    if (alert.description === Alert.descriptions.close_notify) {
-      this.#reader.terminate()
-      return
-    }
-
+    if (alert.description === Alert.descriptions.close_notify)
+      return new Ok(this.#reader.terminate())
     if (alert.level === Alert.levels.fatal)
-      throw new Error(`Fatal alert ${alert.description}`)
+      return new Err(new Error(`Fatal alert ${alert.description}`))
 
     console.warn(`Warning alert ${alert.description}`)
   }
 
   async #onChangeCipherSpec(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (state.type !== "handshake")
-      throw new Error(`Invalid state`)
+      return new Err(new InvalidStateError())
     if (state.step !== "client_finished")
-      throw new Error(`Invalid state`)
+      return new Err(new InvalidStateError())
 
     const change_cipher_spec = record.fragment.tryInto(ChangeCipherSpec).unwrap()
 
     console.debug(change_cipher_spec)
 
     this.#state = { ...state, step: "server_change_cipher_spec", server_encrypted: true, server_sequence: BigInt(0) }
+
+    return Ok.void()
   }
 
   async #onApplicationData(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (state.type !== "handshaked")
-      throw new Error(`Invalid state`)
+      return new Err(new InvalidStateError())
 
     this.#reader.enqueue(record.fragment)
+
+    return Ok.void()
   }
 
   async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (state.type !== "handshake")
-      throw new Error(`Invalid state`)
+      return new Err(new InvalidStateError())
 
     const handshake = record.fragment.tryInto(Handshake).unwrap()
 
@@ -464,11 +467,12 @@ export class TlsClientDuplex {
       return this.#onFinished(handshake, state)
 
     console.warn(handshake)
+    return Ok.void()
   }
 
   async #onServerHello(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "client_hello")
-      throw new Error(`Invalid state`)
+      return new Err(new InvalidStateError())
 
     const server_hello = handshake.fragment.tryInto(ServerHello2).unwrap()
 
@@ -477,24 +481,26 @@ export class TlsClientDuplex {
     const version = server_hello.server_version
 
     if (version !== 0x0303)
-      throw new Error(`Unsupported ${version} version`)
+      return new Err(new UnsupportedVersionError(version))
 
     const cipher = this.params.ciphers.find(it => it.id === server_hello.cipher_suite)
 
     if (cipher === undefined)
-      throw new Error(`Unsupported ${server_hello.cipher_suite} cipher suite`)
+      return new Err(new UnsupportedCipherError(server_hello.cipher_suite))
 
     const server_random = Writable.tryWriteToBytes(server_hello.random).unwrap()
-    const server_extensions = getServerExtensionRecord(server_hello, state.client_extensions)
+    const server_extensions = Extensions.getServerExtensions(server_hello, state.client_extensions)
 
     console.debug(server_extensions)
 
     this.#state = { ...state, step: "server_hello", version, cipher, server_random, server_extensions }
+
+    return Ok.void()
   }
 
   async #onCertificate(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "server_hello")
-      throw new Error(`Invalid state`)
+      return new Err(new InvalidStateError())
 
     const certificate = handshake.fragment.tryInto(Certificate2).unwrap()
 
@@ -513,7 +519,7 @@ export class TlsClientDuplex {
 
   async #onServerKeyExchange(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "server_hello")
-      throw new Error(`Invalid state`)
+      return new Err(new InvalidStateError())
 
     const clazz = ReadableServerKeyExchange2.tryGet(state.cipher).unwrap()
 
@@ -544,7 +550,7 @@ export class TlsClientDuplex {
 
   async #onCertificateRequest(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "server_hello")
-      throw new Error(`Invalid state`)
+      return new Err(new InvalidStateError())
 
     const certificate_request = handshake.fragment.tryInto(CertificateRequest2).unwrap()
 
@@ -577,7 +583,7 @@ export class TlsClientDuplex {
     if (state.server_ecdh_params.curve_params.named_curve.value === NamedCurve.types.secp256r1)
       return new Secp256r1().diffie_hellman(state.server_ecdh_params)
 
-    throw new Error(`Invalid curve`)
+    throw new Panic(`Invalid curve type`)
   }
 
   async #computeSecrets(state: ServerKeyExchangeState, premaster_secret: Uint8Array) {
@@ -625,9 +631,6 @@ export class TlsClientDuplex {
     // console.debug("client_write_IV", client_write_IV.length, Bytes.toHex(client_write_IV))
     // console.debug("server_write_IV", server_write_IV.length, Bytes.toHex(server_write_IV))
 
-    // if (key_block_cursor.remaining)
-    //   throw new Error(`Remaining bytes in key_block_cursor`)
-
     return {
       master_secret,
       client_write_MAC_key,
@@ -641,7 +644,7 @@ export class TlsClientDuplex {
 
   async #onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "server_hello")
-      throw new Error(`Invalid state`)
+      return new Err(new InvalidStateError())
 
     const server_hello_done = handshake.fragment.tryInto(ServerHelloDone2).unwrap()
 
@@ -684,7 +687,7 @@ export class TlsClientDuplex {
       secrets = await this.#computeSecrets(state, ecdh_Z)
     }
 
-    else throw new Error(`Invalid state`)
+    else return new Err(new InvalidStateError())
 
     const encrypter = await state.cipher.init(secrets)
 
@@ -713,7 +716,7 @@ export class TlsClientDuplex {
 
   async #onFinished(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "server_change_cipher_spec")
-      throw new Error(`Invalid state`)
+      return new Err(new InvalidStateError())
 
     const finished = handshake.fragment.tryInto(Finished2).unwrap()
 
