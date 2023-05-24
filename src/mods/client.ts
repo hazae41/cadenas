@@ -119,12 +119,12 @@ export class TlsClientDuplex {
   async #onReadError(reason?: unknown): Promise<Err<unknown>> {
     const error = Cascade.filter(reason)
 
-    console.debug(`${this.#class.name}.onReadError`, { error: error.inner })
+    console.debug(`${this.#class.name}.onReadError`, { reason })
 
     this.#reader.closed = { reason }
-    this.#writer.controller.inner.error(reason)
+    this.#writer.error(reason)
 
-    await this.read.emit("error", error.inner)
+    await this.read.emit("error", reason)
 
     return Cascade.rethrow(error)
   }
@@ -132,12 +132,12 @@ export class TlsClientDuplex {
   async #onWriteError(reason?: unknown): Promise<Err<unknown>> {
     const error = Cascade.filter(reason)
 
-    console.debug(`${this.#class.name}.onWriteError`, { error: error.inner })
+    console.debug(`${this.#class.name}.onWriteError`, { reason })
 
     this.#writer.closed = { reason }
-    this.#reader.controller.inner.error(reason)
+    this.#reader.error(reason)
 
-    await this.write.emit("error", error.inner)
+    await this.write.emit("error", reason)
 
     return Cascade.rethrow(error)
   }
