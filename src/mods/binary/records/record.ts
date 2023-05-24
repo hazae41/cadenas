@@ -85,14 +85,14 @@ export class BlockCiphertextRecord {
     readonly fragment: GenericBlockCipher
   ) { }
 
-  static tryFrom(record: PlaintextRecord<Opaque>) {
+  static tryFrom(record: PlaintextRecord<Opaque>): Result<BlockCiphertextRecord, BinaryReadError> {
     const fragment = record.fragment.tryInto(GenericBlockCipher)
 
     return fragment.mapSync(fragment => new BlockCiphertextRecord(record.subtype, record.version, fragment))
   }
 
   trySize(): Result<number, never> {
-    return this.fragment.trySize().mapSync(x => 1 + 2 + 2)
+    return this.fragment.trySize().mapSync(x => 1 + 2 + 2 + x)
   }
 
   tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
@@ -124,25 +124,34 @@ export class AEADCiphertextRecord {
     readonly fragment: GenericAEADCipher
   ) { }
 
-  static tryFrom(record: PlaintextRecord<Opaque>) {
+  static tryFrom(record: PlaintextRecord<Opaque>): Result<AEADCiphertextRecord, BinaryReadError> {
     const fragment = record.fragment.tryInto(GenericAEADCipher)
 
     return fragment.mapSync(fragment => new AEADCiphertextRecord(record.subtype, record.version, fragment))
   }
 
-  trySize() {
-    return 1 + 2 + 2 + this.fragment.size()
+  trySize(): Result<number, never> {
+    return this.fragment.trySize().mapSync(x => 1 + 2 + 2 + x)
   }
 
-  write(cursor: Cursor) {
-    cursor.writeUint8(this.subtype)
-    cursor.writeUint16(this.version)
-    cursor.writeUint16(this.fragment.size())
-    this.fragment.write(cursor)
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
+    return Result.unthrowSync(t => {
+      cursor.tryWriteUint8(this.subtype).throw(t)
+      cursor.tryWriteUint16(this.version).throw(t)
+
+      const size = this.fragment.trySize().throw(t)
+      cursor.tryWriteUint16(size).throw(t)
+
+      this.fragment.tryWrite(cursor).throw(t)
+
+      return Ok.void()
+    })
   }
 
-  async decrypt(encrypter: AEADEncrypter, sequence: bigint) {
-    const fragment = await this.fragment.decrypt(this, encrypter, sequence)
-    return new PlaintextRecord(this.subtype, this.version, fragment)
+  async tryDecrypt(encrypter: AEADEncrypter, sequence: bigint): Promise<Result<PlaintextRecord<Opaque>, BinaryWriteError>> {
+    const fragment = await this.fragment.tryDecrypt(this, encrypter, sequence)
+
+    return fragment.mapSync(fragment => new PlaintextRecord(this.subtype, this.version, fragment))
   }
+
 }
