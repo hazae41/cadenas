@@ -1,6 +1,6 @@
 import { BinaryError, BinaryReadError, BinaryWriteError, Opaque, Readable, UnsafeOpaque, Writable } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Err, Ok, Panic, Result } from "@hazae41/result"
+import { Ok, Panic, Result } from "@hazae41/result"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { AEADEncrypter, BlockEncrypter, Encrypter } from "mods/ciphers/encryptions/encryption.js"
@@ -74,13 +74,13 @@ export class PlaintextRecord<T extends Writable.Infer<T>> {
     return fragment.mapSync(fragment => new AEADCiphertextRecord(this.subtype, this.version, fragment))
   }
 
-  async tryEncrypt(encrypter: Encrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord | AEADCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError | Panic>> {
+  async tryEncrypt(encrypter: Encrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord | AEADCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError>> {
     if (encrypter.cipher_type === "block")
       return this.#tryEncryptBlock(encrypter, sequence)
     if (encrypter.cipher_type === "aead")
       return this.#tryEncryptAEAD(encrypter, sequence)
 
-    return new Err(new Panic(`Invalid cipher type`))
+    throw new Panic(`Invalid cipher type`)
   }
 
 }
