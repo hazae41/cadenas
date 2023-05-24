@@ -1,4 +1,4 @@
-import { Cursor, Opaque, Writable } from "@hazae41/binary"
+import { Cursor, Opaque, Readable, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { Cascade, SuperTransformStream } from "@hazae41/cascade"
 import { Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
@@ -336,7 +336,7 @@ export class TlsClientDuplex {
     const cursor = new Cursor(chunk)
 
     while (cursor.remaining) {
-      const record = PlaintextRecord.tryRead(cursor)
+      const record = Readable.tryReadOrRollback(PlaintextRecord, cursor)
 
       if (!record) {
         this.#buffer.write(cursor.after)
@@ -372,13 +372,13 @@ export class TlsClientDuplex {
 
   async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }) {
     if (state.encrypter.cipher_type === "block") {
-      const cipher = BlockCiphertextRecord.from(record)
+      const cipher = BlockCiphertextRecord.tryFrom(record)
       const plain = await cipher.decrypt(state.encrypter, state.server_sequence++)
       return await this.#onPlaintextRecord(plain, state)
     }
 
     if (state.encrypter.cipher_type === "aead") {
-      const cipher = AEADCiphertextRecord.from(record)
+      const cipher = AEADCiphertextRecord.tryFrom(record)
       const plain = await cipher.decrypt(state.encrypter, state.server_sequence++)
       return await this.#onPlaintextRecord(plain, state)
     }

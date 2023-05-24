@@ -44,15 +44,15 @@ export class GenericBlockCipher {
     })
   }
 
-  static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint) {
+  static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint): Promise<Result<GenericBlockCipher, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError>> {
     return await Result.unthrow(async t => {
       const iv = Bytes.random(16)
 
       const content = Writable.tryWriteToBytes(record.fragment).throw(t)
 
-      const premac = Cursor.allocUnsafe(8 + record.size())
+      const premac = Cursor.allocUnsafe(8 + record.trySize().throw(t))
       premac.tryWriteUint64(sequence).throw(t)
-      record.write(premac)
+      record.tryWrite(premac).throw(t)
 
       const mac = await encrypter.macher.write(premac.bytes)
 
@@ -74,7 +74,7 @@ export class GenericBlockCipher {
     })
   }
 
-  async tryDecrypt(record: BlockCiphertextRecord, encrypter: BlockEncrypter, sequence: bigint) {
+  async tryDecrypt(record: BlockCiphertextRecord, encrypter: BlockEncrypter, sequence: bigint): Promise<Result<Opaque, never>> {
     return await Result.unthrow(async t => {
       const plaintext = await encrypter.decrypt(this.iv, this.block)
 
@@ -87,4 +87,5 @@ export class GenericBlockCipher {
       return new Ok(new Opaque(content))
     })
   }
+
 }

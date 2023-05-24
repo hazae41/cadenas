@@ -1,4 +1,6 @@
-import { Cursor, Opaque, Readable, UnsafeOpaque, Writable } from "@hazae41/binary"
+import { BinaryError, BinaryReadError, BinaryWriteError, Opaque, Readable, UnsafeOpaque, Writable } from "@hazae41/binary"
+import { Cursor } from "@hazae41/cursor"
+import { Err, Ok, Panic, Result } from "@hazae41/result"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { AEADEncrypter, BlockEncrypter, Encrypter } from "mods/ciphers/encryptions/encryption.js"
@@ -23,79 +25,96 @@ export class PlaintextRecord<T extends Writable.Infer<T>> {
     readonly fragment: T
   ) { }
 
-  size() {
-    return 1 + 2 + 2 + this.fragment.size()
+  trySize(): Result<number, Writable.SizeError<T>> {
+    return this.fragment.trySize().mapSync(x => 1 + 2 + 2 + x)
   }
 
-  write(cursor: Cursor) {
-    cursor.writeUint8(this.subtype)
-    cursor.writeUint16(this.version)
-    cursor.writeUint16(this.fragment.size())
-    this.fragment.write(cursor)
+  tryWrite(cursor: Cursor): Result<void, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError> {
+    return Result.unthrowSync(t => {
+      cursor.tryWriteUint8(this.subtype).throw(t)
+      cursor.tryWriteUint16(this.version).throw(t)
+      const size = this.fragment.trySize().throw(t)
+      cursor.tryWriteUint16(size).throw(t)
+      this.fragment.tryWrite(cursor).throw(t)
+
+      return Ok.void()
+    })
   }
 
-  static read(cursor: Cursor) {
-    const subtype = cursor.readUint8()
-    const version = cursor.readUint16()
-    const size = cursor.readUint16()
+  static tryRead(cursor: Cursor): Result<PlaintextRecord<Opaque>, BinaryReadError> {
+    return Result.unthrowSync(t => {
+      const subtype = cursor.tryReadUint8().throw(t)
+      const version = cursor.tryReadUint16().throw(t)
+      const size = cursor.tryReadUint16().throw(t)
 
-    const fragment = Readable.fromBytes(UnsafeOpaque, cursor.read(size))
+      const bytes = cursor.tryRead(size).throw(t)
+      const fragment = Readable.tryReadFromBytes(UnsafeOpaque, bytes).throw(t)
 
-    return new this(subtype, version, fragment)
+      return new Ok(new PlaintextRecord<Opaque>(subtype, version, fragment))
+    })
   }
 
-  static tryRead(cursor: Cursor) {
-    const start = cursor.offset
+  async #tryEncryptBlock(encrypter: BlockEncrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError>> {
+    const fragment = await GenericBlockCipher.tryEncrypt<T>(this, encrypter, sequence)
 
-    try {
-      return this.read(cursor)
-    } catch (e: unknown) {
-      cursor.offset = start
-    }
+    return fragment.mapSync(fragment => new BlockCiphertextRecord(this.subtype, this.version, fragment))
   }
 
-  async encrypt(encrypter: Encrypter, sequence: bigint) {
-    if (encrypter.cipher_type === "block") {
-      const gcipher = await GenericBlockCipher.encrypt<T>(this, encrypter, sequence)
-      return new BlockCiphertextRecord(this.subtype, this.version, gcipher)
-    }
+  async #tryEncryptAEAD(encrypter: AEADEncrypter, sequence: bigint): Promise<Result<AEADCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError>> {
+    const fragment = await GenericAEADCipher.tryEncrypt<T>(this, encrypter, sequence)
 
-    if (encrypter.cipher_type === "aead") {
-      const gcipher = await GenericAEADCipher.encrypt<T>(this, encrypter, sequence)
-      return new AEADCiphertextRecord(this.subtype, this.version, gcipher)
-    }
-
-    throw new Error(`Invalid cipher type`)
+    return fragment.mapSync(fragment => new AEADCiphertextRecord(this.subtype, this.version, fragment))
   }
+
+  async tryEncrypt(encrypter: Encrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord | AEADCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError | Panic>> {
+    if (encrypter.cipher_type === "block")
+      return this.#tryEncryptBlock(encrypter, sequence)
+    if (encrypter.cipher_type === "aead")
+      return this.#tryEncryptAEAD(encrypter, sequence)
+
+    return new Err(new Panic(`Invalid cipher type`))
+  }
+
 }
 
 export class BlockCiphertextRecord {
+
   constructor(
     readonly subtype: number,
     readonly version: number,
     readonly fragment: GenericBlockCipher
   ) { }
 
-  static from(record: PlaintextRecord<Opaque>) {
-    const fragment = record.fragment.into(GenericBlockCipher)
-    return new this(record.subtype, record.version, fragment)
+  static tryFrom(record: PlaintextRecord<Opaque>) {
+    const fragment = record.fragment.tryInto(GenericBlockCipher)
+
+    return fragment.mapSync(fragment => new BlockCiphertextRecord(record.subtype, record.version, fragment))
   }
 
-  size() {
-    return 1 + 2 + 2 + this.fragment.size()
+  trySize(): Result<number, never> {
+    return this.fragment.trySize().mapSync(x => 1 + 2 + 2)
   }
 
-  write(cursor: Cursor) {
-    cursor.writeUint8(this.subtype)
-    cursor.writeUint16(this.version)
-    cursor.writeUint16(this.fragment.size())
-    this.fragment.write(cursor)
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
+    return Result.unthrowSync(t => {
+      cursor.tryWriteUint8(this.subtype).throw(t)
+      cursor.tryWriteUint16(this.version).throw(t)
+
+      const size = this.fragment.trySize().throw(t)
+      cursor.tryWriteUint16(size).throw(t)
+
+      this.fragment.tryWrite(cursor).throw(t)
+
+      return Ok.void()
+    })
   }
 
-  async decrypt(encrypter: BlockEncrypter, sequence: bigint) {
-    const fragment = await this.fragment.decrypt(this, encrypter, sequence)
-    return new PlaintextRecord(this.subtype, this.version, fragment)
+  async tryDecrypt(encrypter: BlockEncrypter, sequence: bigint): Promise<Result<PlaintextRecord<Opaque>, never>> {
+    const fragment = await this.fragment.tryDecrypt(this, encrypter, sequence)
+
+    return fragment.mapSync(fragment => new PlaintextRecord(this.subtype, this.version, fragment))
   }
+
 }
 
 export class AEADCiphertextRecord {
@@ -105,12 +124,13 @@ export class AEADCiphertextRecord {
     readonly fragment: GenericAEADCipher
   ) { }
 
-  static from(record: PlaintextRecord<Opaque>) {
-    const fragment = record.fragment.into(GenericAEADCipher)
-    return new this(record.subtype, record.version, fragment)
+  static tryFrom(record: PlaintextRecord<Opaque>) {
+    const fragment = record.fragment.tryInto(GenericAEADCipher)
+
+    return fragment.mapSync(fragment => new AEADCiphertextRecord(record.subtype, record.version, fragment))
   }
 
-  size() {
+  trySize() {
     return 1 + 2 + 2 + this.fragment.size()
   }
 

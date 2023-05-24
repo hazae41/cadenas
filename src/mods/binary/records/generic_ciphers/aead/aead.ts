@@ -1,4 +1,4 @@
-import { BinaryReadError, BinaryWriteError, Opaque, Writable } from "@hazae41/binary";
+import { BinaryError, BinaryReadError, BinaryWriteError, Opaque, Writable } from "@hazae41/binary";
 import { Bytes } from "@hazae41/bytes";
 import { Cursor } from "@hazae41/cursor";
 import { Ok, Result } from "@hazae41/result";
@@ -34,7 +34,7 @@ export class GenericAEADCipher {
     })
   }
 
-  static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint) {
+  static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<GenericAEADCipher, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError>> {
     return await Result.unthrow(async t => {
       const nonce = Cursor.allocUnsafe(encrypter.fixed_iv_length + 8)
       nonce.tryWrite(encrypter.secrets.client_write_IV).throw(t)
@@ -64,7 +64,7 @@ export class GenericAEADCipher {
     })
   }
 
-  async tryDecrypt(record: AEADCiphertextRecord, encrypter: AEADEncrypter, sequence: bigint) {
+  async tryDecrypt(record: AEADCiphertextRecord, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<Opaque, BinaryWriteError>> {
     return await Result.unthrow(async t => {
       const nonce = Cursor.allocUnsafe(encrypter.fixed_iv_length + 8)
       nonce.tryWrite(encrypter.secrets.server_write_IV).throw(t)
