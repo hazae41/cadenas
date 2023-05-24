@@ -3,6 +3,10 @@ import { Cursor } from "@hazae41/cursor"
 import { Ok, Result } from "@hazae41/result"
 import { Record } from "mods/binary/records/record.js"
 
+export interface Handshakeable<T extends Writable> extends Writable.Infer<T> {
+  readonly type: number
+}
+
 export class Handshake<T extends Writable.Infer<T>> {
   readonly #class = Handshake
 
@@ -25,6 +29,10 @@ export class Handshake<T extends Writable.Infer<T>> {
     readonly subtype: number,
     readonly fragment: T
   ) { }
+
+  static from<T extends Handshakeable<T>>(handshake: T) {
+    return new Handshake(handshake.type, handshake)
+  }
 
   get type() {
     return this.#class.type

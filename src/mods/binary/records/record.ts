@@ -17,6 +17,10 @@ export namespace Record {
 
 }
 
+export interface Recordable<T extends Writable> extends Writable.Infer<T> {
+  readonly type: number
+}
+
 export class PlaintextRecord<T extends Writable.Infer<T>> {
 
   constructor(
@@ -24,6 +28,10 @@ export class PlaintextRecord<T extends Writable.Infer<T>> {
     readonly version: number,
     readonly fragment: T
   ) { }
+
+  static from<T extends Recordable<T>>(record: T, version: number) {
+    return new PlaintextRecord(record.type, version, record)
+  }
 
   trySize(): Result<number, Writable.SizeError<T>> {
     return this.fragment.trySize().mapSync(x => 1 + 2 + 2 + x)

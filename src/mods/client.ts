@@ -2,9 +2,10 @@ import { Opaque, Readable, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { Cascade, SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
+import { Some } from "@hazae41/option"
 import { Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
 import { Err, Ok } from "@hazae41/result"
-import { Certificate, X509 } from "@hazae41/x509"
+import { Certificate } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
@@ -183,7 +184,7 @@ export interface TlsClientDuplexParams {
 }
 
 export type TlsClientDuplexReadEvents = StreamEvents & {
-  handshaked: Event
+  handshaked: undefined
 }
 
 export class TlsClientDuplex {
@@ -291,15 +292,17 @@ export class TlsClientDuplex {
     const client_random = Writable.tryWriteToBytes(client_hello.random).unwrap()
     const client_extensions = getClientExtensionRecord(client_hello)
 
-    const handshake = client_hello.handshake()
+    const handshake = Handshake.from(client_hello)
     const messages = [Writable.tryWriteToBytes(handshake).unwrap()]
 
     this.#state = { ...this.#state, type: "handshake", messages, step: "client_hello", client_random, client_extensions }
 
-    const record = handshake.record(0x0301)
+    const record = PlaintextRecord.from(handshake, 0x0301)
     this.#writer.enqueue(record)
 
-    await Plume.tryWaitStream(this.read, "handshaked")
+    await Plume.tryWaitStream(this.read, "handshaked", () => {
+      return new Ok(new Some(Ok.void()))
+    }, AbortSignal.timeout(1000))
 
     return Ok.void()
   }
@@ -321,7 +324,7 @@ export class TlsClientDuplex {
    * @returns 
    */
   async #onReadBuffered(chunk: Uint8Array) {
-    this.#buffer.write(chunk)
+    this.#buffer.tryWrite(chunk).unwrap()
     const full = new Uint8Array(this.#buffer.before)
 
     this.#buffer.offset = 0
@@ -337,10 +340,10 @@ export class TlsClientDuplex {
     const cursor = new Cursor(chunk)
 
     while (cursor.remaining) {
-      const record = Readable.tryReadOrRollback(PlaintextRecord, cursor)
+      const record = Readable.tryReadOrRollback(PlaintextRecord, cursor).ok().inner
 
       if (!record) {
-        this.#buffer.write(cursor.after)
+        this.#buffer.tryWrite(cursor.after).unwrap()
         break
       }
 
@@ -357,9 +360,9 @@ export class TlsClientDuplex {
     const type = Record.types.application_data
 
     const plaintext = new PlaintextRecord(type, version, chunk)
-    const ciphertext = await plaintext.encrypt(encrypter, state.client_sequence++)
+    const ciphertext = await plaintext.tryEncrypt(encrypter, state.client_sequence++)
 
-    this.#writer.enqueue(ciphertext)
+    this.#writer.enqueue(ciphertext.unwrap())
 
     return Ok.void()
   }
@@ -373,15 +376,15 @@ export class TlsClientDuplex {
 
   async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }) {
     if (state.encrypter.cipher_type === "block") {
-      const cipher = BlockCiphertextRecord.tryFrom(record)
-      const plain = await cipher.decrypt(state.encrypter, state.server_sequence++)
-      return await this.#onPlaintextRecord(plain, state)
+      const cipher = BlockCiphertextRecord.tryFrom(record).unwrap()
+      const plain = await cipher.tryDecrypt(state.encrypter, state.server_sequence++)
+      return await this.#onPlaintextRecord(plain.unwrap(), state)
     }
 
     if (state.encrypter.cipher_type === "aead") {
-      const cipher = AEADCiphertextRecord.tryFrom(record)
-      const plain = await cipher.decrypt(state.encrypter, state.server_sequence++)
-      return await this.#onPlaintextRecord(plain, state)
+      const cipher = AEADCiphertextRecord.tryFrom(record).unwrap()
+      const plain = await cipher.tryDecrypt(state.encrypter, state.server_sequence++)
+      return await this.#onPlaintextRecord(plain.unwrap(), state)
     }
 
     throw new Error(`Invalid cipher type`)
@@ -401,7 +404,7 @@ export class TlsClientDuplex {
   }
 
   async #onAlert(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
-    const alert = record.fragment.into(Alert)
+    const alert = record.fragment.tryInto(Alert).unwrap()
 
     console.debug(alert)
 
@@ -422,7 +425,7 @@ export class TlsClientDuplex {
     if (state.step !== "client_finished")
       throw new Error(`Invalid state`)
 
-    const change_cipher_spec = record.fragment.into(ChangeCipherSpec)
+    const change_cipher_spec = record.fragment.tryInto(ChangeCipherSpec).unwrap()
 
     console.debug(change_cipher_spec)
 
@@ -440,7 +443,7 @@ export class TlsClientDuplex {
     if (state.type !== "handshake")
       throw new Error(`Invalid state`)
 
-    const handshake = record.fragment.into(Handshake)
+    const handshake = record.fragment.tryInto(Handshake).unwrap()
 
     if (handshake.subtype !== Handshake.types.hello_request)
       state.messages.push(new Uint8Array(record.fragment.bytes))
@@ -465,7 +468,7 @@ export class TlsClientDuplex {
     if (state.step !== "client_hello")
       throw new Error(`Invalid state`)
 
-    const server_hello = handshake.fragment.into(ServerHello2)
+    const server_hello = handshake.fragment.tryInto(ServerHello2).unwrap()
 
     console.debug(server_hello)
 
@@ -479,7 +482,7 @@ export class TlsClientDuplex {
     if (cipher === undefined)
       throw new Error(`Unsupported ${server_hello.cipher_suite} cipher suite`)
 
-    const server_random = Writable.toBytes(server_hello.random)
+    const server_random = Writable.tryWriteToBytes(server_hello.random).unwrap()
     const server_extensions = getServerExtensionRecord(server_hello, state.client_extensions)
 
     console.debug(server_extensions)
@@ -491,18 +494,19 @@ export class TlsClientDuplex {
     if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
-    const certificate = handshake.fragment.into(Certificate2)
+    const certificate = handshake.fragment.tryInto(Certificate2).unwrap()
 
     console.debug(certificate)
 
-    const server_certificates = certificate.certificate_list.value.array
-      .map(it => X509.Certificate.fromBytes(it.value.bytes))
+    // const server_certificates = certificate.certificate_list.value.array
+    // .map(it => X509.Certificate.fromBytes(it.value.bytes))
 
-    console.debug(server_certificates)
+
+    // console.debug(server_certificates)
     // console.debug(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
     // console.debug(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
 
-    this.#state = { ...state, action: "server_certificate", server_certificates }
+    this.#state = { ...state, action: "server_certificate", server_certificates: [] }
   }
 
   async #onServerKeyExchange(handshake: Handshake<Opaque>, state: HandshakeState) {
@@ -511,7 +515,7 @@ export class TlsClientDuplex {
 
     const clazz = ReadableServerKeyExchange2.tryGet(state.cipher).unwrap()
 
-    const server_key_exchange = handshake.fragment.into<InstanceType<typeof clazz>>(clazz)
+    const server_key_exchange = handshake.fragment.tryInto(clazz).unwrap()
 
     if (server_key_exchange instanceof ServerKeyExchange2DHSigned) {
       console.debug(server_key_exchange)
@@ -540,7 +544,7 @@ export class TlsClientDuplex {
     if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
-    const certificate_request = handshake.fragment.into(CertificateRequest2)
+    const certificate_request = handshake.fragment.tryInto(CertificateRequest2).unwrap()
 
     console.debug(certificate_request)
 
@@ -601,20 +605,20 @@ export class TlsClientDuplex {
       ? cipher.hash.mac.mac_key_length
       : 0
 
-    const client_write_MAC_key = key_block_cursor.read(mac_key_length)
-    const server_write_MAC_key = key_block_cursor.read(mac_key_length)
+    const client_write_MAC_key = key_block_cursor.tryRead(mac_key_length).unwrap()
+    const server_write_MAC_key = key_block_cursor.tryRead(mac_key_length).unwrap()
 
     // console.debug("client_write_MAC_key", client_write_MAC_key.length, Bytes.toHex(client_write_MAC_key))
     // console.debug("server_write_MAC_key", server_write_MAC_key.length, Bytes.toHex(server_write_MAC_key))
 
-    const client_write_key = key_block_cursor.read(cipher.encryption.enc_key_length)
-    const server_write_key = key_block_cursor.read(cipher.encryption.enc_key_length)
+    const client_write_key = key_block_cursor.tryRead(cipher.encryption.enc_key_length).unwrap()
+    const server_write_key = key_block_cursor.tryRead(cipher.encryption.enc_key_length).unwrap()
 
     // console.debug("client_write_key", client_write_key.length, Bytes.toHex(client_write_key))
     // console.debug("server_write_key", server_write_key.length, Bytes.toHex(server_write_key))
 
-    const client_write_IV = key_block_cursor.read(cipher.encryption.fixed_iv_length)
-    const server_write_IV = key_block_cursor.read(cipher.encryption.fixed_iv_length)
+    const client_write_IV = key_block_cursor.tryRead(cipher.encryption.fixed_iv_length).unwrap()
+    const server_write_IV = key_block_cursor.tryRead(cipher.encryption.fixed_iv_length).unwrap()
 
     // console.debug("client_write_IV", client_write_IV.length, Bytes.toHex(client_write_IV))
     // console.debug("server_write_IV", server_write_IV.length, Bytes.toHex(server_write_IV))
@@ -637,7 +641,7 @@ export class TlsClientDuplex {
     if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
-    const server_hello_done = handshake.fragment.into(ServerHelloDone2)
+    const server_hello_done = handshake.fragment.tryInto(ServerHelloDone2).unwrap()
 
     console.debug(server_hello_done)
 
@@ -645,10 +649,10 @@ export class TlsClientDuplex {
       const certificate_list = Vector(Number24).from(List.from<Vector<Number24, Opaque>>([]))
 
       const certificate = new Certificate2(certificate_list)
-      const handshake_certificate = certificate.handshake()
-      const record_certificate = handshake_certificate.record(state.version)
+      const handshake_certificate = Handshake.from(certificate)
+      const record_certificate = PlaintextRecord.from(handshake_certificate, state.version)
 
-      state.messages.push(Writable.toBytes(handshake_certificate))
+      state.messages.push(Writable.tryWriteToBytes(handshake_certificate).unwrap())
       this.#writer.enqueue(record_certificate)
     }
 
@@ -657,10 +661,10 @@ export class TlsClientDuplex {
     if ("server_dh_params" in state) {
       const { dh_Yc, dh_Z } = await this.#computeDiffieHellman(state)
 
-      const handshake_client_key_exchange = ClientKeyExchange2DH.from(dh_Yc).handshake()
-      const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
+      const handshake_client_key_exchange = Handshake.from(ClientKeyExchange2DH.from(dh_Yc))
+      const record_client_key_exchange = PlaintextRecord.from(handshake_client_key_exchange, state.version)
 
-      state.messages.push(Writable.toBytes(handshake_client_key_exchange))
+      state.messages.push(Writable.tryWriteToBytes(handshake_client_key_exchange).unwrap())
       this.#writer.enqueue(record_client_key_exchange)
 
       secrets = await this.#computeSecrets(state, dh_Z)
@@ -669,10 +673,10 @@ export class TlsClientDuplex {
     else if ("server_ecdh_params" in state) {
       const { ecdh_Yc, ecdh_Z } = await this.#computeEllipticCurveDiffieHellman(state)
 
-      const handshake_client_key_exchange = ClientKeyExchange2ECDH.from(ecdh_Yc).handshake()
-      const record_client_key_exchange = handshake_client_key_exchange.record(state.version)
+      const handshake_client_key_exchange = Handshake.from(ClientKeyExchange2ECDH.from(ecdh_Yc))
+      const record_client_key_exchange = PlaintextRecord.from(handshake_client_key_exchange, state.version)
 
-      state.messages.push(Writable.toBytes(handshake_client_key_exchange))
+      state.messages.push(Writable.tryWriteToBytes(handshake_client_key_exchange).unwrap())
       this.#writer.enqueue(record_client_key_exchange)
 
       secrets = await this.#computeSecrets(state, ecdh_Z)
@@ -683,7 +687,7 @@ export class TlsClientDuplex {
     const encrypter = await state.cipher.init(secrets)
 
     const change_cipher_spec = new ChangeCipherSpec()
-    const record_change_cipher_spec = change_cipher_spec.record(state.version)
+    const record_change_cipher_spec = PlaintextRecord.from(change_cipher_spec, state.version)
 
     const state2: ClientChangeCipherSpecState = { ...state, step: "client_change_cipher_spec", encrypter, client_encrypted: true, client_sequence: BigInt(0) }
 
@@ -697,10 +701,10 @@ export class TlsClientDuplex {
     const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest(handshake_md, handshake_messages))
 
     const verify_data = await PRF(prf_md, secrets.master_secret, "client finished", handshake_messages_hash, 12)
-    const finished = new Finished2(verify_data).handshake().record(state.version)
-    const cfinished = await finished.encrypt(state2.encrypter, state2.client_sequence++)
+    const finished = PlaintextRecord.from(Handshake.from(new Finished2(verify_data)), state.version)
+    const cfinished = await finished.tryEncrypt(state2.encrypter, state2.client_sequence++)
 
-    this.#writer.enqueue(cfinished)
+    this.#writer.enqueue(cfinished.unwrap())
 
     this.#state = { ...state2, step: "client_finished" }
   }
@@ -709,13 +713,12 @@ export class TlsClientDuplex {
     if (state.step !== "server_change_cipher_spec")
       throw new Error(`Invalid state`)
 
-    const finished = handshake.fragment.into(Finished2)
+    const finished = handshake.fragment.tryInto(Finished2).unwrap()
 
     console.debug(finished)
 
     this.#state = { ...state, type: "handshaked" }
 
-    const event = new Event("handshaked")
-    await this.read.dispatchEvent(event, "handshaked")
+    await this.read.emit("handshaked", undefined)
   }
 }

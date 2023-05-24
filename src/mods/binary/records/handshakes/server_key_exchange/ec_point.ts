@@ -1,4 +1,4 @@
-import { BinaryWriteError, Opaque, SafeOpaque } from "@hazae41/binary";
+import { BinaryReadError, BinaryWriteError, Opaque, SafeOpaque } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
 import { Result } from "@hazae41/result";
 import { Number8 } from "mods/binary/numbers/number8.js";
@@ -29,7 +29,7 @@ export class ECPoint {
     return this.point.tryWrite(cursor)
   }
 
-  static tryRead(cursor: Cursor) {
+  static tryRead(cursor: Cursor): Result<ECPoint, BinaryReadError> {
     return ReadableVector(Number8, SafeOpaque).tryRead(cursor).mapSync(ECPoint.new)
   }
 

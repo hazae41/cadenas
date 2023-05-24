@@ -21,6 +21,10 @@ export class ClientKeyExchange2ECDH {
     return new ClientKeyExchange2ECDH(ClientECDiffieHellmanPublic.from(bytes))
   }
 
+  get type() {
+    return this.#class.type
+  }
+
   trySize(): Result<number, never> {
     return this.exchange_keys.trySize()
   }
