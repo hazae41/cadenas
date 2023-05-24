@@ -25,7 +25,7 @@ export default function Home() {
       // const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
       // const res = await fetch("https://eth.llamarpc.com", { stream: tls, method: "POST", headers, body })
 
-      const res = await fetch("https://twitter.com", { stream: tls })
+      const res = await fetch("https://www.facebook.com", { stream: tls })
 
       console.log(res)
       const text = await res.text()
