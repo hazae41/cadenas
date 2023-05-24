@@ -1,6 +1,7 @@
-import { Cursor, Opaque, Readable, Writable } from "@hazae41/binary"
+import { Opaque, Readable, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { Cascade, SuperTransformStream } from "@hazae41/cascade"
+import { Cursor } from "@hazae41/cursor"
 import { Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
 import { Err, Ok } from "@hazae41/result"
 import { Certificate, X509 } from "@hazae41/x509"
@@ -27,7 +28,7 @@ import { Encrypter } from "mods/ciphers/encryptions/encryption.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 import { ClientKeyExchange2ECDH } from "./binary/records/handshakes/client_key_exchange/client_key_exchange2_ecdh.js"
 import { ServerECDHParams } from "./binary/records/handshakes/server_key_exchange/server_ecdh_params.js"
-import { getServerKeyExchange2 } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
+import { ReadableServerKeyExchange2 } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2DHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_dh_signed.js"
 import { ServerKeyExchange2ECDHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_ecdh_signed.js"
 import { Secp256r1 } from "./ciphers/curves/secp256r1.js"
@@ -508,7 +509,7 @@ export class TlsClientDuplex {
     if (state.step !== "server_hello")
       throw new Error(`Invalid state`)
 
-    const clazz = getServerKeyExchange2(state.cipher)
+    const clazz = ReadableServerKeyExchange2.tryGet(state.cipher).unwrap()
 
     const server_key_exchange = handshake.fragment.into<InstanceType<typeof clazz>>(clazz)
 

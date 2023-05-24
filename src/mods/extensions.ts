@@ -13,9 +13,9 @@ export interface ExtensionRecord {
 export function getClientExtensionRecord(client_hello: ClientHello2) {
   const record: ExtensionRecord = {}
 
-  if (!client_hello.extensions) return record
+  if (client_hello.extensions.isNone()) return record
 
-  for (const extension of client_hello.extensions.value.array) {
+  for (const extension of client_hello.extensions.inner.value.array) {
 
     if (extension.data.value instanceof SignatureAlgorithms) {
       record.signature_algorithms = extension.data.value
@@ -41,11 +41,11 @@ export function getClientExtensionRecord(client_hello: ClientHello2) {
 export function getServerExtensionRecord(server_hello: ServerHello2, client_extensions: ExtensionRecord) {
   const server_extensions: ExtensionRecord = {}
 
-  if (!server_hello.extensions) return server_extensions
+  if (server_hello.extensions.isNone()) return server_extensions
 
   const types = new Set<number>()
 
-  for (const extension of server_hello.extensions.value.array) {
+  for (const extension of server_hello.extensions.inner.value.array) {
 
     if (types.has(extension.subtype))
       throw new Error(`Duplicated extension type`)
