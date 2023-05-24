@@ -53,7 +53,7 @@ export class ClientHello2 {
     return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
   }
 
-  trySize() {
+  trySize(): Result<number, never> {
     return new Ok(0
       + 2
       + this.random.trySize().get()
