@@ -340,14 +340,14 @@ export class TlsClientDuplex {
     const cursor = new Cursor(chunk)
 
     while (cursor.remaining) {
-      const record = Readable.tryReadOrRollback(PlaintextRecord, cursor).ok().inner
+      const record = Readable.tryReadOrRollback(PlaintextRecord, cursor).ignore()
 
-      if (!record) {
+      if (record.isErr()) {
         this.#buffer.tryWrite(cursor.after).unwrap()
         break
       }
 
-      await this.#onRecord(record, this.#state)
+      await this.#onRecord(record.get(), this.#state)
     }
   }
 
