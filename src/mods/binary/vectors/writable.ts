@@ -1,9 +1,9 @@
-import { Writable } from "@hazae41/binary";
-import { Cursor, CursorWriteUnknownError } from "@hazae41/cursor";
+import { BinaryWriteError, Writable } from "@hazae41/binary";
+import { Cursor } from "@hazae41/cursor";
 import { Ok, Result } from "@hazae41/result";
 import { NumberClass, NumberX } from "mods/binary/numbers/number.js";
 
-export interface Vector<L extends NumberX, T extends Writable> extends Writable<Writable.SizeError<T>, Writable.SizeError<T> | Writable.WriteError<T> | CursorWriteUnknownError> {
+export interface Vector<L extends NumberX, T extends Writable> extends Writable<Writable.SizeError<T>, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError> {
   readonly vlength: NumberClass<L>
   readonly value: T
 }
@@ -29,7 +29,7 @@ export const Vector = <L extends NumberX>(vlength: NumberClass<L>) => class <T e
     })
   }
 
-  tryWrite(cursor: Cursor): Result<void, Writable.SizeError<T> | Writable.WriteError<T> | CursorWriteUnknownError> {
+  tryWrite(cursor: Cursor): Result<void, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError> {
     return Result.unthrowSync(t => {
       const size = this.value.trySize().throw(t)
       new vlength(size).tryWrite(cursor).throw(t)

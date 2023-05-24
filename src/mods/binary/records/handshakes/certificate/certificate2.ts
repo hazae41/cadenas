@@ -1,4 +1,6 @@
-import { Cursor, Opaque, SafeOpaque } from "@hazae41/binary"
+import { BinaryReadError, BinaryWriteError, Opaque, SafeOpaque } from "@hazae41/binary"
+import { Cursor } from "@hazae41/cursor"
+import { Ok, Result } from "@hazae41/result"
 import { ReadableList } from "mods/binary/lists/readable.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
@@ -19,21 +21,23 @@ export class Certificate2 {
     return this.#class.type
   }
 
-  static read(cursor: Cursor) {
-    const certificate_list = ReadableVector(Number24, ReadableList(ReadableVector(Number24, SafeOpaque))).read(cursor)
-
-    return new this(certificate_list)
+  trySize(): Result<number, never> {
+    return this.certificate_list.trySize()
   }
 
-  size() {
-    return this.certificate_list.size()
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
+    return this.certificate_list.tryWrite(cursor)
   }
 
-  write(cursor: Cursor) {
-    this.certificate_list.write(cursor)
+  static tryRead(cursor: Cursor): Result<Certificate2, BinaryReadError> {
+    return Result.unthrowSync(t => {
+      const opaque_vector24 = ReadableVector(Number24, SafeOpaque)
+      const opaque_vector24_list = ReadableList(opaque_vector24)
+      const opaque_vector_list_vector24 = ReadableVector(Number24, opaque_vector24_list)
+      const certificate_list = opaque_vector_list_vector24.tryRead(cursor).throw(t)
+
+      return new Ok(new Certificate2(certificate_list))
+    })
   }
 
-  handshake() {
-    return new Handshake<Certificate2>(this.type, this)
-  }
 }

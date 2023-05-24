@@ -1,4 +1,4 @@
-import { Cursor } from "@hazae41/binary";
+import { Cursor } from "@hazae41/cursor";
 import { ECPoint } from "../server_key_exchange/ec_point.js";
 
 export class ClientECDiffieHellmanPublic {
@@ -13,7 +13,7 @@ export class ClientECDiffieHellmanPublic {
     return new this(ecdh_Yc)
   }
 
-  size() {
+  trySize() {
     return this.ecdh_Yc.size()
   }
 

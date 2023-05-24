@@ -1,4 +1,5 @@
-import { Cursor, CursorReadUnknownError, CursorWriteUnknownError } from "@hazae41/cursor";
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
+import { Cursor } from "@hazae41/cursor";
 import { Ok, Result } from "@hazae41/result";
 
 export class HashAlgorithm {
@@ -35,11 +36,11 @@ export class HashAlgorithm {
     return new Ok(1)
   }
 
-  tryWrite(cursor: Cursor): Result<void, CursorWriteUnknownError> {
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
     return cursor.tryWriteUint8(this.type)
   }
 
-  static tryRead(cursor: Cursor): Result<HashAlgorithm, CursorReadUnknownError> {
+  static tryRead(cursor: Cursor): Result<HashAlgorithm, BinaryReadError> {
     return cursor.tryReadUint8().mapSync(HashAlgorithm.new)
   }
 

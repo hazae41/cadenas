@@ -1,4 +1,6 @@
-import { Cursor } from "@hazae41/binary";
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
+import { Cursor } from "@hazae41/cursor";
+import { Result } from "@hazae41/result";
 import { ReadableList } from "mods/binary/lists/readable.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
@@ -16,6 +18,10 @@ export class SignatureAlgorithms {
     readonly supported_signature_algorithms: Vector<Number16, List<SignatureAndHashAlgorithm>>
   ) { }
 
+  static new(supported_signature_algorithms: Vector<Number16, List<SignatureAndHashAlgorithm>>) {
+    return new SignatureAlgorithms(supported_signature_algorithms)
+  }
+
   static default() {
     const { rsaWithSha256 } = SignatureAndHashAlgorithm.instances
 
@@ -28,21 +34,16 @@ export class SignatureAlgorithms {
     return this.#class.type
   }
 
-  size() {
-    return this.supported_signature_algorithms.size()
+  trySize(): Result<number, never> {
+    return this.supported_signature_algorithms.trySize()
   }
 
-  write(cursor: Cursor) {
-    this.supported_signature_algorithms.write(cursor)
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
+    return this.supported_signature_algorithms.tryWrite(cursor)
   }
 
-  extension() {
-    return Extension.from(this.#class.type, this)
+  static tryRead(cursor: Cursor): Result<SignatureAlgorithms, BinaryReadError> {
+    return ReadableVector(Number16, ReadableList(SignatureAndHashAlgorithm)).tryRead(cursor).mapSync(SignatureAlgorithms.new)
   }
 
-  static read(cursor: Cursor) {
-    const supported_signature_algorithms = ReadableVector(Number16, ReadableList(SignatureAndHashAlgorithm)).read(cursor)
-
-    return new this(supported_signature_algorithms)
-  }
 }

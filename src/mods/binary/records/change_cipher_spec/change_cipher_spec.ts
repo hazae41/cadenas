@@ -1,4 +1,5 @@
-import { Cursor, CursorReadUnknownError, CursorWriteUnknownError } from "@hazae41/cursor";
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
+import { Cursor } from "@hazae41/cursor";
 import { Ok, Result } from "@hazae41/result";
 import { Record } from "mods/binary/records/record.js";
 
@@ -27,11 +28,11 @@ export class ChangeCipherSpec {
     return new Ok(1)
   }
 
-  tryWrite(cursor: Cursor): Result<void, CursorWriteUnknownError> {
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
     return cursor.tryWriteUint8(this.subtype)
   }
 
-  static tryRead(cursor: Cursor): Result<ChangeCipherSpec, CursorReadUnknownError> {
+  static tryRead(cursor: Cursor): Result<ChangeCipherSpec, BinaryReadError> {
     return cursor.tryReadUint8().mapSync(ChangeCipherSpec.new)
   }
 

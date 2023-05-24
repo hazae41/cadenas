@@ -1,4 +1,6 @@
-import { Cursor } from "@hazae41/binary";
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary"
+import { Cursor } from "@hazae41/cursor"
+import { Ok, Result } from "@hazae41/result"
 
 export class NamedCurve {
 
@@ -19,20 +21,23 @@ export class NamedCurve {
   }
 
   constructor(
-    readonly subtype: number
+    readonly value: number
   ) { }
 
-  size() {
-    return 2
+  static new(value: number) {
+    return new NamedCurve(value)
   }
 
-  write(cursor: Cursor) {
-    cursor.writeUint16(this.subtype)
+  trySize(): Result<number, never> {
+    return new Ok(2)
   }
 
-  static read(cursor: Cursor,) {
-    const subtype = cursor.readUint16()
-
-    return new this(subtype)
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
+    return cursor.tryWriteUint16(this.value)
   }
+
+  static tryRead(cursor: Cursor): Result<NamedCurve, BinaryReadError> {
+    return cursor.tryReadUint16().mapSync(NamedCurve.new)
+  }
+
 }

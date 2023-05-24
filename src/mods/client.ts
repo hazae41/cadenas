@@ -567,7 +567,7 @@ export class TlsClientDuplex {
   }
 
   async #computeEllipticCurveDiffieHellman(state: ServerKeyExchangeState & { server_ecdh_params: ServerECDHParams }) {
-    if (state.server_ecdh_params.curve_params.named_curve.subtype === NamedCurve.types.secp256r1)
+    if (state.server_ecdh_params.curve_params.named_curve.value === NamedCurve.types.secp256r1)
       return new Secp256r1().diffie_hellman(state.server_ecdh_params)
 
     throw new Error(`Invalid curve`)

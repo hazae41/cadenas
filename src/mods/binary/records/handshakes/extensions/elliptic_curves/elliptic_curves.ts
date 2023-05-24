@@ -1,4 +1,6 @@
-import { Cursor } from "@hazae41/binary";
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
+import { Cursor } from "@hazae41/cursor";
+import { Result } from "@hazae41/result";
 import { NamedCurveList } from "mods/binary/records/handshakes/extensions/elliptic_curves/named_curve_list.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
 
@@ -11,25 +13,24 @@ export class EllipticCurves {
     readonly named_curve_list: NamedCurveList
   ) { }
 
+  static new(named_curve_list: NamedCurveList) {
+    return new EllipticCurves(named_curve_list)
+  }
+
   static default() {
     return new this(NamedCurveList.default())
   }
 
-  size() {
-    return this.named_curve_list.size()
+  trySize(): Result<number, never> {
+    return this.named_curve_list.trySize()
   }
 
-  write(cursor: Cursor) {
-    this.named_curve_list.write(cursor)
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
+    return this.named_curve_list.tryWrite(cursor)
   }
 
-  extension() {
-    return Extension.from(this.#class.type, this)
+  static tryRead(cursor: Cursor): Result<EllipticCurves, BinaryReadError> {
+    return NamedCurveList.tryRead(cursor).mapSync(EllipticCurves.new)
   }
 
-  static read(cursor: Cursor) {
-    const named_curve_list = NamedCurveList.read(cursor)
-
-    return new this(named_curve_list)
-  }
 }

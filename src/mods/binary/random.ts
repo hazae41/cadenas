@@ -1,5 +1,6 @@
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
-import { Cursor, CursorReadLengthOverflowError, CursorReadUnknownError, CursorWriteLengthOverflowError, CursorWriteUnknownError } from "@hazae41/cursor"
+import { Cursor } from "@hazae41/cursor"
 import { Ok, Result } from "@hazae41/result"
 
 export class Random {
@@ -20,7 +21,7 @@ export class Random {
     return new Ok(4 + this.random_bytes.length)
   }
 
-  tryWrite(cursor: Cursor): Result<void, CursorWriteUnknownError | CursorWriteLengthOverflowError> {
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
     return Result.unthrowSync(t => {
       cursor.tryWriteUint32(this.gmt_unix_time).throw(t)
       cursor.tryWrite(this.random_bytes).throw(t)
@@ -29,7 +30,7 @@ export class Random {
     })
   }
 
-  static tryRead(cursor: Cursor): Result<Random, CursorReadUnknownError | CursorReadLengthOverflowError> {
+  static tryRead(cursor: Cursor): Result<Random, BinaryReadError> {
     return Result.unthrowSync(t => {
       const gmt_unix_time = cursor.tryReadUint32().throw(t)
       const random_bytes = Bytes.from(cursor.tryRead(28).throw(t))

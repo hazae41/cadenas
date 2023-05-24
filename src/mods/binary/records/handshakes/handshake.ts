@@ -1,7 +1,9 @@
-import { Cursor, Opaque, Readable, UnsafeOpaque, Writable } from "@hazae41/binary"
-import { PlaintextRecord, Record } from "mods/binary/records/record.js"
+import { BinaryReadError, BinaryWriteError, Opaque, Readable, UnsafeOpaque, Writable } from "@hazae41/binary"
+import { Cursor } from "@hazae41/cursor"
+import { Ok, Result } from "@hazae41/result"
+import { Record } from "mods/binary/records/record.js"
 
-export class Handshake<T extends Writable> {
+export class Handshake<T extends Writable.Infer<T>> {
   readonly #class = Handshake
 
   static readonly type = Record.types.handshake
@@ -28,26 +30,32 @@ export class Handshake<T extends Writable> {
     return this.#class.type
   }
 
-  size() {
-    return 1 + 3 + this.fragment.size()
+  trySize(): Result<number, Writable.SizeError<T>> {
+    return this.fragment.trySize().mapSync(x => 1 + 3 + x)
   }
 
-  write(cursor: Cursor) {
-    cursor.writeUint8(this.subtype)
-    cursor.writeUint24(this.fragment.size())
-    this.fragment.write(cursor)
+  tryWrite(cursor: Cursor): Result<void, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError> {
+    return Result.unthrowSync(t => {
+      cursor.tryWriteUint8(this.subtype).throw(t)
+
+      const size = this.fragment.trySize().throw(t)
+      cursor.tryWriteUint24(size).throw(t)
+
+      this.fragment.tryWrite(cursor).throw(t)
+
+      return Ok.void()
+    })
   }
 
-  record(version: number) {
-    return new PlaintextRecord(this.#class.type, version, this)
+  static tryRead(cursor: Cursor): Result<Handshake<Opaque>, BinaryReadError> {
+    return Result.unthrowSync(t => {
+      const type = cursor.tryReadUint8().throw(t)
+      const size = cursor.tryReadUint24().throw(t)
+      const bytes = cursor.tryRead(size).throw(t)
+      const fragment = Readable.tryReadFromBytes(UnsafeOpaque, bytes).throw(t)
+
+      return new Ok(new Handshake<Opaque>(type, fragment))
+    })
   }
 
-  static read(cursor: Cursor) {
-    const subtype = cursor.readUint8()
-    const size = cursor.readUint24()
-
-    const fragment = Readable.fromBytes(UnsafeOpaque, cursor.read(size))
-
-    return new this<Opaque>(subtype, fragment)
-  }
 }

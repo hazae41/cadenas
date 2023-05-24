@@ -3,9 +3,9 @@ import { Cursor } from "@hazae41/cursor"
 import { Ok, Result } from "@hazae41/result"
 import { List } from "mods/binary/lists/writable.js"
 
-export const ReadableList = <W extends Writable.Infer<W>, R extends Readable<W, Readable.ReadError<R>>>(readable: R) => class {
+export const ReadableList = <W extends Writable.Infer<W>, ReadError>(readable: Readable<W, ReadError>) => class {
 
-  static tryRead(cursor: Cursor): Result<List<W>, Readable.ReadError<R>> {
+  static tryRead(cursor: Cursor): Result<List<W>, ReadError> {
     return Result.unthrowSync(t => {
       const array = new Array<W>()
 

@@ -1,8 +1,10 @@
-import { Cursor, Writable } from "@hazae41/binary";
+import { BinaryWriteError, Writable } from "@hazae41/binary";
+import { Cursor } from "@hazae41/cursor";
+import { Ok, Result } from "@hazae41/result";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
-export class Extension<T extends Writable = Writable> {
+export class Extension<T extends Writable.Infer<T>> {
 
   static readonly types = {
     elliptic_curves: 10,
@@ -15,18 +17,23 @@ export class Extension<T extends Writable = Writable> {
     readonly data: Vector<Number16, T>
   ) { }
 
-  static from<T extends Writable>(extension_type: number, extension: T) {
+  static from<T extends Writable.Infer<T>>(extension_type: number, extension: T) {
     const extension_data = Vector(Number16).from(extension)
 
     return new this(extension_type, extension_data)
   }
 
-  size() {
-    return 2 + this.data.size()
+  trySize(): Result<number, Writable.SizeError<T>> {
+    return this.data.trySize().mapSync(x => 2 + x)
   }
 
-  write(cursor: Cursor) {
-    cursor.writeUint16(this.subtype)
-    this.data.write(cursor)
+  tryWrite(cursor: Cursor): Result<void, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError> {
+    return Result.unthrowSync(t => {
+      cursor.tryWriteUint16(this.subtype).throw(t)
+      this.data.tryWrite(cursor).throw(t)
+
+      return Ok.void()
+    })
   }
+
 }

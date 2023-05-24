@@ -1,4 +1,5 @@
-import { Cursor, CursorReadUnknownError, CursorWriteUnknownError } from "@hazae41/cursor"
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary"
+import { Cursor } from "@hazae41/cursor"
 import { Ok, Result } from "@hazae41/result"
 import { Record } from "mods/binary/records/record.js"
 
@@ -55,7 +56,7 @@ export class Alert {
     return new Ok(1 + 1)
   }
 
-  tryWrite(cursor: Cursor): Result<void, CursorWriteUnknownError> {
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
     return Result.unthrowSync(t => {
       cursor.tryWriteUint8(this.level).throw(t)
       cursor.tryWriteUint8(this.description).throw(t)
@@ -64,7 +65,7 @@ export class Alert {
     })
   }
 
-  static tryRead(cursor: Cursor): Result<Alert, CursorReadUnknownError> {
+  static tryRead(cursor: Cursor): Result<Alert, BinaryReadError> {
     return Result.unthrowSync(t => {
       const level = cursor.tryReadUint8().throw(t)
       const description = cursor.tryReadUint8().throw(t)
@@ -72,10 +73,5 @@ export class Alert {
       return new Ok(new Alert(level, description))
     })
   }
-
-  // record(version: number) {
-  //   return new PlaintextRecord<Alert>(this.type, version, this)
-  // }
-
 
 }

@@ -1,4 +1,5 @@
-import { Cursor, CursorReadUnknownError, CursorWriteUnknownError } from "@hazae41/cursor";
+import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
+import { Cursor } from "@hazae41/cursor";
 import { Ok, Result } from "@hazae41/result";
 import { HashAlgorithm } from "mods/binary/signatures/hash_algorithm.js";
 import { SignatureAlgorithm } from "mods/binary/signatures/signature_algorithm.js";
@@ -21,7 +22,7 @@ export class SignatureAndHashAlgorithm {
     return new Ok(hash + signature)
   }
 
-  tryWrite(cursor: Cursor): Result<void, CursorWriteUnknownError> {
+  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
     return Result.unthrowSync(t => {
       this.hash.tryWrite(cursor).throw(t)
       this.signature.tryWrite(cursor).throw(t)
@@ -30,7 +31,7 @@ export class SignatureAndHashAlgorithm {
     })
   }
 
-  static tryRead(cursor: Cursor): Result<SignatureAndHashAlgorithm, CursorReadUnknownError> {
+  static tryRead(cursor: Cursor): Result<SignatureAndHashAlgorithm, BinaryReadError> {
     return Result.unthrowSync(t => {
       const hash = HashAlgorithm.tryRead(cursor).throw(t)
       const signature = SignatureAlgorithm.tryRead(cursor).throw(t)
