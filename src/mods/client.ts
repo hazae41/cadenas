@@ -4,7 +4,7 @@ import { Cascade, SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Some } from "@hazae41/option"
 import { Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
-import { Debug, Err, Ok } from "@hazae41/result"
+import { Err, Ok } from "@hazae41/result"
 import { Certificate } from "@hazae41/x509"
 import { BigMath } from "libs/bigmath/index.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
@@ -209,8 +209,6 @@ export class TlsClientDuplex {
   ) {
     const { signal } = params
 
-    Debug.debug = true
-
     this.#reader = new SuperTransformStream({
       transform: this.#onReaderWrite.bind(this)
     })
@@ -230,12 +228,14 @@ export class TlsClientDuplex {
       .pipeTo(read.writable, { signal })
       .then(this.#onReadClose.bind(this))
       .catch(this.#onReadError.bind(this))
+      .then(r => r.ignore())
       .catch(console.error)
 
     write.readable
       .pipeTo(subduplex.writable, { signal })
       .then(this.#onWriteClose.bind(this))
       .catch(this.#onWriteError.bind(this))
+      .then(r => r.ignore())
       .catch(console.error)
   }
 
@@ -304,7 +304,7 @@ export class TlsClientDuplex {
 
     await Plume.tryWaitStream(this.read, "handshaked", () => {
       return new Ok(new Some(Ok.void()))
-    }, AbortSignal.timeout(1000))
+    }, AbortSignal.timeout(1000)).then(r => r.unwrap())
 
     return Ok.void()
   }
