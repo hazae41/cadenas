@@ -1,13 +1,13 @@
 import { Ciphers, TlsClientDuplex } from "@hazae41/cadenas"
 import { fetch } from "@hazae41/fleche"
 import { useCallback } from "react"
-import { createWebSocketStream } from "../src/transports/websocket"
+import { tryCreateWebSocketStream } from "../src/transports/websocket"
 
 export default function Home() {
 
   const onClick = useCallback(async () => {
     try {
-      const tcp = await createWebSocketStream("ws://localhost:8080")
+      const tcp = await tryCreateWebSocketStream("ws://localhost:8080")
 
       const ciphers = [
         // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
@@ -50,7 +50,7 @@ export default function Home() {
       // const msgEvent = event as MessageEvent<string>
       // console.log(msgEvent.data)
     } catch (e: unknown) {
-      console.error(e)
+      console.error("onClick", e)
     }
   }, [])
 

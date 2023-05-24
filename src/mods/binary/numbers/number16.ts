@@ -20,11 +20,11 @@ export class Number16 {
   }
 
   tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return cursor.tryWriteUint8(this.value)
+    return cursor.tryWriteUint16(this.value)
   }
 
   static tryRead(cursor: Cursor): Result<Number16, BinaryReadError> {
-    return cursor.tryReadUint8().mapSync(Number16.new)
+    return cursor.tryReadUint16().mapSync(Number16.new)
   }
 
 }
