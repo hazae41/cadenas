@@ -18,19 +18,19 @@ export namespace Record {
 }
 
 export interface Recordable<T extends Writable> extends Writable.Infer<T> {
-  readonly type: number
+  readonly record_type: number
 }
 
 export class PlaintextRecord<T extends Writable.Infer<T>> {
 
   constructor(
-    readonly subtype: number,
+    readonly type: number,
     readonly version: number,
     readonly fragment: T
   ) { }
 
   static from<T extends Recordable<T>>(record: T, version: number) {
-    return new PlaintextRecord(record.type, version, record)
+    return new PlaintextRecord(record.record_type, version, record)
   }
 
   trySize(): Result<number, Writable.SizeError<T>> {
@@ -39,7 +39,7 @@ export class PlaintextRecord<T extends Writable.Infer<T>> {
 
   tryWrite(cursor: Cursor): Result<void, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError> {
     return Result.unthrowSync(t => {
-      cursor.tryWriteUint8(this.subtype).throw(t)
+      cursor.tryWriteUint8(this.type).throw(t)
       cursor.tryWriteUint16(this.version).throw(t)
       const size = this.fragment.trySize().throw(t)
       cursor.tryWriteUint16(size).throw(t)
@@ -51,27 +51,27 @@ export class PlaintextRecord<T extends Writable.Infer<T>> {
 
   static tryRead(cursor: Cursor): Result<PlaintextRecord<Opaque>, BinaryReadError> {
     return Result.unthrowSync(t => {
-      const subtype = cursor.tryReadUint8().throw(t)
+      const type = cursor.tryReadUint8().throw(t)
       const version = cursor.tryReadUint16().throw(t)
       const size = cursor.tryReadUint16().throw(t)
 
       const bytes = cursor.tryRead(size).throw(t)
       const fragment = Readable.tryReadFromBytes(UnsafeOpaque, bytes).throw(t)
 
-      return new Ok(new PlaintextRecord<Opaque>(subtype, version, fragment))
+      return new Ok(new PlaintextRecord<Opaque>(type, version, fragment))
     })
   }
 
   async #tryEncryptBlock(encrypter: BlockEncrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError>> {
     const fragment = await GenericBlockCipher.tryEncrypt<T>(this, encrypter, sequence)
 
-    return fragment.mapSync(fragment => new BlockCiphertextRecord(this.subtype, this.version, fragment))
+    return fragment.mapSync(fragment => new BlockCiphertextRecord(this.type, this.version, fragment))
   }
 
   async #tryEncryptAEAD(encrypter: AEADEncrypter, sequence: bigint): Promise<Result<AEADCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError>> {
     const fragment = await GenericAEADCipher.tryEncrypt<T>(this, encrypter, sequence)
 
-    return fragment.mapSync(fragment => new AEADCiphertextRecord(this.subtype, this.version, fragment))
+    return fragment.mapSync(fragment => new AEADCiphertextRecord(this.type, this.version, fragment))
   }
 
   async tryEncrypt(encrypter: Encrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord | AEADCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError>> {
@@ -88,7 +88,7 @@ export class PlaintextRecord<T extends Writable.Infer<T>> {
 export class BlockCiphertextRecord {
 
   constructor(
-    readonly subtype: number,
+    readonly type: number,
     readonly version: number,
     readonly fragment: GenericBlockCipher
   ) { }
@@ -96,7 +96,7 @@ export class BlockCiphertextRecord {
   static tryFrom(record: PlaintextRecord<Opaque>): Result<BlockCiphertextRecord, BinaryReadError> {
     const fragment = record.fragment.tryInto(GenericBlockCipher)
 
-    return fragment.mapSync(fragment => new BlockCiphertextRecord(record.subtype, record.version, fragment))
+    return fragment.mapSync(fragment => new BlockCiphertextRecord(record.type, record.version, fragment))
   }
 
   trySize(): Result<number, never> {
@@ -105,7 +105,7 @@ export class BlockCiphertextRecord {
 
   tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
     return Result.unthrowSync(t => {
-      cursor.tryWriteUint8(this.subtype).throw(t)
+      cursor.tryWriteUint8(this.type).throw(t)
       cursor.tryWriteUint16(this.version).throw(t)
 
       const size = this.fragment.trySize().throw(t)
@@ -120,14 +120,15 @@ export class BlockCiphertextRecord {
   async tryDecrypt(encrypter: BlockEncrypter, sequence: bigint): Promise<Result<PlaintextRecord<Opaque>, never>> {
     const fragment = await this.fragment.tryDecrypt(this, encrypter, sequence)
 
-    return fragment.mapSync(fragment => new PlaintextRecord(this.subtype, this.version, fragment))
+    return fragment.mapSync(fragment => new PlaintextRecord(this.type, this.version, fragment))
   }
 
 }
 
 export class AEADCiphertextRecord {
+
   constructor(
-    readonly subtype: number,
+    readonly type: number,
     readonly version: number,
     readonly fragment: GenericAEADCipher
   ) { }
@@ -135,7 +136,7 @@ export class AEADCiphertextRecord {
   static tryFrom(record: PlaintextRecord<Opaque>): Result<AEADCiphertextRecord, BinaryReadError> {
     const fragment = record.fragment.tryInto(GenericAEADCipher)
 
-    return fragment.mapSync(fragment => new AEADCiphertextRecord(record.subtype, record.version, fragment))
+    return fragment.mapSync(fragment => new AEADCiphertextRecord(record.type, record.version, fragment))
   }
 
   trySize(): Result<number, never> {
@@ -144,7 +145,7 @@ export class AEADCiphertextRecord {
 
   tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
     return Result.unthrowSync(t => {
-      cursor.tryWriteUint8(this.subtype).throw(t)
+      cursor.tryWriteUint8(this.type).throw(t)
       cursor.tryWriteUint16(this.version).throw(t)
 
       const size = this.fragment.trySize().throw(t)
@@ -159,7 +160,7 @@ export class AEADCiphertextRecord {
   async tryDecrypt(encrypter: AEADEncrypter, sequence: bigint): Promise<Result<PlaintextRecord<Opaque>, BinaryWriteError>> {
     const fragment = await this.fragment.tryDecrypt(this, encrypter, sequence)
 
-    return fragment.mapSync(fragment => new PlaintextRecord(this.subtype, this.version, fragment))
+    return fragment.mapSync(fragment => new PlaintextRecord(this.type, this.version, fragment))
   }
 
 }

@@ -5,7 +5,7 @@ import { Number16 } from "mods/binary/numbers/number16.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
 export interface Extensionable<T extends Writable> extends Writable.Infer<T> {
-  readonly type: number
+  readonly extension_type: number
 }
 
 export class Extension<T extends Writable.Infer<T>> {
@@ -17,14 +17,14 @@ export class Extension<T extends Writable.Infer<T>> {
   } as const
 
   constructor(
-    readonly subtype: number,
+    readonly type: number,
     readonly data: Vector<Number16, T>
   ) { }
 
   static from<T extends Extensionable<T>>(extension: T) {
     const extension_data = Vector(Number16).from(extension)
 
-    return new Extension(extension.type, extension_data)
+    return new Extension(extension.extension_type, extension_data)
   }
 
   trySize(): Result<number, Writable.SizeError<T>> {
@@ -33,7 +33,7 @@ export class Extension<T extends Writable.Infer<T>> {
 
   tryWrite(cursor: Cursor): Result<void, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError> {
     return Result.unthrowSync(t => {
-      cursor.tryWriteUint16(this.subtype).throw(t)
+      cursor.tryWriteUint16(this.type).throw(t)
       this.data.tryWrite(cursor).throw(t)
 
       return Ok.void()

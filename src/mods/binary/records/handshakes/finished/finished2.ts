@@ -6,7 +6,7 @@ import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 export class Finished2 {
   readonly #class = Finished2
 
-  static readonly type = Handshake.types.finished
+  static readonly handshake_type = Handshake.types.finished
 
   constructor(
     readonly verify_data: Uint8Array
@@ -16,8 +16,8 @@ export class Finished2 {
     return new Finished2(verify_data)
   }
 
-  get type() {
-    return this.#class.type
+  get handshake_type() {
+    return this.#class.handshake_type
   }
 
   trySize(): Result<number, never> {

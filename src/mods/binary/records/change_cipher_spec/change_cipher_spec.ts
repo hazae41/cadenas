@@ -6,22 +6,22 @@ import { Record } from "mods/binary/records/record.js";
 export class ChangeCipherSpec {
   readonly #class = ChangeCipherSpec
 
-  static readonly type = Record.types.change_cipher_spec
+  static readonly record_type = Record.types.change_cipher_spec
 
   static readonly types = {
     change_cipher_spec: 1
   } as const
 
   constructor(
-    readonly subtype: number = ChangeCipherSpec.types.change_cipher_spec
+    readonly type: number = ChangeCipherSpec.types.change_cipher_spec
   ) { }
 
-  static new(subtype?: number) {
-    return new ChangeCipherSpec(subtype)
+  static new(type?: number) {
+    return new ChangeCipherSpec(type)
   }
 
-  get type() {
-    return this.#class.type
+  get record_type() {
+    return this.#class.record_type
   }
 
   trySize(): Result<number, never> {
@@ -29,7 +29,7 @@ export class ChangeCipherSpec {
   }
 
   tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return cursor.tryWriteUint8(this.subtype)
+    return cursor.tryWriteUint8(this.type)
   }
 
   static tryRead(cursor: Cursor): Result<ChangeCipherSpec, BinaryReadError> {

@@ -7,7 +7,7 @@ import { Extension } from "mods/binary/records/handshakes/extensions/extension.j
 export class ECPointFormats {
   readonly #class = ECPointFormats
 
-  static readonly type = Extension.types.ec_point_formats
+  static readonly extension_type = Extension.types.ec_point_formats
 
   constructor(
     readonly ec_point_format_list: ECPointFormatList
@@ -21,8 +21,8 @@ export class ECPointFormats {
     return new this(ECPointFormatList.default())
   }
 
-  get type() {
-    return this.#class.type
+  get extension_type() {
+    return this.#class.extension_type
   }
 
   trySize(): Result<number, never> {

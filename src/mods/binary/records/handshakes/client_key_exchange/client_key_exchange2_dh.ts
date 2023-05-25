@@ -7,7 +7,7 @@ import { Handshake } from "mods/binary/records/handshakes/handshake.js";
 export class ClientKeyExchange2DH {
   readonly #class = ClientKeyExchange2DH
 
-  static readonly type = Handshake.types.client_key_exchange
+  static readonly handshake_type = Handshake.types.client_key_exchange
 
   constructor(
     readonly exchange_keys: ClientDiffieHellmanPublic
@@ -21,8 +21,8 @@ export class ClientKeyExchange2DH {
     return new ClientKeyExchange2DH(ClientDiffieHellmanPublic.from(bytes))
   }
 
-  get type() {
-    return this.#class.type
+  get handshake_type() {
+    return this.#class.handshake_type
   }
 
   trySize(): Result<number, never> {

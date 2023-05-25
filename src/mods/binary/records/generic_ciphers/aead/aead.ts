@@ -48,7 +48,7 @@ export class GenericAEADCipher {
 
       const additional_data = Cursor.allocUnsafe(8 + 1 + 2 + 2)
       additional_data.tryWriteUint64(sequence).throw(t)
-      additional_data.tryWriteUint8(record.subtype).throw(t)
+      additional_data.tryWriteUint8(record.type).throw(t)
       additional_data.tryWriteUint16(record.version).throw(t)
       additional_data.tryWriteUint16(record.fragment.trySize().throw(t)).throw(t)
 
@@ -72,7 +72,7 @@ export class GenericAEADCipher {
 
       const additional_data = Cursor.allocUnsafe(8 + 1 + 2 + 2)
       additional_data.tryWriteUint64(sequence).throw(t)
-      additional_data.tryWriteUint8(record.subtype).throw(t)
+      additional_data.tryWriteUint8(record.type).throw(t)
       additional_data.tryWriteUint16(record.version).throw(t)
       additional_data.tryWriteUint16(record.fragment.trySize().throw(t) - 24).throw(t)
 

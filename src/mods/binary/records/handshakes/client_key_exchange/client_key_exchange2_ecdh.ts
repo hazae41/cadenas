@@ -7,7 +7,7 @@ import { ClientECDiffieHellmanPublic } from "./client_ec_diffie_hellman_public.j
 export class ClientKeyExchange2ECDH {
   readonly #class = ClientKeyExchange2ECDH
 
-  static readonly type = Handshake.types.client_key_exchange
+  static readonly handshake_type = Handshake.types.client_key_exchange
 
   constructor(
     readonly exchange_keys: ClientECDiffieHellmanPublic
@@ -21,8 +21,8 @@ export class ClientKeyExchange2ECDH {
     return new ClientKeyExchange2ECDH(ClientECDiffieHellmanPublic.from(bytes))
   }
 
-  get type() {
-    return this.#class.type
+  get handshake_type() {
+    return this.#class.handshake_type
   }
 
   trySize(): Result<number, never> {

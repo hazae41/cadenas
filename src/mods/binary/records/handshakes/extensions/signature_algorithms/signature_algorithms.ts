@@ -12,7 +12,7 @@ import { Vector } from "mods/binary/vectors/writable.js";
 export class SignatureAlgorithms {
   readonly #class = SignatureAlgorithms
 
-  static readonly type = Extension.types.signature_algorithms
+  static readonly extension_type = Extension.types.signature_algorithms
 
   constructor(
     readonly supported_signature_algorithms: Vector<Number16, List<SignatureAndHashAlgorithm>>
@@ -30,8 +30,8 @@ export class SignatureAlgorithms {
     return new this(supported_signature_algorithms)
   }
 
-  get type() {
-    return this.#class.type
+  get extension_type() {
+    return this.#class.extension_type
   }
 
   trySize(): Result<number, never> {

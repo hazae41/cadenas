@@ -7,7 +7,7 @@ import { Extension } from "mods/binary/records/handshakes/extensions/extension.j
 export class EllipticCurves {
   readonly #class = EllipticCurves
 
-  static readonly type = Extension.types.elliptic_curves
+  static readonly extension_type = Extension.types.elliptic_curves
 
   constructor(
     readonly named_curve_list: NamedCurveList
@@ -21,8 +21,8 @@ export class EllipticCurves {
     return new this(NamedCurveList.default())
   }
 
-  get type() {
-    return this.#class.type
+  get extension_type() {
+    return this.#class.extension_type
   }
 
   trySize(): Result<number, never> {

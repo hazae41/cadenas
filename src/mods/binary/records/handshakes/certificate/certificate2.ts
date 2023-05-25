@@ -11,14 +11,14 @@ import { Vector } from "mods/binary/vectors/writable.js"
 export class Certificate2 {
   readonly #class = Certificate2
 
-  static readonly type = Handshake.types.certificate
+  static readonly handshake_type = Handshake.types.certificate
 
   constructor(
     readonly certificate_list: Vector<Number24, List<Vector<Number24, Opaque>>>
   ) { }
 
-  get type() {
-    return this.#class.type
+  get handshake_type() {
+    return this.#class.handshake_type
   }
 
   trySize(): Result<number, never> {

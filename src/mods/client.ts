@@ -262,13 +262,13 @@ export class TlsClientDuplex {
   }
 
   async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, InvalidStateError | FatalAlertError | UnsupportedVersionError | UnsupportedCipherError | ExtensionError | EventError | BinaryError>> {
-    if (record.subtype === Alert.type)
+    if (record.type === Alert.record_type)
       return await this.#onAlert(record, state)
-    if (record.subtype === Handshake.type)
+    if (record.type === Handshake.record_type)
       return await this.#onHandshake(record, state)
-    if (record.subtype === ChangeCipherSpec.type)
+    if (record.type === ChangeCipherSpec.record_type)
       return await this.#onChangeCipherSpec(record, state)
-    if (record.subtype === Record.types.application_data)
+    if (record.type === Record.types.application_data)
       return await this.#onApplicationData(record, state)
 
     console.warn(record)
@@ -326,20 +326,20 @@ export class TlsClientDuplex {
 
       const handshake = record.fragment.tryInto(Handshake).throw(t)
 
-      if (handshake.subtype !== Handshake.types.hello_request)
+      if (handshake.type !== Handshake.types.hello_request)
         state.messages.push(new Uint8Array(record.fragment.bytes))
 
-      if (handshake.subtype === ServerHello2.type)
+      if (handshake.type === ServerHello2.type)
         return this.#onServerHello(handshake, state)
-      if (handshake.subtype === Certificate2.type)
+      if (handshake.type === Certificate2.handshake_type)
         return this.#onCertificate(handshake, state)
-      if (handshake.subtype === ServerHelloDone2.type)
+      if (handshake.type === ServerHelloDone2.type)
         return this.#onServerHelloDone(handshake, state)
-      if (handshake.subtype === Handshake.types.server_key_exchange)
+      if (handshake.type === Handshake.types.server_key_exchange)
         return this.#onServerKeyExchange(handshake, state)
-      if (handshake.subtype === CertificateRequest2.type)
+      if (handshake.type === CertificateRequest2.type)
         return this.#onCertificateRequest(handshake, state)
-      if (handshake.subtype === Finished2.type)
+      if (handshake.type === Finished2.handshake_type)
         return this.#onFinished(handshake, state)
 
       console.warn(handshake)

@@ -4,13 +4,13 @@ import { Ok, Result } from "@hazae41/result"
 import { Record } from "mods/binary/records/record.js"
 
 export interface Handshakeable<T extends Writable> extends Writable.Infer<T> {
-  readonly type: number
+  readonly handshake_type: number
 }
 
 export class Handshake<T extends Writable.Infer<T>> {
   readonly #class = Handshake
 
-  static readonly type = Record.types.handshake
+  static readonly record_type = Record.types.handshake
 
   static readonly types = {
     hello_request: 0,
@@ -26,16 +26,16 @@ export class Handshake<T extends Writable.Infer<T>> {
   } as const
 
   constructor(
-    readonly subtype: number,
+    readonly type: number,
     readonly fragment: T
   ) { }
 
   static from<T extends Handshakeable<T>>(handshake: T) {
-    return new Handshake(handshake.type, handshake)
+    return new Handshake(handshake.handshake_type, handshake)
   }
 
-  get type() {
-    return this.#class.type
+  get record_type() {
+    return this.#class.record_type
   }
 
   trySize(): Result<number, Writable.SizeError<T>> {
@@ -44,7 +44,7 @@ export class Handshake<T extends Writable.Infer<T>> {
 
   tryWrite(cursor: Cursor): Result<void, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError> {
     return Result.unthrowSync(t => {
-      cursor.tryWriteUint8(this.subtype).throw(t)
+      cursor.tryWriteUint8(this.type).throw(t)
 
       const size = this.fragment.trySize().throw(t)
       cursor.tryWriteUint24(size).throw(t)

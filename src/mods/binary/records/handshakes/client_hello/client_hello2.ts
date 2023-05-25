@@ -21,7 +21,7 @@ import { Cipher } from "mods/ciphers/cipher.js"
 export class ClientHello2 {
   readonly #class = ClientHello2
 
-  static readonly type = Handshake.types.client_hello
+  static readonly handshake_type = Handshake.types.client_hello
 
   constructor(
     readonly version: number,
@@ -32,8 +32,8 @@ export class ClientHello2 {
     readonly extensions: Option<Vector<Number16, List<Extension<ResolvedExtension>>>>
   ) { }
 
-  get type() {
-    return this.#class.type
+  get handshake_type() {
+    return this.#class.handshake_type
   }
 
   static default(ciphers: Cipher[]) {

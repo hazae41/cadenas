@@ -6,7 +6,7 @@ import { Record } from "mods/binary/records/record.js"
 export class Alert {
   readonly #class = Alert
 
-  static readonly type = Record.types.alert
+  static readonly record_type = Record.types.alert
 
   static readonly levels = {
     warning: 1,
@@ -48,8 +48,8 @@ export class Alert {
     readonly description: number
   ) { }
 
-  get type() {
-    return this.#class.type
+  get record_type() {
+    return this.#class.record_type
   }
 
   trySize(): Result<number, never> {

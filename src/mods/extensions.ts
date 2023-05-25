@@ -77,7 +77,7 @@ export namespace Extensions {
         continue
       }
 
-      return new Err(new UnsupportedExtensionError(extension.subtype))
+      return new Err(new UnsupportedExtensionError(extension.type))
     }
 
     return new Ok(client_extensions)
@@ -93,14 +93,14 @@ export namespace Extensions {
 
     for (const extension of server_hello.extensions.inner.value.array) {
 
-      if (types.has(extension.subtype))
-        return new Err(new DuplicatedExtensionError(extension.subtype))
+      if (types.has(extension.type))
+        return new Err(new DuplicatedExtensionError(extension.type))
 
-      types.add(extension.subtype)
+      types.add(extension.type)
 
       if (extension.data.value instanceof SignatureAlgorithms) {
         if (!client_extensions.signature_algorithms)
-          return new Err(new UnexpectedExtensionError(extension.subtype))
+          return new Err(new UnexpectedExtensionError(extension.type))
 
         server_extensions.signature_algorithms = extension.data.value
         continue
@@ -108,7 +108,7 @@ export namespace Extensions {
 
       if (extension.data.value instanceof EllipticCurves) {
         if (!client_extensions.elliptic_curves)
-          return new Err(new UnexpectedExtensionError(extension.subtype))
+          return new Err(new UnexpectedExtensionError(extension.type))
 
         server_extensions.elliptic_curves = extension.data.value
         continue
@@ -116,13 +116,13 @@ export namespace Extensions {
 
       if (extension.data.value instanceof ECPointFormats) {
         if (!client_extensions.ec_point_formats)
-          return new Err(new UnexpectedExtensionError(extension.subtype))
+          return new Err(new UnexpectedExtensionError(extension.type))
 
         server_extensions.ec_point_formats = extension.data.value
         continue
       }
 
-      return new Err(new UnsupportedExtensionError(extension.subtype))
+      return new Err(new UnsupportedExtensionError(extension.type))
     }
 
     return new Ok(server_extensions)
