@@ -158,7 +158,7 @@ export class TlsClientDuplex {
 
       await Plume.tryWaitStream(this.read, "handshaked", () => {
         return new Ok(new Some(Ok.void()))
-      }, AbortSignal.timeout(1000)).then(r => r.throw(t))
+      }, AbortSignal.timeout(5_000)).then(r => r.throw(t))
 
       return Ok.void()
     })
