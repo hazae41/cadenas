@@ -1,6 +1,6 @@
 import { BinaryReadError, BinaryWriteError, Opaque, SafeOpaque } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Option, Some } from "@hazae41/option"
+import { None, Option, Some } from "@hazae41/option"
 import { Ok, Result } from "@hazae41/result"
 import { ReadableList } from "mods/binary/lists/readable.js"
 import { List } from "mods/binary/lists/writable.js"
@@ -83,7 +83,10 @@ export class ClientHello2 {
       const session_id = ReadableVector(Number8, SafeOpaque).tryRead(cursor).throw(t)
       const cipher_suites = ReadableVector(Number16, ReadableList(Number16)).tryRead(cursor).throw(t)
       const compression_methods = ReadableVector(Number8, ReadableList(Number8)).tryRead(cursor).throw(t)
-      const extensions = Option.from(cursor.remaining).mapSync(() => ReadableVector(Number16, ReadableList(OpaqueExtension)).tryRead(cursor).throw(t))
+
+      const extensions = cursor.remaining > 0
+        ? new Some(ReadableVector(Number16, ReadableList(OpaqueExtension)).tryRead(cursor).throw(t))
+        : new None()
 
       return new Ok(new ClientHello2(version, random, session_id, cipher_suites, compression_methods, extensions))
     })
