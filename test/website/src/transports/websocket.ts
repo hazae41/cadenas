@@ -1,6 +1,6 @@
 import { Opaque, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
-import { ResultableUnderlyingDefaultSource, ResultableUnderlyingSink, SuperReadableStream, SuperReadableStreamDefaultController, SuperWritableStream } from "@hazae41/cascade"
+import { ResultableUnderlyingDefaultSource, ResultableUnderlyingSink, SuperReadableStream, SuperWritableStream } from "@hazae41/cascade"
 import { Ok, Panic, Result } from "@hazae41/result"
 
 export async function tryCreateWebSocketStream(url: string) {
@@ -90,7 +90,7 @@ export class WebSocketSource implements ResultableUnderlyingDefaultSource<Opaque
     this.websocket.removeEventListener("error", this.#onError!)
   }
 
-  async start(controller: SuperReadableStreamDefaultController<Opaque>) {
+  async start(controller: ReadableStreamDefaultController<Opaque>) {
 
     this.#onMessage = (msgEvent: MessageEvent<ArrayBuffer>) => {
       const bytes = new Uint8Array(msgEvent.data)
