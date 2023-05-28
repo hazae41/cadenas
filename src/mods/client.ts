@@ -156,9 +156,9 @@ export class TlsClientDuplex {
       const client_hello_handshake_record = PlaintextRecord.from(client_hello_handshake, 0x0301)
       this.#writer.enqueue(client_hello_handshake_record)
 
-      await Plume.tryWaitStream(this.read, "handshaked", () => {
+      await Plume.tryWaitOrStream(this.read, "handshaked", () => {
         return new Ok(new Some(Ok.void()))
-      }, AbortSignal.timeout(5_000)).then(r => r.throw(t))
+      }).then(r => r.throw(t))
 
       return Ok.void()
     })
