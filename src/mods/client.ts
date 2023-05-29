@@ -1,6 +1,6 @@
 import { BinaryError, Opaque, Readable, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
-import { Cascade, SuperTransformStream } from "@hazae41/cascade"
+import { SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Some } from "@hazae41/option"
 import { AbortError, CloseError, ErrorError, EventError, Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
@@ -124,7 +124,7 @@ export class TlsClientDuplex {
 
     await this.read.emit("error", reason)
 
-    return Cascade.rethrow(reason)
+    return Result.rethrow(reason)
   }
 
   async #onWriteError(reason?: unknown): Promise<Err<unknown>> {
@@ -135,7 +135,7 @@ export class TlsClientDuplex {
 
     await this.write.emit("error", reason)
 
-    return Cascade.rethrow(reason)
+    return Result.rethrow(reason)
   }
 
   async #onWriterStart(): Promise<Result<void, InvalidStateError | ExtensionError | BinaryError | AbortError | ErrorError | CloseError>> {
