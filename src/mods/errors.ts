@@ -6,7 +6,6 @@ export type TlsClientError =
   | UnsupportedVersionError
   | UnsupportedCipherError
   | FatalAlertError
-  | WarningAlertError
   | TlsExtensionError
 
 export class InvalidTlsStateError extends Error {
