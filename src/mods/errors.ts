@@ -1,11 +1,20 @@
 import { Alert } from "./binary/records/alerts/alert.js"
+import { TlsExtensionError } from "./extensions.js"
 
-export class InvalidStateError extends Error {
-  readonly #class = InvalidStateError
+export type TlsClientError =
+  | InvalidTlsStateError
+  | UnsupportedVersionError
+  | UnsupportedCipherError
+  | FatalAlertError
+  | WarningAlertError
+  | TlsExtensionError
+
+export class InvalidTlsStateError extends Error {
+  readonly #class = InvalidTlsStateError
   readonly name = this.#class.name
 
   constructor() {
-    super(`Invalid state`)
+    super(`Invalid TLS state`)
   }
 
 }

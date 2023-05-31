@@ -11,7 +11,7 @@ export interface Extensions {
   ec_point_formats?: ECPointFormats
 }
 
-export type ExtensionError =
+export type TlsExtensionError =
   | UnsupportedExtensionError
   | DuplicatedExtensionError
   | UnexpectedExtensionError
@@ -54,7 +54,7 @@ export class UnexpectedExtensionError extends Error {
 
 export namespace Extensions {
 
-  export function getClientExtensions(client_hello: ClientHello2): Result<Extensions, ExtensionError> {
+  export function getClientExtensions(client_hello: ClientHello2): Result<Extensions, TlsExtensionError> {
     const client_extensions: Extensions = {}
 
     if (client_hello.extensions.isNone())
@@ -83,7 +83,7 @@ export namespace Extensions {
     return new Ok(client_extensions)
   }
 
-  export function getServerExtensions(server_hello: ServerHello2, client_extensions: Extensions): Result<Extensions, ExtensionError> {
+  export function getServerExtensions(server_hello: ServerHello2, client_extensions: Extensions): Result<Extensions, TlsExtensionError> {
     const server_extensions: Extensions = {}
 
     if (server_hello.extensions.isNone())

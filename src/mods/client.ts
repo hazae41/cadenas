@@ -31,8 +31,8 @@ import { ReadableServerKeyExchange2 } from "./binary/records/handshakes/server_k
 import { ServerKeyExchange2DHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_dh_signed.js"
 import { ServerKeyExchange2ECDHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_ecdh_signed.js"
 import { Secp256r1 } from "./ciphers/curves/secp256r1.js"
-import { FatalAlertError, InvalidStateError, UnsupportedCipherError, UnsupportedVersionError, WarningAlertError } from "./errors.js"
-import { ExtensionError, Extensions } from "./extensions.js"
+import { FatalAlertError, InvalidTlsStateError, TlsClientError, UnsupportedCipherError, UnsupportedVersionError, WarningAlertError } from "./errors.js"
+import { Extensions } from "./extensions.js"
 import { ClientChangeCipherSpecState, HandshakeState, ServerKeyExchangeState, TlsClientDuplexState } from "./state.js"
 
 export interface TlsClientDuplexParams {
@@ -138,10 +138,10 @@ export class TlsClientDuplex {
     return Result.rethrow(reason)
   }
 
-  async #onWriterStart(): Promise<Result<void, InvalidStateError | ExtensionError | BinaryError | AbortError | ErrorError | CloseError>> {
+  async #onWriterStart(): Promise<Result<void, TlsClientError | BinaryError | AbortError | ErrorError | CloseError>> {
     return await Result.unthrow(async t => {
       if (this.#state.type !== "none")
-        return new Err(new InvalidStateError())
+        return new Err(new InvalidTlsStateError())
 
       const client_hello = ClientHello2.default(this.params.ciphers)
 
@@ -164,7 +164,7 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onReaderWrite(chunk: Opaque): Promise<Result<void, InvalidStateError | FatalAlertError | UnsupportedVersionError | UnsupportedCipherError | ExtensionError | EventError | BinaryError>> {
+  async #onReaderWrite(chunk: Opaque): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
     // console.debug(this.#class.name, "<-", chunk)
 
     if (this.#buffer.offset)
@@ -178,7 +178,7 @@ export class TlsClientDuplex {
    * @param chunk 
    * @returns 
    */
-  async #onReadBuffered(chunk: Uint8Array): Promise<Result<void, InvalidStateError | FatalAlertError | UnsupportedVersionError | UnsupportedCipherError | ExtensionError | EventError | BinaryError>> {
+  async #onReadBuffered(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
     return await Result.unthrow(async t => {
       this.#buffer.tryWrite(chunk).throw(t)
       const full = new Uint8Array(this.#buffer.before)
@@ -193,7 +193,7 @@ export class TlsClientDuplex {
    * @param chunk 
    * @returns 
    */
-  async #onReadDirect(chunk: Uint8Array): Promise<Result<void, InvalidStateError | FatalAlertError | UnsupportedVersionError | UnsupportedCipherError | ExtensionError | EventError | BinaryError>> {
+  async #onReadDirect(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
     return await Result.unthrow(async t => {
       const cursor = new Cursor(chunk)
 
@@ -212,10 +212,10 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onWriterWrite(chunk: Writable): Promise<Result<void, InvalidStateError | unknown>> {
+  async #onWriterWrite(chunk: Writable): Promise<Result<void, TlsClientError | unknown>> {
     return await Result.unthrow(async t => {
       if (this.#state.type !== "handshaked")
-        return new Err(new InvalidStateError())
+        return new Err(new InvalidTlsStateError())
 
       const state = this.#state
 
@@ -231,14 +231,14 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, InvalidStateError | FatalAlertError | UnsupportedVersionError | UnsupportedCipherError | ExtensionError | EventError | BinaryError>> {
+  async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
     if (state.server_encrypted)
       return await this.#onCiphertextRecord(record, state)
 
     return await this.#onPlaintextRecord(record, state)
   }
 
-  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }): Promise<Result<void, InvalidStateError | FatalAlertError | UnsupportedVersionError | UnsupportedCipherError | ExtensionError | EventError | BinaryError>> {
+  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
     return await Result.unthrow(async t => {
 
       if (state.encrypter.cipher_type === "block") {
@@ -257,7 +257,7 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, InvalidStateError | FatalAlertError | UnsupportedVersionError | UnsupportedCipherError | ExtensionError | EventError | BinaryError>> {
+  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
     if (record.type === Alert.record_type)
       return await this.#onAlert(record, state)
     if (record.type === Handshake.record_type)
@@ -271,7 +271,7 @@ export class TlsClientDuplex {
     return Ok.void()
   }
 
-  async #onAlert(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, FatalAlertError | BinaryError>> {
+  async #onAlert(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | BinaryError>> {
     return await Result.unthrow(async t => {
       const alert = record.fragment.tryInto(Alert).throw(t)
 
@@ -289,12 +289,12 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onChangeCipherSpec(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, InvalidStateError | BinaryError>> {
+  async #onChangeCipherSpec(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | BinaryError>> {
     return await Result.unthrow(async t => {
       if (state.type !== "handshake")
-        return new Err(new InvalidStateError())
+        return new Err(new InvalidTlsStateError())
       if (state.step !== "client_finished")
-        return new Err(new InvalidStateError())
+        return new Err(new InvalidTlsStateError())
 
       const change_cipher_spec = record.fragment.tryInto(ChangeCipherSpec).throw(t)
 
@@ -306,19 +306,19 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onApplicationData(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, InvalidStateError>> {
+  async #onApplicationData(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError>> {
     if (state.type !== "handshaked")
-      return new Err(new InvalidStateError())
+      return new Err(new InvalidTlsStateError())
 
     this.#reader.enqueue(record.fragment)
 
     return Ok.void()
   }
 
-  async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, InvalidStateError | UnsupportedVersionError | UnsupportedCipherError | ExtensionError | BinaryError | EventError>> {
+  async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | BinaryError | EventError>> {
     return await Result.unthrow(async t => {
       if (state.type !== "handshake")
-        return new Err(new InvalidStateError())
+        return new Err(new InvalidTlsStateError())
 
       const handshake = record.fragment.tryInto(Handshake).throw(t)
 
@@ -343,10 +343,10 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onServerHello(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, InvalidStateError | UnsupportedVersionError | UnsupportedCipherError | ExtensionError | BinaryError>> {
+  async #onServerHello(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError>> {
     return await Result.unthrow(async t => {
       if (state.step !== "client_hello")
-        return new Err(new InvalidStateError())
+        return new Err(new InvalidTlsStateError())
 
       const server_hello = handshake.fragment.tryInto(ServerHello2).throw(t)
 
@@ -373,10 +373,10 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onCertificate(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, InvalidStateError | BinaryError>> {
+  async #onCertificate(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError>> {
     return await Result.unthrow(async t => {
       if (state.step !== "server_hello")
-        return new Err(new InvalidStateError())
+        return new Err(new InvalidTlsStateError())
 
       const certificate = handshake.fragment.tryInto(Certificate2).throw(t)
 
@@ -396,10 +396,10 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onServerKeyExchange(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, InvalidStateError | BinaryError>> {
+  async #onServerKeyExchange(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError>> {
     return await Result.unthrow(async t => {
       if (state.step !== "server_hello")
-        return new Err(new InvalidStateError())
+        return new Err(new InvalidTlsStateError())
 
       const clazz = ReadableServerKeyExchange2.tryGet(state.cipher).get()
 
@@ -430,10 +430,10 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onCertificateRequest(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, InvalidStateError | BinaryError>> {
+  async #onCertificateRequest(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError>> {
     return await Result.unthrow(async t => {
       if (state.step !== "server_hello")
-        return new Err(new InvalidStateError())
+        return new Err(new InvalidTlsStateError())
 
       const certificate_request = handshake.fragment.tryInto(CertificateRequest2).throw(t)
 
@@ -530,10 +530,10 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, InvalidStateError | BinaryError>> {
+  async #onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError>> {
     return await Result.unthrow(async t => {
       if (state.step !== "server_hello")
-        return new Err(new InvalidStateError())
+        return new Err(new InvalidTlsStateError())
 
       const server_hello_done = handshake.fragment.tryInto(ServerHelloDone2).throw(t)
 
@@ -576,7 +576,7 @@ export class TlsClientDuplex {
         secrets = await this.#tryComputeSecrets(state, ecdh_Z).then(r => r.throw(t))
       }
 
-      else return new Err(new InvalidStateError())
+      else return new Err(new InvalidTlsStateError())
 
       const encrypter = await state.cipher.init(secrets)
 
@@ -606,10 +606,10 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onFinished(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, InvalidStateError | BinaryError | EventError>> {
+  async #onFinished(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError | EventError>> {
     return await Result.unthrow(async t => {
       if (state.step !== "server_change_cipher_spec")
-        return new Err(new InvalidStateError())
+        return new Err(new InvalidTlsStateError())
 
       const finished = handshake.fragment.tryInto(Finished2).throw(t)
 
