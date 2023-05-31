@@ -273,7 +273,7 @@ export class TlsClientDuplex {
 
   async #onAlert(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | BinaryError>> {
     return await Result.unthrow(async t => {
-      const alert = record.fragment.tryInto(Alert).throw(t)
+      const alert = record.fragment.tryReadInto(Alert).throw(t)
 
       console.debug(alert)
 
@@ -296,7 +296,7 @@ export class TlsClientDuplex {
       if (state.step !== "client_finished")
         return new Err(new InvalidTlsStateError())
 
-      const change_cipher_spec = record.fragment.tryInto(ChangeCipherSpec).throw(t)
+      const change_cipher_spec = record.fragment.tryReadInto(ChangeCipherSpec).throw(t)
 
       console.debug(change_cipher_spec)
 
@@ -320,7 +320,7 @@ export class TlsClientDuplex {
       if (state.type !== "handshake")
         return new Err(new InvalidTlsStateError())
 
-      const handshake = record.fragment.tryInto(Handshake).throw(t)
+      const handshake = record.fragment.tryReadInto(Handshake).throw(t)
 
       if (handshake.type !== Handshake.types.hello_request)
         state.messages.push(new Uint8Array(record.fragment.bytes))
@@ -348,7 +348,7 @@ export class TlsClientDuplex {
       if (state.step !== "client_hello")
         return new Err(new InvalidTlsStateError())
 
-      const server_hello = handshake.fragment.tryInto(ServerHello2).throw(t)
+      const server_hello = handshake.fragment.tryReadInto(ServerHello2).throw(t)
 
       console.debug(server_hello)
 
@@ -378,7 +378,7 @@ export class TlsClientDuplex {
       if (state.step !== "server_hello")
         return new Err(new InvalidTlsStateError())
 
-      const certificate = handshake.fragment.tryInto(Certificate2).throw(t)
+      const certificate = handshake.fragment.tryReadInto(Certificate2).throw(t)
 
       console.debug(certificate)
 
@@ -403,7 +403,7 @@ export class TlsClientDuplex {
 
       const clazz = ReadableServerKeyExchange2.tryGet(state.cipher).get()
 
-      const server_key_exchange = handshake.fragment.tryInto(clazz).throw(t)
+      const server_key_exchange = handshake.fragment.tryReadInto(clazz).throw(t)
 
       if (server_key_exchange instanceof ServerKeyExchange2DHSigned) {
         console.debug(server_key_exchange)
@@ -435,7 +435,7 @@ export class TlsClientDuplex {
       if (state.step !== "server_hello")
         return new Err(new InvalidTlsStateError())
 
-      const certificate_request = handshake.fragment.tryInto(CertificateRequest2).throw(t)
+      const certificate_request = handshake.fragment.tryReadInto(CertificateRequest2).throw(t)
 
       console.debug(certificate_request)
 
@@ -535,7 +535,7 @@ export class TlsClientDuplex {
       if (state.step !== "server_hello")
         return new Err(new InvalidTlsStateError())
 
-      const server_hello_done = handshake.fragment.tryInto(ServerHelloDone2).throw(t)
+      const server_hello_done = handshake.fragment.tryReadInto(ServerHelloDone2).throw(t)
 
       console.debug(server_hello_done)
 
@@ -611,7 +611,7 @@ export class TlsClientDuplex {
       if (state.step !== "server_change_cipher_spec")
         return new Err(new InvalidTlsStateError())
 
-      const finished = handshake.fragment.tryInto(Finished2).throw(t)
+      const finished = handshake.fragment.tryReadInto(Finished2).throw(t)
 
       console.debug(finished)
 

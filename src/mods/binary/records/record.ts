@@ -94,7 +94,7 @@ export class BlockCiphertextRecord {
   ) { }
 
   static tryFrom(record: PlaintextRecord<Opaque>): Result<BlockCiphertextRecord, BinaryReadError> {
-    const fragment = record.fragment.tryInto(GenericBlockCipher)
+    const fragment = record.fragment.tryReadInto(GenericBlockCipher)
 
     return fragment.mapSync(fragment => new BlockCiphertextRecord(record.type, record.version, fragment))
   }
@@ -134,7 +134,7 @@ export class AEADCiphertextRecord {
   ) { }
 
   static tryFrom(record: PlaintextRecord<Opaque>): Result<AEADCiphertextRecord, BinaryReadError> {
-    const fragment = record.fragment.tryInto(GenericAEADCipher)
+    const fragment = record.fragment.tryReadInto(GenericAEADCipher)
 
     return fragment.mapSync(fragment => new AEADCiphertextRecord(record.type, record.version, fragment))
   }
