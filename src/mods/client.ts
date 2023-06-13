@@ -3,7 +3,7 @@ import { Bytes } from "@hazae41/bytes"
 import { SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Some } from "@hazae41/option"
-import { AbortError, CloseError, ErrorError, EventError, Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
+import { AbortedError, ClosedError, ErroredError, EventError, Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
 import { Err, Ok, Panic, Result } from "@hazae41/result"
 import { BigMath } from "libs/bigmath/index.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
@@ -138,7 +138,7 @@ export class TlsClientDuplex {
     return Result.rethrow(reason)
   }
 
-  async #onWriterStart(): Promise<Result<void, TlsClientError | BinaryError | AbortError | ErrorError | CloseError>> {
+  async #onWriterStart(): Promise<Result<void, TlsClientError | BinaryError | AbortedError | ErroredError | ClosedError>> {
     return await Result.unthrow(async t => {
       if (this.#state.type !== "none")
         return new Err(new InvalidTlsStateError())
