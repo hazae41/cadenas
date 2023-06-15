@@ -281,12 +281,12 @@ export class TlsClientDuplex {
         return new Err(new FatalAlertError(alert))
 
       if (alert.description === Alert.descriptions.close_notify)
-        this.#reader.terminate()
-      else if (alert.level === Alert.levels.warning)
-        console.warn(new WarningAlertError(alert))
-      else
-        console.warn(`Unknown alert level ${alert.level}`)
+        return new Ok(this.#reader.terminate())
 
+      if (alert.level === Alert.levels.warning)
+        return new Ok(console.warn(new WarningAlertError(alert)))
+
+      console.warn(`Unknown alert level ${alert.level}`)
       return Ok.void()
     })
   }
