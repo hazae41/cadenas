@@ -1,3 +1,5 @@
+import { Result } from "@hazae41/result"
+import { CryptoError } from "libs/crypto/crypto.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 
 export interface Hash {
@@ -13,12 +15,12 @@ export interface Mac {
   readonly mac_length: number
   readonly mac_key_length: number
 
-  init(secrets: Secrets): Promise<Macher>
+  tryInit(secrets: Secrets): Promise<Result<Macher, CryptoError>>
 }
 
 export interface Macher {
   readonly mac_length: number
   readonly mac_key_length: number
 
-  write(seed: Uint8Array): Promise<Uint8Array>
+  tryWrite(seed: Uint8Array): Promise<Result<Uint8Array, CryptoError>>
 }

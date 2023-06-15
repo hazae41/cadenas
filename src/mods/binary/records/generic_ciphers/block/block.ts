@@ -2,6 +2,7 @@ import { BinaryReadError, BinaryWriteError, Opaque, Writable } from "@hazae41/bi
 import { Bytes } from "@hazae41/bytes"
 import { Cursor } from "@hazae41/cursor"
 import { Ok, Result } from "@hazae41/result"
+import { CryptoError } from "libs/crypto/crypto.js"
 import { BlockCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js"
 import { BlockEncrypter } from "mods/ciphers/encryptions/encryption.js"
 
@@ -44,7 +45,7 @@ export class GenericBlockCipher {
     })
   }
 
-  static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint): Promise<Result<GenericBlockCipher, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError>> {
+  static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint): Promise<Result<GenericBlockCipher, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError | CryptoError>> {
     return await Result.unthrow(async t => {
       const iv = Bytes.random(16)
 
@@ -54,7 +55,7 @@ export class GenericBlockCipher {
       premac.tryWriteUint64(sequence).throw(t)
       record.tryWrite(premac).throw(t)
 
-      const mac = await encrypter.macher.write(premac.bytes)
+      const mac = await encrypter.macher.tryWrite(premac.bytes).then(r => r.throw(t))
 
       const length = content.length + mac.length
       const padding_length = modulup(length + 1, 16)
@@ -62,7 +63,7 @@ export class GenericBlockCipher {
       padding.fill(padding_length)
 
       const plaintext = Bytes.concat([content, mac, padding])
-      const ciphertext = await encrypter.encrypt(iv, plaintext)
+      const ciphertext = await encrypter.tryEncrypt(iv, plaintext).then(r => r.throw(t))
 
       // console.debug("-> iv", iv.length, Bytes.toHex(iv))
       // console.debug("-> plaintext", plaintext.length, Bytes.toHex(plaintext))
@@ -74,9 +75,9 @@ export class GenericBlockCipher {
     })
   }
 
-  async tryDecrypt(record: BlockCiphertextRecord, encrypter: BlockEncrypter, sequence: bigint): Promise<Result<Opaque, never>> {
+  async tryDecrypt(record: BlockCiphertextRecord, encrypter: BlockEncrypter, sequence: bigint): Promise<Result<Opaque, CryptoError>> {
     return await Result.unthrow(async t => {
-      const plaintext = await encrypter.decrypt(this.iv, this.block)
+      const plaintext = await encrypter.tryDecrypt(this.iv, this.block).then(r => r.throw(t))
 
       const content = plaintext.subarray(0, -encrypter.macher.mac_length)
       const mac = plaintext.subarray(-encrypter.macher.mac_length)

@@ -1,3 +1,5 @@
+import { Ok, Result } from "@hazae41/result"
+import { CryptoError, tryCrypto } from "libs/crypto/crypto.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 
 export class AES_128_GCM {
@@ -15,11 +17,18 @@ export class AES_128_GCM {
     readonly decryption_key: CryptoKey,
   ) { }
 
-  static async init(secrets: Secrets) {
-    const encryption = await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-GCM", length: 128 }, false, ["encrypt"])
-    const decryption = await crypto.subtle.importKey("raw", secrets.server_write_key, { name: "AES-GCM", length: 128 }, false, ["decrypt"])
+  static async tryInit(secrets: Secrets): Promise<Result<AES_128_GCM, CryptoError>> {
+    return await Result.unthrow(async t => {
+      const encryption = await tryCrypto(async () => {
+        return await crypto.subtle.importKey("raw", secrets.client_write_key, { name: "AES-GCM", length: 128 }, false, ["encrypt"])
+      }).then(r => r.throw(t))
 
-    return new this(secrets, encryption, decryption)
+      const decryption = await tryCrypto(async () => {
+        return await crypto.subtle.importKey("raw", secrets.server_write_key, { name: "AES-GCM", length: 128 }, false, ["decrypt"])
+      }).then(r => r.throw(t))
+
+      return new Ok(new AES_128_GCM(secrets, encryption, decryption))
+    })
   }
 
   get cipher_type() {
@@ -42,11 +51,12 @@ export class AES_128_GCM {
     return this.#class.record_iv_length
   }
 
-  async encrypt(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array) {
-    return new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", length: 128, iv: nonce, additionalData }, this.encryption_key, block))
+  async tryEncrypt(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array): Promise<Result<Uint8Array, CryptoError>> {
+    return await tryCrypto(async () => new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", length: 128, iv: nonce, additionalData }, this.encryption_key, block)))
   }
 
-  async decrypt(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array) {
-    return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", length: 128, iv: nonce, additionalData }, this.decryption_key, block))
+  async tryDecrypt(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array): Promise<Result<Uint8Array, CryptoError>> {
+    return await tryCrypto(async () => new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", length: 128, iv: nonce, additionalData }, this.decryption_key, block)))
   }
+
 }

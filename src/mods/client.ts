@@ -6,6 +6,7 @@ import { Some } from "@hazae41/option"
 import { AbortedError, ClosedError, ErroredError, EventError, Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
 import { Err, Ok, Panic, Result } from "@hazae41/result"
 import { BigMath } from "libs/bigmath/index.js"
+import { CryptoError } from "libs/crypto/crypto.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
@@ -164,7 +165,7 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onReaderWrite(chunk: Opaque): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
+  async #onReaderWrite(chunk: Opaque): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
     // console.debug(this.#class.name, "<-", chunk)
 
     if (this.#buffer.offset)
@@ -178,7 +179,7 @@ export class TlsClientDuplex {
    * @param chunk 
    * @returns 
    */
-  async #onReadBuffered(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
+  async #onReadBuffered(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
     return await Result.unthrow(async t => {
       this.#buffer.tryWrite(chunk).throw(t)
       const full = new Uint8Array(this.#buffer.before)
@@ -193,7 +194,7 @@ export class TlsClientDuplex {
    * @param chunk 
    * @returns 
    */
-  async #onReadDirect(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
+  async #onReadDirect(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
     return await Result.unthrow(async t => {
       const cursor = new Cursor(chunk)
 
@@ -231,14 +232,14 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
+  async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
     if (state.server_encrypted)
       return await this.#onCiphertextRecord(record, state)
 
     return await this.#onPlaintextRecord(record, state)
   }
 
-  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
+  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
     return await Result.unthrow(async t => {
 
       if (state.encrypter.cipher_type === "block") {
@@ -257,7 +258,7 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError>> {
+  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
     if (record.type === Alert.record_type)
       return await this.#onAlert(record, state)
     if (record.type === Handshake.record_type)
@@ -317,7 +318,7 @@ export class TlsClientDuplex {
     return Ok.void()
   }
 
-  async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | BinaryError | EventError>> {
+  async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | BinaryError | EventError | CryptoError>> {
     return await Result.unthrow(async t => {
       if (state.type !== "handshake")
         return new Err(new InvalidTlsStateError())
@@ -474,7 +475,7 @@ export class TlsClientDuplex {
     throw new Panic(`Invalid curve type`)
   }
 
-  async #tryComputeSecrets(state: ServerKeyExchangeState, premaster_secret: Uint8Array): Promise<Result<Secrets, BinaryError>> {
+  async #tryComputeSecrets(state: ServerKeyExchangeState, premaster_secret: Uint8Array): Promise<Result<Secrets, BinaryError | CryptoError>> {
     return await Result.unthrow(async t => {
       const { cipher, client_random, server_random } = state
       const { prf_md } = state.cipher.hash
@@ -482,7 +483,7 @@ export class TlsClientDuplex {
       // console.debug("premaster_secret", premaster_secret.length, Bytes.toHex(premaster_secret))
 
       const master_secret_seed = Bytes.concat([client_random, server_random])
-      const master_secret = await PRF(prf_md, premaster_secret, "master secret", master_secret_seed, 48)
+      const master_secret = await PRF(prf_md, premaster_secret, "master secret", master_secret_seed, 48).then(r => r.throw(t))
 
       // console.debug("master_secret", master_secret.length, Bytes.toHex(master_secret))
 
@@ -492,7 +493,7 @@ export class TlsClientDuplex {
         + (2 * cipher.encryption.fixed_iv_length)
 
       const key_block_seed = Bytes.concat([server_random, client_random])
-      const key_block = await PRF(prf_md, master_secret, "key expansion", key_block_seed, key_block_length)
+      const key_block = await PRF(prf_md, master_secret, "key expansion", key_block_seed, key_block_length).then(r => r.throw(t))
 
       // console.debug("key_block", key_block.length, Bytes.toHex(key_block))
 
@@ -532,7 +533,7 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError>> {
+  async #onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError | CryptoError>> {
     return await Result.unthrow(async t => {
       if (state.step !== "server_hello")
         return new Err(new InvalidTlsStateError())
@@ -567,7 +568,7 @@ export class TlsClientDuplex {
       }
 
       else if ("server_ecdh_params" in state) {
-        const { ecdh_Yc, ecdh_Z } = await this.#computeEllipticCurveDiffieHellman(state)
+        const { ecdh_Yc, ecdh_Z } = await this.#computeEllipticCurveDiffieHellman(state).then(r => r.throw(t))
 
         const handshake_client_key_exchange = Handshake.from(ClientKeyExchange2ECDH.from(ecdh_Yc))
         const record_client_key_exchange = PlaintextRecord.from(handshake_client_key_exchange, state.version)
@@ -580,7 +581,7 @@ export class TlsClientDuplex {
 
       else return new Err(new InvalidTlsStateError())
 
-      const encrypter = await state.cipher.init(secrets)
+      const encrypter = await state.cipher.tryInit(secrets).then(r => r.throw(t))
 
       const change_cipher_spec = new ChangeCipherSpec()
       const record_change_cipher_spec = PlaintextRecord.from(change_cipher_spec, state.version)
@@ -596,7 +597,7 @@ export class TlsClientDuplex {
       const handshake_messages = Bytes.concat(state2.messages)
       const handshake_messages_hash = new Uint8Array(await crypto.subtle.digest(handshake_md, handshake_messages))
 
-      const verify_data = await PRF(prf_md, secrets.master_secret, "client finished", handshake_messages_hash, 12)
+      const verify_data = await PRF(prf_md, secrets.master_secret, "client finished", handshake_messages_hash, 12).then(r => r.throw(t))
       const finished = PlaintextRecord.from(Handshake.from(new Finished2(verify_data)), state.version)
       const cfinished = await finished.tryEncrypt(state2.encrypter, state2.client_sequence++)
 

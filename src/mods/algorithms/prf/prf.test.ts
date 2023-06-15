@@ -16,7 +16,7 @@ test("PRF (master secret)", async ({ message }) => {
   const start = Date.now()
 
   const seed = Bytes.concat([client_random, server_random])
-  const result = await PRF("SHA-1", premaster_secret, "master secret", seed, 48)
+  const result = await PRF("SHA-1", premaster_secret, "master secret", seed, 48).then(r => r.unwrap())
 
   const end = Date.now()
 

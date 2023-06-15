@@ -1,3 +1,5 @@
+import { Result } from "@hazae41/result"
+import { CryptoError } from "libs/crypto/crypto.js"
 import { Mac, Macher } from "mods/ciphers/hashes/hash.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 
@@ -11,7 +13,7 @@ export interface BlockEncryption {
   readonly fixed_iv_length: number
   readonly record_iv_length: number
 
-  init(secrets: Secrets, mac: Mac): Promise<BlockEncrypter>
+  tryInit(secrets: Secrets, mac: Mac): Promise<Result<BlockEncrypter, CryptoError>>
 }
 
 export interface AEADEncryption {
@@ -20,7 +22,7 @@ export interface AEADEncryption {
   readonly fixed_iv_length: number
   readonly record_iv_length: number
 
-  init(secrets: Secrets): Promise<AEADEncrypter>
+  tryInit(secrets: Secrets): Promise<Result<AEADEncrypter, CryptoError>>
 }
 
 export type Encrypter =
@@ -35,8 +37,8 @@ export interface BlockEncrypter {
 
   readonly macher: Macher
 
-  encrypt(iv: Uint8Array, block: Uint8Array): Promise<Uint8Array>
-  decrypt(iv: Uint8Array, block: Uint8Array): Promise<Uint8Array>
+  tryEncrypt(iv: Uint8Array, block: Uint8Array): Promise<Result<Uint8Array, CryptoError>>
+  tryDecrypt(iv: Uint8Array, block: Uint8Array): Promise<Result<Uint8Array, CryptoError>>
 }
 
 export interface AEADEncrypter {
@@ -47,6 +49,6 @@ export interface AEADEncrypter {
 
   readonly secrets: Secrets
 
-  encrypt(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array): Promise<Uint8Array>
-  decrypt(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array): Promise<Uint8Array>
+  tryEncrypt(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array): Promise<Result<Uint8Array, CryptoError>>
+  tryDecrypt(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array): Promise<Result<Uint8Array, CryptoError>>
 }

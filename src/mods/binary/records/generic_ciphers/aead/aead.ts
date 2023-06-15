@@ -2,6 +2,7 @@ import { BinaryError, BinaryReadError, BinaryWriteError, Opaque, Writable } from
 import { Bytes } from "@hazae41/bytes";
 import { Cursor } from "@hazae41/cursor";
 import { Ok, Result } from "@hazae41/result";
+import { CryptoError } from "libs/crypto/crypto.js";
 import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
 import { AEADEncrypter } from "mods/ciphers/encryptions/encryption.js";
 
@@ -34,7 +35,7 @@ export class GenericAEADCipher {
     })
   }
 
-  static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<GenericAEADCipher, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError>> {
+  static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<GenericAEADCipher, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError | CryptoError>> {
     return await Result.unthrow(async t => {
       const nonce = Cursor.allocUnsafe(encrypter.fixed_iv_length + 8)
       nonce.tryWrite(encrypter.secrets.client_write_IV).throw(t)
@@ -56,7 +57,7 @@ export class GenericAEADCipher {
       // console.debug("-> plaintext", content.length, Bytes.toHex(content))
       // console.debug("-> additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
 
-      const ciphertext = await encrypter.encrypt(nonce.bytes, content, additional_data.bytes)
+      const ciphertext = await encrypter.tryEncrypt(nonce.bytes, content, additional_data.bytes).then(r => r.throw(t))
 
       // console.debug("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
 
@@ -64,7 +65,7 @@ export class GenericAEADCipher {
     })
   }
 
-  async tryDecrypt(record: AEADCiphertextRecord, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<Opaque, BinaryWriteError>> {
+  async tryDecrypt(record: AEADCiphertextRecord, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<Opaque, BinaryWriteError | CryptoError>> {
     return await Result.unthrow(async t => {
       const nonce = Cursor.allocUnsafe(encrypter.fixed_iv_length + 8)
       nonce.tryWrite(encrypter.secrets.server_write_IV).throw(t)
@@ -80,7 +81,7 @@ export class GenericAEADCipher {
       // console.debug("<- ciphertext", this.block.length, Bytes.toHex(this.block))
       // console.debug("<- additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
 
-      const plaintext = await encrypter.decrypt(nonce.bytes, this.block, additional_data.bytes)
+      const plaintext = await encrypter.tryDecrypt(nonce.bytes, this.block, additional_data.bytes).then(r => r.throw(t))
 
       // console.debug("<- plaintext", plaintext.length, Bytes.toHex(plaintext))
 

@@ -1,3 +1,5 @@
+import { Ok, Result } from "@hazae41/result"
+import { CryptoError, tryCrypto } from "libs/crypto/crypto.js"
 import { Secrets } from "mods/ciphers/secrets.js"
 
 export class HMAC_SHA256 {
@@ -18,15 +20,20 @@ export class HMAC_SHA256 {
     return this.#class.mac_key_length
   }
 
-  static async init(secrets: Secrets) {
-    const mac_key = await crypto.subtle.importKey("raw", secrets.client_write_MAC_key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+  static async tryInit(secrets: Secrets): Promise<Result<HMAC_SHA256, CryptoError>> {
+    return await Result.unthrow(async t => {
+      const mac_key = await tryCrypto(async () => {
+        return await crypto.subtle.importKey("raw", secrets.client_write_MAC_key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+      }).then(r => r.throw(t))
 
-    return new this(mac_key)
+      return new Ok(new HMAC_SHA256(mac_key))
+    })
   }
 
-  async write(seed: Uint8Array) {
-    return new Uint8Array(await crypto.subtle.sign("HMAC", this.mac_key, seed))
+  async tryWrite(seed: Uint8Array): Promise<Result<Uint8Array, CryptoError>> {
+    return await tryCrypto(async () => new Uint8Array(await crypto.subtle.sign("HMAC", this.mac_key, seed)))
   }
+
 }
 
 export class SHA256 {

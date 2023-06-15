@@ -1,6 +1,7 @@
 import { BinaryError, BinaryReadError, BinaryWriteError, Opaque, Readable, UnsafeOpaque, Writable } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
 import { Ok, Panic, Result } from "@hazae41/result"
+import { CryptoError } from "libs/crypto/crypto.js"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { AEADEncrypter, BlockEncrypter, Encrypter } from "mods/ciphers/encryptions/encryption.js"
@@ -62,19 +63,19 @@ export class PlaintextRecord<T extends Writable.Infer<T>> {
     })
   }
 
-  async #tryEncryptBlock(encrypter: BlockEncrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError>> {
+  async #tryEncryptBlock(encrypter: BlockEncrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError | CryptoError>> {
     const fragment = await GenericBlockCipher.tryEncrypt<T>(this, encrypter, sequence)
 
     return fragment.mapSync(fragment => new BlockCiphertextRecord(this.type, this.version, fragment))
   }
 
-  async #tryEncryptAEAD(encrypter: AEADEncrypter, sequence: bigint): Promise<Result<AEADCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError>> {
+  async #tryEncryptAEAD(encrypter: AEADEncrypter, sequence: bigint): Promise<Result<AEADCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError | CryptoError>> {
     const fragment = await GenericAEADCipher.tryEncrypt<T>(this, encrypter, sequence)
 
     return fragment.mapSync(fragment => new AEADCiphertextRecord(this.type, this.version, fragment))
   }
 
-  async tryEncrypt(encrypter: Encrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord | AEADCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError>> {
+  async tryEncrypt(encrypter: Encrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord | AEADCiphertextRecord, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError | CryptoError>> {
     if (encrypter.cipher_type === "block")
       return this.#tryEncryptBlock(encrypter, sequence)
     if (encrypter.cipher_type === "aead")
@@ -117,7 +118,7 @@ export class BlockCiphertextRecord {
     })
   }
 
-  async tryDecrypt(encrypter: BlockEncrypter, sequence: bigint): Promise<Result<PlaintextRecord<Opaque>, never>> {
+  async tryDecrypt(encrypter: BlockEncrypter, sequence: bigint): Promise<Result<PlaintextRecord<Opaque>, CryptoError>> {
     const fragment = await this.fragment.tryDecrypt(this, encrypter, sequence)
 
     return fragment.mapSync(fragment => new PlaintextRecord(this.type, this.version, fragment))
@@ -157,7 +158,7 @@ export class AEADCiphertextRecord {
     })
   }
 
-  async tryDecrypt(encrypter: AEADEncrypter, sequence: bigint): Promise<Result<PlaintextRecord<Opaque>, BinaryWriteError>> {
+  async tryDecrypt(encrypter: AEADEncrypter, sequence: bigint): Promise<Result<PlaintextRecord<Opaque>, BinaryWriteError | CryptoError>> {
     const fragment = await this.fragment.tryDecrypt(this, encrypter, sequence)
 
     return fragment.mapSync(fragment => new PlaintextRecord(this.type, this.version, fragment))
