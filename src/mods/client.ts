@@ -3,7 +3,7 @@ import { Bytes } from "@hazae41/bytes"
 import { SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Some } from "@hazae41/option"
-import { AbortedError, ClosedError, ErroredError, EventError, Plume, StreamEvents, SuperEventTarget } from "@hazae41/plume"
+import { AbortedError, CloseEvents, ClosedError, ErrorEvents, ErroredError, EventError, Plume, SuperEventTarget } from "@hazae41/plume"
 import { Err, Ok, Panic, Result } from "@hazae41/result"
 import { BigMath } from "libs/bigmath/index.js"
 import { CryptoError } from "libs/crypto/crypto.js"
@@ -41,15 +41,15 @@ export interface TlsClientDuplexParams {
   signal?: AbortSignal
 }
 
-export type TlsClientDuplexReadEvents = StreamEvents & {
-  handshaked: undefined
+export type TlsClientDuplexReadEvents = CloseEvents & ErrorEvents & {
+  handshaked: () => void
 }
 
 export class TlsClientDuplex {
   readonly #class = TlsClientDuplex
 
   readonly read = new SuperEventTarget<TlsClientDuplexReadEvents>()
-  readonly write = new SuperEventTarget<StreamEvents>()
+  readonly write = new SuperEventTarget<CloseEvents & ErrorEvents>()
 
   readonly #reader: SuperTransformStream<Opaque, Opaque>
   readonly #writer: SuperTransformStream<Writable, Writable>
@@ -102,7 +102,7 @@ export class TlsClientDuplex {
 
     this.#reader.closed = {}
 
-    await this.read.emit("close", undefined)
+    await this.read.emit("close", [undefined])
 
     return Ok.void()
   }
@@ -112,7 +112,7 @@ export class TlsClientDuplex {
 
     this.#writer.closed = {}
 
-    await this.write.emit("close", undefined)
+    await this.write.emit("close", [undefined])
 
     return Ok.void()
   }
@@ -123,7 +123,7 @@ export class TlsClientDuplex {
     this.#reader.closed = { reason }
     this.#writer.error(reason)
 
-    await this.read.emit("error", reason)
+    await this.read.emit("error", [reason])
 
     return Result.rethrow(reason)
   }
@@ -134,7 +134,7 @@ export class TlsClientDuplex {
     this.#writer.closed = { reason }
     this.#reader.error(reason)
 
-    await this.write.emit("error", reason)
+    await this.write.emit("error", [reason])
 
     return Result.rethrow(reason)
   }
@@ -157,8 +157,8 @@ export class TlsClientDuplex {
       const client_hello_handshake_record = PlaintextRecord.from(client_hello_handshake, 0x0301)
       this.#writer.enqueue(client_hello_handshake_record)
 
-      await Plume.tryWaitOrStream(this.read, "handshaked", () => {
-        return new Ok(new Some(Ok.void()))
+      await Plume.tryWaitOrCloseOrError(this.read, "handshaked", () => {
+        return new Some(Ok.void())
       }).then(r => r.throw(t))
 
       return Ok.void()
@@ -620,7 +620,9 @@ export class TlsClientDuplex {
 
       this.#state = { ...state, type: "handshaked" }
 
-      return await this.read.tryEmit("handshaked", undefined)
+      await this.read.emit("handshaked", [])
+
+      return Ok.void()
     })
   }
 
