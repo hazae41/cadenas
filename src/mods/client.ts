@@ -2,7 +2,8 @@ import { BinaryError, Opaque, Readable, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
-import { Some } from "@hazae41/option"
+import { Future } from "@hazae41/future"
+import { None } from "@hazae41/option"
 import { AbortedError, CloseEvents, ClosedError, ErrorEvents, ErroredError, EventError, Plume, SuperEventTarget } from "@hazae41/plume"
 import { Err, Ok, Panic, Result } from "@hazae41/result"
 import { BigMath } from "libs/bigmath/index.js"
@@ -157,8 +158,9 @@ export class TlsClientDuplex {
       const client_hello_handshake_record = PlaintextRecord.from(client_hello_handshake, 0x0301)
       this.#writer.enqueue(client_hello_handshake_record)
 
-      await Plume.tryWaitOrCloseOrError(this.read, "handshaked", () => {
-        return new Some(Ok.void())
+      await Plume.tryWaitOrCloseOrError(this.read, "handshaked", (future: Future<Ok<void>>) => {
+        future.resolve(Ok.void())
+        return new None()
       }).then(r => r.throw(t))
 
       return Ok.void()
