@@ -38,7 +38,7 @@ export class ClientHello2 {
     return this.#class.handshake_type
   }
 
-  static default(host_name: string, ciphers: Cipher[]) {
+  static default(ciphers: Cipher[], host_name?: string) {
     const version = 0x0303
     const random = Random.default()
 
@@ -46,12 +46,17 @@ export class ClientHello2 {
     const cipher_suites = Vector(Number16).from(List.from(ciphers.map(it => new Number16(it.id))))
     const compression_methods = Vector(Number8).from(List.from([new Number8(0)]))
 
-    const server_name = Extension.from(ServerNameList.from([ServerName.from(host_name)]))
+    const extensions = new Some(Vector(Number16).from(List.from<Extension<ResolvedExtension>>([])))
+
+    if (host_name) {
+      const server_name = Extension.from(ServerNameList.from([ServerName.from(host_name)]))
+      extensions.inner.value.array.push(server_name)
+    }
+
     const signature_algorithms = Extension.from(SignatureAlgorithms.default())
     const elliptic_curves = Extension.from(EllipticCurves.default())
     const ec_point_formats = Extension.from(ECPointFormats.default())
-
-    const extensions = new Some(Vector(Number16).from(List.from([server_name, signature_algorithms, elliptic_curves, ec_point_formats])))
+    extensions.inner.value.array.push(signature_algorithms, elliptic_curves, ec_point_formats)
 
     return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
   }

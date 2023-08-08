@@ -38,8 +38,8 @@ import { Extensions } from "./extensions.js"
 import { ClientChangeCipherSpecState, HandshakeState, ServerKeyExchangeState, TlsClientDuplexState } from "./state.js"
 
 export interface TlsClientDuplexParams {
-  host_name: string,
   ciphers: Cipher[]
+  host_name?: string
   signal?: AbortSignal
 }
 
@@ -146,7 +146,7 @@ export class TlsClientDuplex {
       if (this.#state.type !== "none")
         return new Err(new InvalidTlsStateError())
 
-      const client_hello = ClientHello2.default(this.params.host_name, this.params.ciphers)
+      const client_hello = ClientHello2.default(this.params.ciphers, this.params.host_name)
 
       const client_random = Writable.tryWriteToBytes(client_hello.random).throw(t)
       const client_extensions = Extensions.getClientExtensions(client_hello).throw(t)

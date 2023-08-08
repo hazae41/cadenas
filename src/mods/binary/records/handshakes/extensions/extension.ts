@@ -8,7 +8,7 @@ export interface Extensionable<T extends Writable> extends Writable.Infer<T> {
   readonly extension_type: number
 }
 
-export class Extension<T extends Writable.Infer<T>> {
+export class Extension<T extends Writable.Infer<T> = Writable> {
 
   static readonly types = {
     server_name: 0,
