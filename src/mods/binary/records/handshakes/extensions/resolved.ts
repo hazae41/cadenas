@@ -7,9 +7,11 @@ import { Extension } from "mods/binary/records/handshakes/extensions/extension.j
 import { ReadableVector } from "mods/binary/vectors/readable.js"
 import { ECPointFormats } from "./ec_point_formats/ec_point_formats.js"
 import { EllipticCurves } from "./elliptic_curves/elliptic_curves.js"
+import { ServerNameList } from "./server_name/server_name_list.js"
 import { SignatureAlgorithms } from "./signature_algorithms/signature_algorithms.js"
 
 export type ResolvedExtension =
+  | ServerNameList
   | SignatureAlgorithms
   | EllipticCurves
   | ECPointFormats

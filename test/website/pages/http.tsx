@@ -19,13 +19,13 @@ export default function Home() {
         Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
       ]
 
-      const tls = new TlsClientDuplex(tcp, { ciphers })
+      const tls = new TlsClientDuplex(tcp, { host_name: "proxy.brume.money", ciphers })
 
-      // const headers = new Headers({ "Content-Type": "application/json" })
-      // const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
-      // const res = await fetch("https://eth.llamarpc.com", { stream: tls, method: "POST", headers, body })
+      const headers = new Headers({ "Content-Type": "application/json" })
+      const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
+      const res = await fetch("https://proxy.brume.money", { stream: tls, method: "POST", headers, body })
 
-      const res = await fetch("https://www.facebook.com", { stream: tls })
+      // const res = await fetch("https://www.facebook.com", { stream: tls })
 
       console.log(res)
       const text = await res.text()

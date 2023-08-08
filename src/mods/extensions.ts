@@ -2,10 +2,12 @@ import { Err, Ok, Result } from "@hazae41/result"
 import { ClientHello2 } from "./binary/records/handshakes/client_hello/client_hello2.js"
 import { ECPointFormats } from "./binary/records/handshakes/extensions/ec_point_formats/ec_point_formats.js"
 import { EllipticCurves } from "./binary/records/handshakes/extensions/elliptic_curves/elliptic_curves.js"
+import { ServerNameList } from "./binary/records/handshakes/extensions/server_name/server_name_list.js"
 import { SignatureAlgorithms } from "./binary/records/handshakes/extensions/signature_algorithms/signature_algorithms.js"
 import { ServerHello2 } from "./binary/records/handshakes/server_hello/server_hello2.js"
 
 export interface Extensions {
+  server_name?: ServerNameList,
   signature_algorithms?: SignatureAlgorithms,
   elliptic_curves?: EllipticCurves,
   ec_point_formats?: ECPointFormats
@@ -77,6 +79,11 @@ export namespace Extensions {
         continue
       }
 
+      if (extension.data.value instanceof ServerNameList) {
+        client_extensions.server_name = extension.data.value
+        continue
+      }
+
       return new Err(new UnsupportedExtensionError(extension.type))
     }
 
@@ -119,6 +126,16 @@ export namespace Extensions {
           return new Err(new UnexpectedExtensionError(extension.type))
 
         server_extensions.ec_point_formats = extension.data.value
+        continue
+      }
+
+      if (extension.type === ServerNameList.extension_type) {
+        if (!client_extensions.server_name)
+          return new Err(new UnexpectedExtensionError(extension.type))
+
+        /**
+         * NOOP: TODO: server_name is empty from server
+         */
         continue
       }
 

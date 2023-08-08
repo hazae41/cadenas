@@ -17,6 +17,8 @@ import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { ReadableVector } from "mods/binary/vectors/readable.js"
 import { Vector } from "mods/binary/vectors/writable.js"
 import { Cipher } from "mods/ciphers/cipher.js"
+import { ServerName } from "../extensions/server_name/server_name.js"
+import { ServerNameList } from "../extensions/server_name/server_name_list.js"
 
 export class ClientHello2 {
   readonly #class = ClientHello2
@@ -36,7 +38,7 @@ export class ClientHello2 {
     return this.#class.handshake_type
   }
 
-  static default(ciphers: Cipher[]) {
+  static default(host_name: string, ciphers: Cipher[]) {
     const version = 0x0303
     const random = Random.default()
 
@@ -44,11 +46,12 @@ export class ClientHello2 {
     const cipher_suites = Vector(Number16).from(List.from(ciphers.map(it => new Number16(it.id))))
     const compression_methods = Vector(Number8).from(List.from([new Number8(0)]))
 
+    const server_name = Extension.from(ServerNameList.from([ServerName.from(host_name)]))
     const signature_algorithms = Extension.from(SignatureAlgorithms.default())
     const elliptic_curves = Extension.from(EllipticCurves.default())
     const ec_point_formats = Extension.from(ECPointFormats.default())
 
-    const extensions = new Some(Vector(Number16).from(List.from([signature_algorithms, elliptic_curves, ec_point_formats])))
+    const extensions = new Some(Vector(Number16).from(List.from([server_name, signature_algorithms, elliptic_curves, ec_point_formats])))
 
     return new this(version, random, session_id, cipher_suites, compression_methods, extensions)
   }

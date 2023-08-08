@@ -11,6 +11,7 @@ export interface Extensionable<T extends Writable> extends Writable.Infer<T> {
 export class Extension<T extends Writable.Infer<T>> {
 
   static readonly types = {
+    server_name: 0,
     elliptic_curves: 10,
     ec_point_formats: 11,
     signature_algorithms: 13
