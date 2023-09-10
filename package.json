@@ -22,26 +22,27 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@hazae41/binary": "^1.2.34",
-    "@hazae41/bytes": "^1.1.21",
-    "@hazae41/cascade": "^1.1.26",
-    "@hazae41/cursor": "^1.1.24",
+    "@hazae41/base16": "^1.0.8",
+    "@hazae41/binary": "^1.3.1",
+    "@hazae41/bytes": "^1.2.2",
+    "@hazae41/cascade": "^1.1.27",
+    "@hazae41/cursor": "^1.1.26",
     "@hazae41/future": "^1.0.3",
-    "@hazae41/option": "^1.0.17",
-    "@hazae41/plume": "^2.1.3",
-    "@hazae41/result": "^1.0.52",
-    "@hazae41/x509": "^1.1.9"
+    "@hazae41/option": "^1.0.21",
+    "@hazae41/plume": "^2.1.7",
+    "@hazae41/result": "^1.1.3",
+    "@hazae41/x509": "^1.1.13"
   },
   "devDependencies": {
     "@hazae41/phobos": "^1.0.10",
     "@rollup/plugin-inject": "^5.0.3",
-    "@rollup/plugin-typescript": "^11.1.2",
-    "@types/node": "^20.4.8",
+    "@rollup/plugin-typescript": "^11.1.3",
+    "@types/node": "^20.6.0",
     "rimraf": "^5.0.1",
-    "rollup": "^3.27.2",
-    "rollup-plugin-dts": "^5.3.1",
+    "rollup": "^3.29.1",
+    "rollup-plugin-dts": "^6.0.2",
     "rollup-plugin-node-externals": "^6.1.1",
-    "typescript": "^5.1.6"
+    "typescript": "^5.2.2"
   },
   "exports": {
     ".": {

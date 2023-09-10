@@ -37,7 +37,7 @@ export class GenericAEADCipher {
 
   static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<GenericAEADCipher, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError | CryptoError>> {
     return await Result.unthrow(async t => {
-      const nonce = Cursor.allocUnsafe(encrypter.fixed_iv_length + 8)
+      const nonce = new Cursor(Bytes.tryAllocUnsafe(encrypter.fixed_iv_length + 8).throw(t))
       nonce.tryWrite(encrypter.secrets.client_write_IV).throw(t)
       nonce.tryWriteUint64(sequence).throw(t)
 
@@ -47,7 +47,7 @@ export class GenericAEADCipher {
 
       const content = Writable.tryWriteToBytes(record.fragment).throw(t)
 
-      const additional_data = Cursor.allocUnsafe(8 + 1 + 2 + 2)
+      const additional_data = new Cursor(Bytes.tryAllocUnsafe(8 + 1 + 2 + 2).throw(t))
       additional_data.tryWriteUint64(sequence).throw(t)
       additional_data.tryWriteUint8(record.type).throw(t)
       additional_data.tryWriteUint16(record.version).throw(t)
@@ -67,11 +67,11 @@ export class GenericAEADCipher {
 
   async tryDecrypt(record: AEADCiphertextRecord, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<Opaque, BinaryWriteError | CryptoError>> {
     return await Result.unthrow(async t => {
-      const nonce = Cursor.allocUnsafe(encrypter.fixed_iv_length + 8)
+      const nonce = new Cursor(Bytes.tryAllocUnsafe(encrypter.fixed_iv_length + 8).throw(t))
       nonce.tryWrite(encrypter.secrets.server_write_IV).throw(t)
       nonce.tryWrite(this.nonce_explicit).throw(t)
 
-      const additional_data = Cursor.allocUnsafe(8 + 1 + 2 + 2)
+      const additional_data = new Cursor(Bytes.tryAllocUnsafe(8 + 1 + 2 + 2).throw(t))
       additional_data.tryWriteUint64(sequence).throw(t)
       additional_data.tryWriteUint8(record.type).throw(t)
       additional_data.tryWriteUint16(record.version).throw(t)

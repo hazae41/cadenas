@@ -33,7 +33,7 @@ export class Random {
   static tryRead(cursor: Cursor): Result<Random, BinaryReadError> {
     return Result.unthrowSync(t => {
       const gmt_unix_time = cursor.tryReadUint32().throw(t)
-      const random_bytes = Bytes.from(cursor.tryRead(28).throw(t))
+      const random_bytes = Bytes.tryFromSized(cursor.tryRead(28).throw(t)).throw(t)
 
       return new Ok(new Random(gmt_unix_time, random_bytes))
     })

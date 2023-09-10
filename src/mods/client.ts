@@ -1,11 +1,13 @@
+import { Base16 } from "@hazae41/base16"
 import { BinaryError, Opaque, Readable, Writable } from "@hazae41/binary"
-import { Bytes } from "@hazae41/bytes"
+import { Bytes, BytesError } from "@hazae41/bytes"
 import { SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Future } from "@hazae41/future"
 import { None } from "@hazae41/option"
 import { AbortedError, CloseEvents, ClosedError, ErrorEvents, ErroredError, EventError, Plume, SuperEventTarget } from "@hazae41/plume"
-import { Err, Ok, Panic, Result } from "@hazae41/result"
+import { Catched, Err, Ok, Panic, Result } from "@hazae41/result"
+import { BigInts } from "libs/bigint/bigint.js"
 import { BigMath } from "libs/bigmath/index.js"
 import { CryptoError } from "libs/crypto/crypto.js"
 import { PRF } from "mods/algorithms/prf/prf.js"
@@ -59,7 +61,7 @@ export class TlsClientDuplex {
   readonly readable: ReadableStream<Opaque>
   readonly writable: WritableStream<Writable>
 
-  #buffer = Cursor.allocUnsafe(65535)
+  #buffer = new Cursor(Bytes.tryAllocUnsafe(65535).unwrap())
 
   #state: TlsClientDuplexState = { type: "none", client_encrypted: false, server_encrypted: false }
 
@@ -127,7 +129,7 @@ export class TlsClientDuplex {
 
     await this.read.emit("error", [reason])
 
-    return Result.rethrow(reason)
+    return Catched.throwOrErr(reason)
   }
 
   async #onWriteError(reason?: unknown): Promise<Err<unknown>> {
@@ -138,7 +140,7 @@ export class TlsClientDuplex {
 
     await this.write.emit("error", [reason])
 
-    return Result.rethrow(reason)
+    return Catched.throwOrErr(reason)
   }
 
   async #onWriterStart(): Promise<Result<void, TlsClientError | BinaryError | AbortedError | ErroredError | ClosedError>> {
@@ -168,7 +170,7 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onReaderWrite(chunk: Opaque): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
+  async #onReaderWrite(chunk: Opaque): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
     // console.debug(this.#class.name, "<-", chunk)
 
     if (this.#buffer.offset)
@@ -182,7 +184,7 @@ export class TlsClientDuplex {
    * @param chunk 
    * @returns 
    */
-  async #onReadBuffered(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
+  async #onReadBuffered(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
     return await Result.unthrow(async t => {
       this.#buffer.tryWrite(chunk).throw(t)
       const full = new Uint8Array(this.#buffer.before)
@@ -197,7 +199,7 @@ export class TlsClientDuplex {
    * @param chunk 
    * @returns 
    */
-  async #onReadDirect(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
+  async #onReadDirect(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
     return await Result.unthrow(async t => {
       const cursor = new Cursor(chunk)
 
@@ -235,14 +237,14 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
+  async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
     if (state.server_encrypted)
       return await this.#onCiphertextRecord(record, state)
 
     return await this.#onPlaintextRecord(record, state)
   }
 
-  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
+  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
     return await Result.unthrow(async t => {
 
       if (state.encrypter.cipher_type === "block") {
@@ -261,7 +263,7 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError>> {
+  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
     if (record.type === Alert.record_type)
       return await this.#onAlert(record, state)
     if (record.type === Handshake.record_type)
@@ -321,7 +323,7 @@ export class TlsClientDuplex {
     return Ok.void()
   }
 
-  async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | BinaryError | EventError | CryptoError>> {
+  async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | BinaryError | EventError | CryptoError | Base16.CodingError>> {
     return await Result.unthrow(async t => {
       if (state.type !== "handshake")
         return new Err(new InvalidTlsStateError())
@@ -451,24 +453,26 @@ export class TlsClientDuplex {
     })
   }
 
-  async #computeDiffieHellman(state: ServerKeyExchangeState & { server_dh_params: ServerDHParams }) {
-    const { dh_g, dh_p, dh_Ys } = state.server_dh_params
+  #tryComputeDiffieHellman(state: ServerKeyExchangeState & { server_dh_params: ServerDHParams }): Result<{ dh_Yc: Uint8Array, dh_Z: Uint8Array }, BytesError | Base16.CodingError> {
+    return Result.unthrowSync(t => {
+      const { dh_g, dh_p, dh_Ys } = state.server_dh_params
 
-    const g = Bytes.toBigInt(dh_g.value.bytes)
-    const p = Bytes.toBigInt(dh_p.value.bytes)
-    const Ys = Bytes.toBigInt(dh_Ys.value.bytes)
+      const g = BigInts.tryImport(dh_g.value.bytes).throw(t)
+      const p = BigInts.tryImport(dh_p.value.bytes).throw(t)
+      const Ys = BigInts.tryImport(dh_Ys.value.bytes).throw(t)
 
-    const dh_yc = Bytes.random(dh_p.value.bytes.length)
+      const dh_yc = Bytes.tryRandom(dh_p.value.bytes.length).throw(t)
 
-    const yc = Bytes.toBigInt(dh_yc)
+      const yc = BigInts.tryImport(dh_yc).throw(t)
 
-    const Yc = BigMath.umodpow(g, yc, p)
-    const Z = BigMath.umodpow(Ys, yc, p)
+      const Yc = BigMath.umodpow(g, yc, p)
+      const Z = BigMath.umodpow(Ys, yc, p)
 
-    const dh_Yc = Bytes.fromBigInt(Yc)
-    const dh_Z = Bytes.fromBigInt(Z)
+      const dh_Yc = BigInts.tryExport(Yc).throw(t)
+      const dh_Z = BigInts.tryExport(Z).throw(t)
 
-    return { dh_Yc, dh_Z }
+      return new Ok({ dh_Yc, dh_Z })
+    })
   }
 
   async #computeEllipticCurveDiffieHellman(state: ServerKeyExchangeState & { server_ecdh_params: ServerECDHParams }) {
@@ -536,7 +540,7 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError | CryptoError>> {
+  async #onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError | CryptoError | Base16.CodingError>> {
     return await Result.unthrow(async t => {
       if (state.step !== "server_hello")
         return new Err(new InvalidTlsStateError())
@@ -559,7 +563,7 @@ export class TlsClientDuplex {
       let secrets: Secrets
 
       if ("server_dh_params" in state) {
-        const { dh_Yc, dh_Z } = await this.#computeDiffieHellman(state)
+        const { dh_Yc, dh_Z } = this.#tryComputeDiffieHellman(state).throw(t)
 
         const handshake_client_key_exchange = Handshake.from(ClientKeyExchange2DH.from(dh_Yc))
         const record_client_key_exchange = PlaintextRecord.from(handshake_client_key_exchange, state.version)

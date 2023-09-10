@@ -9,15 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@hazae41/fleche": "^1.1.43",
-    "@types/node": "20.4.8",
-    "@types/react": "18.2.19",
+    "@hazae41/fleche": "^1.1.50",
+    "@types/node": "20.6.0",
+    "@types/react": "18.2.21",
     "@types/react-dom": "18.2.7",
-    "eslint": "8.46.0",
-    "eslint-config-next": "13.4.13",
-    "next": "13.4.13",
+    "eslint": "8.49.0",
+    "eslint-config-next": "13.4.19",
+    "next": "13.4.19",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "typescript": "5.1.6"
+    "typescript": "5.2.2"
   }
 }

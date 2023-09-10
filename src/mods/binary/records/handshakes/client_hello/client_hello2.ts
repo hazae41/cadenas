@@ -1,4 +1,5 @@
 import { BinaryReadError, BinaryWriteError, Opaque, SafeOpaque } from "@hazae41/binary"
+import { Bytes } from "@hazae41/bytes"
 import { Cursor } from "@hazae41/cursor"
 import { None, Option, Some } from "@hazae41/option"
 import { Ok, Result } from "@hazae41/result"
@@ -42,7 +43,7 @@ export class ClientHello2 {
     const version = 0x0303
     const random = Random.default()
 
-    const session_id = Vector(Number8).from(Opaque.empty())
+    const session_id = Vector(Number8).from(new Opaque(Bytes.tryEmpty().unwrap()))
     const cipher_suites = Vector(Number16).from(List.from(ciphers.map(it => new Number16(it.id))))
     const compression_methods = Vector(Number8).from(List.from([new Number8(0)]))
 

@@ -51,7 +51,7 @@ export class GenericBlockCipher {
 
       const content = Writable.tryWriteToBytes(record.fragment).throw(t)
 
-      const premac = Cursor.allocUnsafe(8 + record.trySize().throw(t))
+      const premac = new Cursor(Bytes.tryAllocUnsafe(8 + record.trySize().throw(t)).throw(t))
       premac.tryWriteUint64(sequence).throw(t)
       record.tryWrite(premac).throw(t)
 

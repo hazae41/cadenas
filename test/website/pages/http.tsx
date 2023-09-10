@@ -19,6 +19,7 @@ export default function Home() {
         Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
       ]
 
+      const start = Date.now()
       const tls = new TlsClientDuplex(tcp, { host_name: "proxy.brume.money", ciphers })
 
       const headers = new Headers({ "Content-Type": "application/json" })
@@ -27,8 +28,10 @@ export default function Home() {
 
       // const res = await fetch("https://www.facebook.com", { stream: tls })
 
-      console.log(res)
+      // console.log(res)
       const text = await res.text()
+      const end = Date.now()
+      console.log(end - start)
       console.log(text)
 
       // const ws = new Fleche.WebSocket("wss://example.com", undefined, { stream: tls })
