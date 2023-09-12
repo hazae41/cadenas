@@ -170,7 +170,7 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onReaderWrite(chunk: Opaque): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
+  async #onReaderWrite(chunk: Opaque): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.AnyError>> {
     // console.debug(this.#class.name, "<-", chunk)
 
     if (this.#buffer.offset)
@@ -184,7 +184,7 @@ export class TlsClientDuplex {
    * @param chunk 
    * @returns 
    */
-  async #onReadBuffered(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
+  async #onReadBuffered(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.AnyError>> {
     return await Result.unthrow(async t => {
       this.#buffer.tryWrite(chunk).throw(t)
       const full = new Uint8Array(this.#buffer.before)
@@ -199,7 +199,7 @@ export class TlsClientDuplex {
    * @param chunk 
    * @returns 
    */
-  async #onReadDirect(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
+  async #onReadDirect(chunk: Uint8Array): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.AnyError>> {
     return await Result.unthrow(async t => {
       const cursor = new Cursor(chunk)
 
@@ -237,14 +237,14 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
+  async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.AnyError>> {
     if (state.server_encrypted)
       return await this.#onCiphertextRecord(record, state)
 
     return await this.#onPlaintextRecord(record, state)
   }
 
-  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
+  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.AnyError>> {
     return await Result.unthrow(async t => {
 
       if (state.encrypter.cipher_type === "block") {
@@ -263,7 +263,7 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.CodingError>> {
+  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.AnyError>> {
     if (record.type === Alert.record_type)
       return await this.#onAlert(record, state)
     if (record.type === Handshake.record_type)
@@ -323,7 +323,7 @@ export class TlsClientDuplex {
     return Ok.void()
   }
 
-  async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | BinaryError | EventError | CryptoError | Base16.CodingError>> {
+  async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError | BinaryError | EventError | CryptoError | Base16.AnyError>> {
     return await Result.unthrow(async t => {
       if (state.type !== "handshake")
         return new Err(new InvalidTlsStateError())
@@ -453,7 +453,7 @@ export class TlsClientDuplex {
     })
   }
 
-  #tryComputeDiffieHellman(state: ServerKeyExchangeState & { server_dh_params: ServerDHParams }): Result<{ dh_Yc: Uint8Array, dh_Z: Uint8Array }, BytesError | Base16.CodingError> {
+  #tryComputeDiffieHellman(state: ServerKeyExchangeState & { server_dh_params: ServerDHParams }): Result<{ dh_Yc: Uint8Array, dh_Z: Uint8Array }, BytesError | Base16.AnyError> {
     return Result.unthrowSync(t => {
       const { dh_g, dh_p, dh_Ys } = state.server_dh_params
 
@@ -540,7 +540,7 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError | CryptoError | Base16.CodingError>> {
+  async #onServerHelloDone(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, TlsClientError | BinaryError | CryptoError | Base16.AnyError>> {
     return await Result.unthrow(async t => {
       if (state.step !== "server_hello")
         return new Err(new InvalidTlsStateError())
