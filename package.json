@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@hazae41/cadenas",
-  "version": "0.2.39",
+  "version": "0.2.40",
   "description": "Zero-copy TLS protocol for the web",
   "homepage": "https://github.com/hazae41/cadenas",
   "repository": "github:hazae41/cadenas",
