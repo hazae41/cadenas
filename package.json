@@ -31,7 +31,7 @@
     "@hazae41/option": "^1.0.21",
     "@hazae41/plume": "^2.1.8",
     "@hazae41/result": "^1.1.4",
-    "@hazae41/x509": "^1.1.14"
+    "@hazae41/x509": "^1.1.15"
   },
   "devDependencies": {
     "@hazae41/phobos": "^1.0.10",
