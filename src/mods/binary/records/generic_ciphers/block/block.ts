@@ -65,11 +65,11 @@ export class GenericBlockCipher {
       const plaintext = Bytes.concat([content, mac, padding])
       const ciphertext = await encrypter.tryEncrypt(iv, plaintext).then(r => r.throw(t))
 
-      // console.debug("-> iv", iv.length, Bytes.toHex(iv))
-      // console.debug("-> plaintext", plaintext.length, Bytes.toHex(plaintext))
-      // console.debug("-> content", content.length, Bytes.toHex(content))
-      // console.debug("-> mac", mac.length, Bytes.toHex(mac))
-      // console.debug("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
+      // Console.debug("-> iv", iv.length, Bytes.toHex(iv))
+      // Console.debug("-> plaintext", plaintext.length, Bytes.toHex(plaintext))
+      // Console.debug("-> content", content.length, Bytes.toHex(content))
+      // Console.debug("-> mac", mac.length, Bytes.toHex(mac))
+      // Console.debug("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
 
       return new Ok(new GenericBlockCipher(iv, ciphertext))
     })
@@ -82,8 +82,8 @@ export class GenericBlockCipher {
       const content = plaintext.subarray(0, -encrypter.macher.mac_length)
       const mac = plaintext.subarray(-encrypter.macher.mac_length)
 
-      // console.debug("<- content", content.length, Bytes.toHex(content))
-      // console.debug("<- mac", mac.length, Bytes.toHex(mac))
+      // Console.debug("<- content", content.length, Bytes.toHex(content))
+      // Console.debug("<- mac", mac.length, Bytes.toHex(mac))
 
       return new Ok(new Opaque(content))
     })

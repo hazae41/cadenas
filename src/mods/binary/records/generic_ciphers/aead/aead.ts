@@ -53,13 +53,13 @@ export class GenericAEADCipher {
       additional_data.tryWriteUint16(record.version).throw(t)
       additional_data.tryWriteUint16(record.fragment.trySize().throw(t)).throw(t)
 
-      // console.debug("-> nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
-      // console.debug("-> plaintext", content.length, Bytes.toHex(content))
-      // console.debug("-> additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
+      // Console.debug("-> nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
+      // Console.debug("-> plaintext", content.length, Bytes.toHex(content))
+      // Console.debug("-> additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
 
       const ciphertext = await encrypter.tryEncrypt(nonce.bytes, content, additional_data.bytes).then(r => r.throw(t))
 
-      // console.debug("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
+      // Console.debug("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
 
       return new Ok(new GenericAEADCipher(nonce_explicit, ciphertext))
     })
@@ -77,13 +77,13 @@ export class GenericAEADCipher {
       additional_data.tryWriteUint16(record.version).throw(t)
       additional_data.tryWriteUint16(record.fragment.trySize().throw(t) - 24).throw(t)
 
-      // console.debug("<- nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
-      // console.debug("<- ciphertext", this.block.length, Bytes.toHex(this.block))
-      // console.debug("<- additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
+      // Console.debug("<- nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
+      // Console.debug("<- ciphertext", this.block.length, Bytes.toHex(this.block))
+      // Console.debug("<- additional_data", additional_data.bytes.length, Bytes.toHex(additional_data.bytes))
 
       const plaintext = await encrypter.tryDecrypt(nonce.bytes, this.block, additional_data.bytes).then(r => r.throw(t))
 
-      // console.debug("<- plaintext", plaintext.length, Bytes.toHex(plaintext))
+      // Console.debug("<- plaintext", plaintext.length, Bytes.toHex(plaintext))
 
       return new Ok(new Opaque(plaintext))
     })

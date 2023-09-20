@@ -94,7 +94,7 @@ export class WebSocketSource implements ResultableUnderlyingDefaultSource<Opaque
 
     this.#onMessage = (msgEvent: MessageEvent<ArrayBuffer>) => {
       const bytes = new Uint8Array(msgEvent.data)
-      console.debug("ws <-", bytes, Bytes.toUtf8(bytes))
+      Console.debug("ws <-", bytes, Bytes.toUtf8(bytes))
       controller.enqueue(new Opaque(bytes))
     }
 
@@ -181,7 +181,7 @@ export class WebSocketSink implements ResultableUnderlyingSink<Writable> {
     return await Result.unthrow(async t => {
       const bytes = Writable.tryWriteToBytes(chunk).throw(t)
 
-      console.debug("ws ->", bytes, Bytes.toUtf8(bytes))
+      Console.debug("ws ->", bytes, Bytes.toUtf8(bytes))
       this.websocket.send(bytes)
 
       return Ok.void()

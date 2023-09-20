@@ -35,6 +35,7 @@ import { ReadableServerKeyExchange2 } from "./binary/records/handshakes/server_k
 import { ServerKeyExchange2DHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_dh_signed.js"
 import { ServerKeyExchange2ECDHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_ecdh_signed.js"
 import { Secp256r1 } from "./ciphers/curves/secp256r1.js"
+import { Console } from "./console/index.js"
 import { FatalAlertError, InvalidTlsStateError, TlsClientError, UnsupportedCipherError, UnsupportedVersionError, WarningAlertError } from "./errors.js"
 import { Extensions } from "./extensions.js"
 import { ClientChangeCipherSpecState, HandshakeState, ServerKeyExchangeState, TlsClientDuplexState } from "./state.js"
@@ -102,7 +103,7 @@ export class TlsClientDuplex {
   }
 
   async #onReadClose(): Promise<Ok<void>> {
-    console.debug(`${this.#class.name}.onReadClose`)
+    Console.debug(`${this.#class.name}.onReadClose`)
 
     this.#reader.closed = {}
 
@@ -112,7 +113,7 @@ export class TlsClientDuplex {
   }
 
   async #onWriteClose(): Promise<Ok<void>> {
-    console.debug(`${this.#class.name}.onWriteClose`)
+    Console.debug(`${this.#class.name}.onWriteClose`)
 
     this.#writer.closed = {}
 
@@ -122,7 +123,7 @@ export class TlsClientDuplex {
   }
 
   async #onReadError(reason?: unknown): Promise<Err<unknown>> {
-    console.debug(`${this.#class.name}.onReadError`, { reason })
+    Console.debug(`${this.#class.name}.onReadError`, { reason })
 
     this.#reader.closed = { reason }
     this.#writer.error(reason)
@@ -133,7 +134,7 @@ export class TlsClientDuplex {
   }
 
   async #onWriteError(reason?: unknown): Promise<Err<unknown>> {
-    console.debug(`${this.#class.name}.onWriteError`, { reason })
+    Console.debug(`${this.#class.name}.onWriteError`, { reason })
 
     this.#writer.closed = { reason }
     this.#reader.error(reason)
@@ -171,7 +172,7 @@ export class TlsClientDuplex {
   }
 
   async #onReaderWrite(chunk: Opaque): Promise<Result<void, TlsClientError | EventError | BinaryError | CryptoError | Base16.AnyError>> {
-    // console.debug(this.#class.name, "<-", chunk)
+    // Console.debug(this.#class.name, "<-", chunk)
 
     if (this.#buffer.offset)
       return await this.#onReadBuffered(chunk.bytes)
@@ -281,7 +282,7 @@ export class TlsClientDuplex {
     return await Result.unthrow(async t => {
       const alert = record.fragment.tryReadInto(Alert).throw(t)
 
-      console.debug(alert)
+      Console.debug(alert)
 
       if (alert.level === Alert.levels.fatal)
         return new Err(new FatalAlertError(alert))
@@ -306,7 +307,7 @@ export class TlsClientDuplex {
 
       const change_cipher_spec = record.fragment.tryReadInto(ChangeCipherSpec).throw(t)
 
-      console.debug(change_cipher_spec)
+      Console.debug(change_cipher_spec)
 
       this.#state = { ...state, step: "server_change_cipher_spec", server_encrypted: true, server_sequence: BigInt(0) }
 
@@ -358,7 +359,7 @@ export class TlsClientDuplex {
 
       const server_hello = handshake.fragment.tryReadInto(ServerHello2).throw(t)
 
-      console.debug(server_hello)
+      Console.debug(server_hello)
 
       const version = server_hello.server_version
 
@@ -373,7 +374,7 @@ export class TlsClientDuplex {
       const server_random = Writable.tryWriteToBytes(server_hello.random).throw(t)
       const server_extensions = Extensions.getServerExtensions(server_hello, state.client_extensions).throw(t)
 
-      console.debug(server_extensions)
+      Console.debug(server_extensions)
 
       this.#state = { ...state, step: "server_hello", version, cipher, server_random, server_extensions }
 
@@ -388,15 +389,15 @@ export class TlsClientDuplex {
 
       const certificate = handshake.fragment.tryReadInto(Certificate2).throw(t)
 
-      console.debug(certificate)
+      Console.debug(certificate)
 
       // const server_certificates = certificate.certificate_list.value.array
       // .map(it => X509.Certificate.fromBytes(it.value.bytes))
 
 
-      // console.debug(server_certificates)
-      // console.debug(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
-      // console.debug(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
+      // Console.debug(server_certificates)
+      // Console.debug(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
+      // Console.debug(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
 
       this.#state = { ...state, action: "server_certificate", server_certificates: [] }
 
@@ -414,7 +415,7 @@ export class TlsClientDuplex {
       const server_key_exchange = handshake.fragment.tryReadInto(clazz).throw(t)
 
       if (server_key_exchange instanceof ServerKeyExchange2DHSigned) {
-        console.debug(server_key_exchange)
+        Console.debug(server_key_exchange)
 
         const server_dh_params = server_key_exchange.params
 
@@ -424,7 +425,7 @@ export class TlsClientDuplex {
       }
 
       if (server_key_exchange instanceof ServerKeyExchange2ECDHSigned) {
-        console.debug(server_key_exchange)
+        Console.debug(server_key_exchange)
 
         const server_ecdh_params = server_key_exchange.params
 
@@ -445,7 +446,7 @@ export class TlsClientDuplex {
 
       const certificate_request = handshake.fragment.tryReadInto(CertificateRequest2).throw(t)
 
-      console.debug(certificate_request)
+      Console.debug(certificate_request)
 
       this.#state = { ...state, action: "server_certificate_request", certificate_request }
 
@@ -487,12 +488,12 @@ export class TlsClientDuplex {
       const { cipher, client_random, server_random } = state
       const { prf_md } = state.cipher.hash
 
-      // console.debug("premaster_secret", premaster_secret.length, Bytes.toHex(premaster_secret))
+      // Console.debug("premaster_secret", premaster_secret.length, Bytes.toHex(premaster_secret))
 
       const master_secret_seed = Bytes.concat([client_random, server_random])
       const master_secret = await PRF(prf_md, premaster_secret, "master secret", master_secret_seed, 48).then(r => r.throw(t))
 
-      // console.debug("master_secret", master_secret.length, Bytes.toHex(master_secret))
+      // Console.debug("master_secret", master_secret.length, Bytes.toHex(master_secret))
 
       const key_block_length = 0
         + (2 * cipher.hash.mac_key_length)
@@ -502,7 +503,7 @@ export class TlsClientDuplex {
       const key_block_seed = Bytes.concat([server_random, client_random])
       const key_block = await PRF(prf_md, master_secret, "key expansion", key_block_seed, key_block_length).then(r => r.throw(t))
 
-      // console.debug("key_block", key_block.length, Bytes.toHex(key_block))
+      // Console.debug("key_block", key_block.length, Bytes.toHex(key_block))
 
       const key_block_cursor = new Cursor(key_block)
 
@@ -513,20 +514,20 @@ export class TlsClientDuplex {
       const client_write_MAC_key = key_block_cursor.tryRead(mac_key_length).throw(t)
       const server_write_MAC_key = key_block_cursor.tryRead(mac_key_length).throw(t)
 
-      // console.debug("client_write_MAC_key", client_write_MAC_key.length, Bytes.toHex(client_write_MAC_key))
-      // console.debug("server_write_MAC_key", server_write_MAC_key.length, Bytes.toHex(server_write_MAC_key))
+      // Console.debug("client_write_MAC_key", client_write_MAC_key.length, Bytes.toHex(client_write_MAC_key))
+      // Console.debug("server_write_MAC_key", server_write_MAC_key.length, Bytes.toHex(server_write_MAC_key))
 
       const client_write_key = key_block_cursor.tryRead(cipher.encryption.enc_key_length).throw(t)
       const server_write_key = key_block_cursor.tryRead(cipher.encryption.enc_key_length).throw(t)
 
-      // console.debug("client_write_key", client_write_key.length, Bytes.toHex(client_write_key))
-      // console.debug("server_write_key", server_write_key.length, Bytes.toHex(server_write_key))
+      // Console.debug("client_write_key", client_write_key.length, Bytes.toHex(client_write_key))
+      // Console.debug("server_write_key", server_write_key.length, Bytes.toHex(server_write_key))
 
       const client_write_IV = key_block_cursor.tryRead(cipher.encryption.fixed_iv_length).throw(t)
       const server_write_IV = key_block_cursor.tryRead(cipher.encryption.fixed_iv_length).throw(t)
 
-      // console.debug("client_write_IV", client_write_IV.length, Bytes.toHex(client_write_IV))
-      // console.debug("server_write_IV", server_write_IV.length, Bytes.toHex(server_write_IV))
+      // Console.debug("client_write_IV", client_write_IV.length, Bytes.toHex(client_write_IV))
+      // Console.debug("server_write_IV", server_write_IV.length, Bytes.toHex(server_write_IV))
 
       return new Ok({
         master_secret,
@@ -547,7 +548,7 @@ export class TlsClientDuplex {
 
       const server_hello_done = handshake.fragment.tryReadInto(ServerHelloDone2).throw(t)
 
-      console.debug(server_hello_done)
+      Console.debug(server_hello_done)
 
       if ("certificate_request" in state) {
         const certificate_list = Vector(Number24).from(List.from<Vector<Number24, Opaque>>([]))
@@ -623,7 +624,7 @@ export class TlsClientDuplex {
 
       const finished = handshake.fragment.tryReadInto(Finished2).throw(t)
 
-      console.debug(finished)
+      Console.debug(finished)
 
       this.#state = { ...state, type: "handshaked" }
 
