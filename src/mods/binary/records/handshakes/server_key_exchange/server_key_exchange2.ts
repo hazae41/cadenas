@@ -24,7 +24,7 @@ export namespace ReadableServerKeyExchange2 {
     if (cipher.key_exchange === ECDHE_RSA)
       return new Ok(ServerKeyExchange2ECDHSigned)
 
-    throw new Panic(`Invalid key exchange`)
+    throw Panic.from(new Error(`Invalid key exchange`))
   }
 
 }

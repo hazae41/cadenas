@@ -81,7 +81,7 @@ export class PlaintextRecord<T extends Writable.Infer<T>> {
     if (encrypter.cipher_type === "aead")
       return this.#tryEncryptAEAD(encrypter, sequence)
 
-    throw new Panic(`Invalid cipher type`)
+    throw Panic.from(new Error(`Invalid cipher type`))
   }
 
 }

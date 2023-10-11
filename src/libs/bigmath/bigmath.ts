@@ -16,7 +16,7 @@ const b2 = BigInt(2)
  */
 export function umod(value: bigint, modulus: bigint): bigint {
   if (modulus <= b0)
-    throw new Panic(`modulus < 0`)
+    throw Panic.from(new Error(`modulus < 0`))
 
   const modulo = value % modulus
 
@@ -35,11 +35,11 @@ export function umod(value: bigint, modulus: bigint): bigint {
  */
 export function umodpow(base: bigint, exponent: bigint, modulus: bigint): bigint {
   if (base <= b0)
-    throw new Panic(`base < 0`)
+    throw Panic.from(new Error(`base < 0`))
   if (exponent <= b0)
-    throw new Panic(`exponent < 0`)
+    throw Panic.from(new Error(`exponent < 0`))
   if (modulus <= b0)
-    throw new Panic(`modulus < 0`)
+    throw Panic.from(new Error(`modulus < 0`))
 
   if (modulus === b1)
     return b0
