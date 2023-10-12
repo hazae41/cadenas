@@ -1,6 +1,5 @@
 import { Base16 } from "@hazae41/base16"
 import { BinaryError, Opaque, Readable, Writable } from "@hazae41/binary"
-import { Box, Copied } from "@hazae41/box"
 import { Bytes, BytesError } from "@hazae41/bytes"
 import { SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
@@ -459,19 +458,19 @@ export class TlsClientDuplex {
     return Result.unthrowSync(t => {
       const { dh_g, dh_p, dh_Ys } = state.server_dh_params
 
-      const g = BigInts.tryImport(new Box(new Copied(dh_g.value.bytes))).throw(t)
-      const p = BigInts.tryImport(new Box(new Copied(dh_p.value.bytes))).throw(t)
-      const Ys = BigInts.tryImport(new Box(new Copied(dh_Ys.value.bytes))).throw(t)
+      const g = BigInts.tryImport(dh_g.value.bytes).throw(t)
+      const p = BigInts.tryImport(dh_p.value.bytes).throw(t)
+      const Ys = BigInts.tryImport(dh_Ys.value.bytes).throw(t)
 
       const dh_yc = Bytes.tryRandom(dh_p.value.bytes.length).throw(t)
 
-      const yc = BigInts.tryImport(new Box(new Copied(dh_yc))).throw(t)
+      const yc = BigInts.tryImport(dh_yc).throw(t)
 
       const Yc = BigMath.umodpow(g, yc, p)
       const Z = BigMath.umodpow(Ys, yc, p)
 
-      const dh_Yc = BigInts.tryExport(Yc).throw(t).copyAndDispose().bytes
-      const dh_Z = BigInts.tryExport(Z).throw(t).copyAndDispose().bytes
+      const dh_Yc = BigInts.tryExport(Yc).throw(t).copyAndDispose()
+      const dh_Z = BigInts.tryExport(Z).throw(t).copyAndDispose()
 
       return new Ok({ dh_Yc, dh_Z })
     })
