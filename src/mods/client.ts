@@ -58,8 +58,8 @@ export class TlsClientDuplex {
   readonly #input: SuperTransformStream<Opaque, Opaque>
   readonly #output: SuperTransformStream<Writable, Writable>
 
-  readonly input: ReadableWritablePair<Opaque, Opaque>
-  readonly output: ReadableWritablePair<Writable, Writable>
+  readonly inner: ReadableWritablePair<Writable, Opaque>
+  readonly outer: ReadableWritablePair<Opaque, Writable>
 
   #buffer = new Cursor(Bytes.alloc(65_535))
 
@@ -68,10 +68,16 @@ export class TlsClientDuplex {
   constructor(
     readonly params: TlsClientDuplexParams
   ) {
+    /**
+     * Input pipeline (outer <- inner) (client <- server)
+     */
     this.#input = new SuperTransformStream({
       transform: this.#onInputTransform.bind(this)
     })
 
+    /**
+     * Output pipeline (outer -> inner) (client -> server)
+     */
     this.#output = new SuperTransformStream({
       start: this.#onOutputStart.bind(this),
       transform: this.#onOutputTransform.bind(this)
@@ -84,30 +90,18 @@ export class TlsClientDuplex {
     const postOutputer = new TransformStream<Writable, Writable>({})
 
     /**
-     * Input pipeline (outer <- inner) (client <- server)
+     * Inner protocol (TCP?)
      */
-    this.input = {
-      /**
-       * Outer protocol (WebSocket?)
-       */
-      readable: postInputer.readable,
-      /**
-       * Inner protocol (TCP? TLS?)
-       */
+    this.inner = {
+      readable: postOutputer.readable,
       writable: preInputer.writable
     }
 
     /**
-     * Output pipeline (outer -> inner) (client -> server)
+     * Outer protocol (HTTP?)
      */
-    this.output = {
-      /**
-       * Inner protocol (TCP? TLS?)
-       */
-      readable: postOutputer.readable,
-      /**
-       * Outer protocol (App? WebSocket?)
-       */
+    this.outer = {
+      readable: postInputer.readable,
       writable: preOutputer.writable
     }
 

@@ -12,7 +12,7 @@ export async function createWebSocketStream(url: string) {
     websocket.addEventListener("error", err)
   })
 
-  return WebSocketStream.tryNew(websocket, { shouldCloseOnClose: true, shouldCloseOnAbort: true, shouldCloseOnCancel: true })
+  return WebSocketStream.tryNew(websocket, { shouldCloseOnAbort: true, shouldCloseOnCancel: true })
 }
 
 async function closeOrThrow(websocket: WebSocket) {
@@ -86,7 +86,7 @@ export class WebSocketSource implements ResultableUnderlyingDefaultSource<Opaque
   #onClose?: (e: CloseEvent) => void
   #onError?: (e: Event) => void
 
-  #onCloseOrError() {
+  #onClean() {
     this.websocket.removeEventListener("message", this.#onMessage!)
     this.websocket.removeEventListener("close", this.#onClose!)
     this.websocket.removeEventListener("error", this.#onError!)
@@ -110,7 +110,7 @@ export class WebSocketSource implements ResultableUnderlyingDefaultSource<Opaque
         controller.error(error)
       } catch (e: unknown) { }
 
-      this.#onCloseOrError()
+      this.#onClean()
     }
 
     this.#onClose = (event: CloseEvent) => {
@@ -118,7 +118,7 @@ export class WebSocketSource implements ResultableUnderlyingDefaultSource<Opaque
         controller.close()
       } catch (e: unknown) { }
 
-      this.#onCloseOrError()
+      this.#onClean()
     }
 
     this.websocket.addEventListener("message", this.#onMessage, { passive: true })
@@ -133,7 +133,7 @@ export class WebSocketSource implements ResultableUnderlyingDefaultSource<Opaque
     if (this.params.shouldCloseOnCancel)
       await closeOrThrow(this.websocket)
 
-    this.#onCloseOrError()
+    this.#onClean()
 
     return Ok.void()
   }
@@ -165,7 +165,7 @@ export class WebSocketSink implements ResultableUnderlyingSink<Writable> {
   #onClose?: (e: CloseEvent) => void
   #onError?: (e: Event) => void
 
-  #onCloseOrError() {
+  #onClean() {
     this.websocket.removeEventListener("close", this.#onClose!)
     this.websocket.removeEventListener("error", this.#onError!)
   }
@@ -179,7 +179,7 @@ export class WebSocketSink implements ResultableUnderlyingSink<Writable> {
         controller.error(error)
       } catch (e: unknown) { }
 
-      this.#onCloseOrError()
+      this.#onClean()
     }
 
     this.#onError = (event: Event) => {
@@ -189,7 +189,7 @@ export class WebSocketSink implements ResultableUnderlyingSink<Writable> {
         controller.error(error)
       } catch (e: unknown) { }
 
-      this.#onCloseOrError()
+      this.#onClean()
     }
 
     this.websocket.addEventListener("error", this.#onError, { passive: true, once: true })
@@ -212,7 +212,7 @@ export class WebSocketSink implements ResultableUnderlyingSink<Writable> {
     if (this.params.shouldCloseOnAbort)
       await closeOrThrow(this.websocket)
 
-    this.#onCloseOrError()
+    this.#onClean()
 
     return Ok.void()
   }
@@ -221,8 +221,9 @@ export class WebSocketSink implements ResultableUnderlyingSink<Writable> {
     if (this.params.shouldCloseOnClose)
       await closeOrThrow(this.websocket)
 
-    this.#onCloseOrError()
+    this.#onClean()
 
     return Ok.void()
   }
+
 }
