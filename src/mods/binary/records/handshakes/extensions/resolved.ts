@@ -1,4 +1,4 @@
-import { Opaque, UnsafeOpaque } from "@hazae41/binary"
+import { Opaque, SafeOpaque } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
 import { Vector } from "index.js"
 import { Number16 } from "mods/binary/numbers/number16.js"
@@ -26,7 +26,7 @@ export namespace ResolvedExtension {
     if (type === Extension.types.ec_point_formats)
       return ReadableVector(Number16, ECPointFormats).readOrThrow(cursor)
 
-    return ReadableVector(Number16, UnsafeOpaque).readOrThrow(cursor)
+    return ReadableVector(Number16, SafeOpaque).readOrThrow(cursor)
   }
 
   export function readOrThrow(cursor: Cursor): Extension<ResolvedExtension> {

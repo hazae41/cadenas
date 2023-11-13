@@ -72,7 +72,7 @@ export class ClientHello2 {
   }
 
   writeOrThrow(cursor: Cursor) {
-    cursor.tryWriteUint16(this.version)
+    cursor.writeUint16OrThrow(this.version)
     this.random.writeOrThrow(cursor)
     this.session_id.writeOrThrow(cursor)
     this.cipher_suites.writeOrThrow(cursor)
