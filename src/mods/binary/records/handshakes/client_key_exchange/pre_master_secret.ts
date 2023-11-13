@@ -1,7 +1,5 @@
-import { BinaryWriteError } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { Cursor } from "@hazae41/cursor"
-import { Ok, Result } from "@hazae41/result"
 
 export class PreMasterSecret {
 
@@ -15,17 +13,13 @@ export class PreMasterSecret {
     readonly random: Bytes<46>
   ) { }
 
-  trySize(): Result<number, never> {
-    return new Ok(2 + this.random.length)
+  sizeOrThrow() {
+    return 2 + this.random.length
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      cursor.tryWriteUint16(this.client_version).throw(t)
-      cursor.tryWrite(this.random).throw(t)
-
-      return Ok.void()
-    })
+  writeOrThrow(cursor: Cursor) {
+    cursor.writeUint16OrThrow(this.client_version)
+    cursor.writeOrThrow(this.random)
   }
 
 }

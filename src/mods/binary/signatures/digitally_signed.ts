@@ -1,6 +1,5 @@
-import { BinaryReadError, BinaryWriteError, Opaque, SafeOpaque } from "@hazae41/binary";
+import { Opaque, SafeOpaque } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Ok, Result } from "@hazae41/result";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { SignatureAndHashAlgorithm } from "mods/binary/signatures/signature_and_hash_algorithm.js";
 import { ReadableVector } from "mods/binary/vectors/readable.js";
@@ -13,28 +12,19 @@ export class DigitallySigned {
     readonly signature: Vector<Number16, Opaque>
   ) { }
 
-  trySize(): Result<number, never> {
-    const algorithm = this.algorithm.trySize().get()
-    const signature = this.signature.trySize().get()
-
-    return new Ok(algorithm + signature)
+  sizeOrThrow() {
+    return this.algorithm.sizeOrThrow() + this.signature.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      this.algorithm.tryWrite(cursor).throw(t)
-      this.signature.tryWrite(cursor).throw(t)
-
-      return Ok.void()
-    })
+  writeOrThrow(cursor: Cursor) {
+    this.algorithm.writeOrThrow(cursor)
+    this.signature.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<DigitallySigned, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const algorithm = SignatureAndHashAlgorithm.tryRead(cursor).throw(t)
-      const signature = ReadableVector(Number16, SafeOpaque).tryRead(cursor).throw(t)
+  static readOrThrow(cursor: Cursor) {
+    const algorithm = SignatureAndHashAlgorithm.readOrThrow(cursor)
+    const signature = ReadableVector(Number16, SafeOpaque).readOrThrow(cursor)
 
-      return new Ok(new DigitallySigned(algorithm, signature))
-    })
+    return new DigitallySigned(algorithm, signature)
   }
 }

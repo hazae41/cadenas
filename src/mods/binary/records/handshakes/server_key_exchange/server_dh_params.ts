@@ -1,6 +1,5 @@
-import { BinaryReadError, BinaryWriteError, Opaque, SafeOpaque } from "@hazae41/binary";
+import { Opaque, SafeOpaque } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Ok, Result } from "@hazae41/result";
 import { Number16 } from "mods/binary/numbers/number16.js";
 import { ReadableVector } from "mods/binary/vectors/readable.js";
 import { Vector } from "mods/binary/vectors/writable.js";
@@ -13,31 +12,25 @@ export class ServerDHParams {
     readonly dh_Ys: Vector<Number16, Opaque>
   ) { }
 
-  trySize(): Result<number, never> {
-    return new Ok(0
-      + this.dh_p.trySize().get()
-      + this.dh_g.trySize().get()
-      + this.dh_Ys.trySize().get())
+  sizeOrThrow() {
+    return 0
+      + this.dh_p.sizeOrThrow()
+      + this.dh_g.sizeOrThrow()
+      + this.dh_Ys.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      this.dh_p.tryWrite(cursor).throw(t)
-      this.dh_g.tryWrite(cursor).throw(t)
-      this.dh_Ys.tryWrite(cursor).throw(t)
-
-      return Ok.void()
-    })
+  writeOrThrow(cursor: Cursor) {
+    this.dh_p.writeOrThrow(cursor)
+    this.dh_g.writeOrThrow(cursor)
+    this.dh_Ys.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<ServerDHParams, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const dh_p = ReadableVector(Number16, SafeOpaque).tryRead(cursor).throw(t)
-      const dh_g = ReadableVector(Number16, SafeOpaque).tryRead(cursor).throw(t)
-      const dh_Ys = ReadableVector(Number16, SafeOpaque).tryRead(cursor).throw(t)
+  static readOrThrow(cursor: Cursor) {
+    const dh_p = ReadableVector(Number16, SafeOpaque).readOrThrow(cursor)
+    const dh_g = ReadableVector(Number16, SafeOpaque).readOrThrow(cursor)
+    const dh_Ys = ReadableVector(Number16, SafeOpaque).readOrThrow(cursor)
 
-      return new Ok(new ServerDHParams(dh_p, dh_g, dh_Ys))
-    })
+    return new ServerDHParams(dh_p, dh_g, dh_Ys)
   }
 
 }

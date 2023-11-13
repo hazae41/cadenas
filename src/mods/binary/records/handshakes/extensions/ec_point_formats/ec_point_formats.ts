@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Result } from "@hazae41/result";
 import { ECPointFormatList } from "mods/binary/records/handshakes/extensions/ec_point_formats/ec_point_format_list.js";
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js";
 
@@ -25,16 +23,16 @@ export class ECPointFormats {
     return this.#class.extension_type
   }
 
-  trySize(): Result<number, never> {
-    return this.ec_point_format_list.trySize()
+  sizeOrThrow() {
+    return this.ec_point_format_list.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return this.ec_point_format_list.tryWrite(cursor)
+  writeOrThrow(cursor: Cursor) {
+    this.ec_point_format_list.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<ECPointFormats, BinaryReadError> {
-    return ECPointFormatList.tryRead(cursor).mapSync(ECPointFormats.new)
+  static readOrThrow(cursor: Cursor) {
+    return new ECPointFormats(ECPointFormatList.readOrThrow(cursor))
   }
 
 }

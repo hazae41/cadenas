@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Result } from "@hazae41/result";
 import { ECPoint } from "../server_key_exchange/ec_point.js";
 
 export class ClientECDiffieHellmanPublic {
@@ -17,16 +15,16 @@ export class ClientECDiffieHellmanPublic {
     return new ClientECDiffieHellmanPublic(ECPoint.from(bytes))
   }
 
-  trySize(): Result<number, never> {
-    return this.ecdh_Yc.trySize()
+  sizeOrThrow() {
+    return this.ecdh_Yc.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return this.ecdh_Yc.tryWrite(cursor)
+  writeOrThrow(cursor: Cursor) {
+    return this.ecdh_Yc.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<ClientECDiffieHellmanPublic, BinaryReadError> {
-    return ECPoint.tryRead(cursor).mapSync(ClientECDiffieHellmanPublic.new)
+  static readOrThrow(cursor: Cursor) {
+    return new ClientECDiffieHellmanPublic(ECPoint.readOrThrow(cursor))
   }
 
 }

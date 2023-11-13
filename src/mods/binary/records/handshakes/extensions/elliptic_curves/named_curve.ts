@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Ok, Result } from "@hazae41/result"
 
 export class NamedCurve {
 
@@ -28,16 +26,16 @@ export class NamedCurve {
     return new NamedCurve(value)
   }
 
-  trySize(): Result<number, never> {
-    return new Ok(2)
+  sizeOrThrow() {
+    return 2
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return cursor.tryWriteUint16(this.value)
+  writeOrThrow(cursor: Cursor) {
+    cursor.writeUint16OrThrow(this.value)
   }
 
-  static tryRead(cursor: Cursor): Result<NamedCurve, BinaryReadError> {
-    return cursor.tryReadUint16().mapSync(NamedCurve.new)
+  static readOrThrow(cursor: Cursor) {
+    return new NamedCurve(cursor.readUint16OrThrow())
   }
 
 }

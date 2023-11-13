@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Result } from "@hazae41/result";
 import { ReadableList } from "mods/binary/lists/readable.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number8 } from "mods/binary/numbers/number8.js";
@@ -30,16 +28,16 @@ export class ECPointFormatList {
     return new this(ec_point_format_list)
   }
 
-  trySize(): Result<number, never> {
-    return this.ec_point_format_list.trySize()
+  sizeOrThrow() {
+    return this.ec_point_format_list.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return this.ec_point_format_list.tryWrite(cursor)
+  writeOrThrow(cursor: Cursor) {
+    return this.ec_point_format_list.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<ECPointFormatList, BinaryReadError> {
-    return ReadableVector(Number8, ReadableList(ECPointFormat)).tryRead(cursor).mapSync(ECPointFormatList.new)
+  static readOrThrow(cursor: Cursor) {
+    return new ECPointFormatList(ReadableVector(Number8, ReadableList(ECPointFormat)).readOrThrow(cursor))
   }
 
 }

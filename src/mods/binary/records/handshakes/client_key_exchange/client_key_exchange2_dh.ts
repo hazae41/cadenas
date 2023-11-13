@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Result } from "@hazae41/result";
 import { ClientDiffieHellmanPublic } from "mods/binary/records/handshakes/client_key_exchange/client_diffie_hellman_public.js";
 import { Handshake } from "mods/binary/records/handshakes/handshake.js";
 
@@ -25,16 +23,16 @@ export class ClientKeyExchange2DH {
     return this.#class.handshake_type
   }
 
-  trySize(): Result<number, never> {
-    return this.exchange_keys.trySize()
+  sizeOrThrow() {
+    return this.exchange_keys.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return this.exchange_keys.tryWrite(cursor)
+  writeOrThrow(cursor: Cursor) {
+    this.exchange_keys.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<ClientKeyExchange2DH, BinaryReadError> {
-    return ClientDiffieHellmanPublic.tryRead(cursor).mapSync(ClientKeyExchange2DH.new)
+  static readOrThrow(cursor: Cursor) {
+    return new ClientKeyExchange2DH(ClientDiffieHellmanPublic.readOrThrow(cursor))
   }
 
 }

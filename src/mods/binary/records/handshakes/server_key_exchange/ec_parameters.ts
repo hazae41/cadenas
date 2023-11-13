@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Ok, Result } from "@hazae41/result";
 import { NamedCurve } from "mods/binary/records/handshakes/extensions/elliptic_curves/named_curve.js";
 import { ECCurveType } from "./ec_curve_type.js";
 
@@ -11,26 +9,20 @@ export class ECParameters {
     readonly named_curve: NamedCurve
   ) { }
 
-  trySize(): Result<number, never> {
-    return new Ok(this.curve_type.trySize().get() + this.named_curve.trySize().get())
+  sizeOrThrow() {
+    return this.curve_type.sizeOrThrow() + this.named_curve.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      this.curve_type.tryWrite(cursor).throw(t)
-      this.named_curve.tryWrite(cursor).throw(t)
-
-      return Ok.void()
-    })
+  writeOrThrow(cursor: Cursor) {
+    this.curve_type.writeOrThrow(cursor)
+    this.named_curve.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<ECParameters, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const curve_type = ECCurveType.tryRead(cursor).throw(t)
-      const named_curve = NamedCurve.tryRead(cursor).throw(t)
+  static readOrThrow(cursor: Cursor) {
+    const curve_type = ECCurveType.readOrThrow(cursor)
+    const named_curve = NamedCurve.readOrThrow(cursor)
 
-      return new Ok(new ECParameters(curve_type, named_curve))
-    })
+    return new ECParameters(curve_type, named_curve)
   }
 
 }

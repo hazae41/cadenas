@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Ok, Result } from "@hazae41/result"
 
 export class NameType {
 
@@ -20,16 +18,16 @@ export class NameType {
     return new NameType(type)
   }
 
-  trySize(): Result<number, never> {
-    return new Ok(1)
+  sizeOrThrow() {
+    return 1
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return cursor.tryWriteUint8(this.type)
+  writeOrThrow(cursor: Cursor) {
+    cursor.writeUint8OrThrow(this.type)
   }
 
-  static tryRead(cursor: Cursor): Result<NameType, BinaryReadError> {
-    return cursor.tryReadUint8().mapSync(NameType.new)
+  static readOrThrow(cursor: Cursor) {
+    return new NameType(cursor.readUint8OrThrow())
   }
 
 }

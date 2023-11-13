@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Ok, Result } from "@hazae41/result";
 import { ECParameters } from "./ec_parameters.js";
 import { ECPoint } from "./ec_point.js";
 
@@ -11,26 +9,20 @@ export class ServerECDHParams {
     readonly public_point: ECPoint
   ) { }
 
-  trySize(): Result<number, never> {
-    return new Ok(this.curve_params.trySize().get() + this.public_point.trySize().get())
+  sizeOrThrow() {
+    return this.curve_params.sizeOrThrow() + this.public_point.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      this.curve_params.tryWrite(cursor).throw(t)
-      this.public_point.tryWrite(cursor).throw(t)
-
-      return Ok.void()
-    })
+  writeOrThrow(cursor: Cursor) {
+    this.curve_params.writeOrThrow(cursor)
+    this.public_point.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<ServerECDHParams, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const curve_params = ECParameters.tryRead(cursor).throw(t)
-      const public_point = ECPoint.tryRead(cursor).throw(t)
+  static readOrThrow(cursor: Cursor) {
+    const curve_params = ECParameters.readOrThrow(cursor)
+    const public_point = ECPoint.readOrThrow(cursor)
 
-      return new Ok(new ServerECDHParams(curve_params, public_point))
-    })
+    return new ServerECDHParams(curve_params, public_point)
   }
 
 }

@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Result } from "@hazae41/result";
 import { ReadableList } from "mods/binary/lists/readable.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
@@ -30,16 +28,16 @@ export class NamedCurveList {
     return new this(named_curve_list)
   }
 
-  trySize(): Result<number, never> {
-    return this.named_curve_list.trySize()
+  sizeOrThrow() {
+    return this.named_curve_list.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return this.named_curve_list.tryWrite(cursor)
+  writeOrThrow(cursor: Cursor) {
+    this.named_curve_list.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<NamedCurveList, BinaryReadError> {
-    return ReadableVector(Number16, ReadableList(NamedCurve)).tryRead(cursor).mapSync(NamedCurveList.new)
+  static readOrThrow(cursor: Cursor) {
+    return new NamedCurveList(ReadableVector(Number16, ReadableList(NamedCurve)).readOrThrow(cursor))
   }
 
 }

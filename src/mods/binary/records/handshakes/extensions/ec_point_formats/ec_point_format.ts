@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Ok, Result } from "@hazae41/result"
 
 export class ECPointFormat {
 
@@ -22,16 +20,16 @@ export class ECPointFormat {
     return new ECPointFormat(value)
   }
 
-  trySize(): Result<number, never> {
-    return new Ok(1)
+  sizeOrThrow() {
+    return 1
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return cursor.tryWriteUint8(this.value)
+  writeOrThrow(cursor: Cursor) {
+    cursor.writeUint8OrThrow(this.value)
   }
 
-  static tryRead(cursor: Cursor): Result<ECPointFormat, BinaryReadError> {
-    return cursor.tryReadUint8().mapSync(ECPointFormat.new)
+  static readOrThrow(cursor: Cursor) {
+    return new ECPointFormat(cursor.readUint8OrThrow())
   }
 
 }

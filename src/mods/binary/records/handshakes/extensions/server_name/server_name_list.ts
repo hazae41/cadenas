@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Result } from "@hazae41/result";
 import { ReadableList } from "mods/binary/lists/readable.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
@@ -38,16 +36,16 @@ export class ServerNameList {
     return this.#class.extension_type
   }
 
-  trySize(): Result<number, never> {
-    return this.server_name_list.trySize()
+  sizeOrThrow() {
+    return this.server_name_list.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return this.server_name_list.tryWrite(cursor)
+  writeOrThrow(cursor: Cursor) {
+    return this.server_name_list.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<ServerNameList, BinaryReadError> {
-    return ReadableVector(Number16, ReadableList(ServerName)).tryRead(cursor).mapSync(ServerNameList.new)
+  static readOrThrow(cursor: Cursor) {
+    return new ServerNameList(ReadableVector(Number16, ReadableList(ServerName)).readOrThrow(cursor))
   }
 
 }

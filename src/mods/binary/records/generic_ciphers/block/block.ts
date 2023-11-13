@@ -39,21 +39,21 @@ export class GenericBlockCipher {
     return new GenericBlockCipher(iv, block)
   }
 
-  static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint): Promise<Result<GenericBlockCipher, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError | CryptoError>> {
+  static async tryEncrypt<T extends Writable>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint): Promise<Result<GenericBlockCipher, Error>> {
     return await Result.unthrow(async t => {
       const iv = Bytes.random(16)
 
       const content = Writable.tryWriteToBytes(record.fragment).throw(t)
 
-      const premac = new Cursor(Bytes.tryAllocUnsafe(8 + record.trySize().throw(t)).throw(t))
+      const premac = new Cursor(Bytes.alloc(8 + record.sizeOrThrow()))
       premac.tryWriteUint64(sequence).throw(t)
-      record.tryWrite(premac).throw(t)
+      record.writeOrThrow(premac)
 
       const mac = await encrypter.macher.tryWrite(premac.bytes).then(r => r.throw(t))
 
       const length = content.length + mac.length
       const padding_length = modulup(length + 1, 16)
-      const padding = Bytes.allocUnsafe(padding_length + 1)
+      const padding = Bytes.alloc(padding_length + 1)
       padding.fill(padding_length)
 
       const plaintext = Bytes.concat([content, mac, padding])

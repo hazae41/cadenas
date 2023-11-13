@@ -1,7 +1,10 @@
-import { Bytes, BytesError } from "@hazae41/bytes"
-import { Ok, Result } from "@hazae41/result"
-import { CryptoError, tryCrypto } from "libs/crypto/crypto.js"
-import { HMAC } from "mods/algorithms/hmac/hmac.js"
+import { Bytes } from "@hazae41/bytes"
+import { Result } from "@hazae41/result"
+import { CryptoError } from "libs/crypto/crypto.js"
+
+export async function hmacOrThrow(key: CryptoKey, seed: Uint8Array): Promise<Uint8Array> {
+  return new Uint8Array(await crypto.subtle.sign("HMAC", key, seed))
+}
 
 /**
  * Naive implementation, just for testing
@@ -13,16 +16,14 @@ import { HMAC } from "mods/algorithms/hmac/hmac.js"
  * @param index 
  * @returns 
  */
-async function A(key: CryptoKey, seed: Uint8Array, index: number): Promise<Result<Uint8Array, CryptoError | BytesError>> {
-  return await Result.unthrow(async t => {
-    if (index === 0)
-      return new Ok(seed)
+async function A(key: CryptoKey, seed: Uint8Array, index: number): Promise<Uint8Array> {
+  if (index === 0)
+    return seed
 
-    const prev = await A(key, seed, index - 1).then(r => r.throw(t))
-    const hmac = await HMAC(key, prev).then(r => r.throw(t))
+  const prev = await A(key, seed, index - 1)
+  const hmac = await hmacOrThrow(key, prev)
 
-    return new Ok(hmac)
-  })
+  return hmac
 }
 
 /**
@@ -35,23 +36,24 @@ async function A(key: CryptoKey, seed: Uint8Array, index: number): Promise<Resul
  * @param length 
  * @returns 
  */
-async function P(key: CryptoKey, seed: Uint8Array, length: number): Promise<Result<Uint8Array, CryptoError | BytesError>> {
-  return await Result.unthrow(async t => {
-    let result: Bytes = Bytes.tryEmpty().throw(t)
+async function P(key: CryptoKey, seed: Uint8Array, length: number): Promise<Uint8Array> {
+  let result: Bytes = Bytes.empty()
 
-    for (let i = 1; result.length < length; i++)
-      result = Bytes.concat([result, await HMAC(key, Bytes.concat([await A(key, seed, i).then(r => r.throw(t)), seed])).then(r => r.throw(t))])
+  for (let i = 1; result.length < length; i++)
+    result = Bytes.concat([result, await hmacOrThrow(key, Bytes.concat([await A(key, seed, i), seed]))])
 
-    return new Ok(result.subarray(0, length))
-  })
+  return result.subarray(0, length)
 }
 
-export async function PRF(hash: AlgorithmIdentifier, secret: Uint8Array, label: string, seed: Uint8Array, length: number): Promise<Result<Uint8Array, CryptoError | BytesError>> {
-  return await Result.unthrow(async t => {
-    const key = await tryCrypto(async () => {
-      return await crypto.subtle.importKey("raw", secret, { name: "HMAC", hash }, false, ["sign"])
-    }).then(r => r.throw(t))
+export async function prfOrThrow(hash: AlgorithmIdentifier, secret: Uint8Array, label: string, seed: Uint8Array, length: number): Promise<Uint8Array> {
+  const key = await crypto.subtle.importKey("raw", secret, { name: "HMAC", hash }, false, ["sign"])
+  const prf = await P(key, Bytes.concat([Bytes.fromUtf8(label), seed]), length)
 
-    return await P(key, Bytes.concat([Bytes.fromUtf8(label), seed]), length)
-  })
+  return prf
+}
+
+export async function tryPrf(hash: AlgorithmIdentifier, secret: Uint8Array, label: string, seed: Uint8Array, length: number): Promise<Result<Uint8Array, CryptoError>> {
+  return await Result.runAndWrap(async () => {
+    return prfOrThrow(hash, secret, label, seed, length)
+  }).then(r => r.mapErrSync(CryptoError.from))
 }

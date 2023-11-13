@@ -2,7 +2,6 @@ import { Opaque, Writable } from "@hazae41/binary";
 import { Bytes } from "@hazae41/bytes";
 import { Cursor } from "@hazae41/cursor";
 import { Ok, Result } from "@hazae41/result";
-import { CryptoError } from "libs/crypto/crypto.js";
 import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
 import { AEADEncrypter } from "mods/ciphers/encryptions/encryption.js";
 
@@ -29,9 +28,9 @@ export class GenericAEADCipher {
     return new GenericAEADCipher(nonce_explicit, block)
   }
 
-  static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<GenericAEADCipher, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError | CryptoError>> {
+  static async tryEncrypt<T extends Writable>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<GenericAEADCipher, Error>> {
     return await Result.unthrow(async t => {
-      const nonce = new Cursor(Bytes.tryAllocUnsafe(encrypter.fixed_iv_length + 8).throw(t))
+      const nonce = new Cursor(Bytes.alloc(encrypter.fixed_iv_length + 8))
       nonce.tryWrite(encrypter.secrets.client_write_IV).throw(t)
       nonce.tryWriteUint64(sequence).throw(t)
 
@@ -41,11 +40,11 @@ export class GenericAEADCipher {
 
       const content = Writable.tryWriteToBytes(record.fragment).throw(t)
 
-      const additional_data = new Cursor(Bytes.tryAllocUnsafe(8 + 1 + 2 + 2).throw(t))
+      const additional_data = new Cursor(Bytes.alloc(8 + 1 + 2 + 2))
       additional_data.tryWriteUint64(sequence).throw(t)
       additional_data.tryWriteUint8(record.type).throw(t)
       additional_data.tryWriteUint16(record.version).throw(t)
-      additional_data.tryWriteUint16(record.fragment.trySize().throw(t)).throw(t)
+      additional_data.tryWriteUint16(record.fragment.sizeOrThrow()).throw(t)
 
       // Console.debug("-> nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
       // Console.debug("-> plaintext", content.length, Bytes.toHex(content))
@@ -59,17 +58,17 @@ export class GenericAEADCipher {
     })
   }
 
-  async tryDecrypt(record: AEADCiphertextRecord, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<Opaque, BinaryWriteError | CryptoError>> {
+  async tryDecrypt(record: AEADCiphertextRecord, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<Opaque, Error>> {
     return await Result.unthrow(async t => {
-      const nonce = new Cursor(Bytes.tryAllocUnsafe(encrypter.fixed_iv_length + 8).throw(t))
+      const nonce = new Cursor(Bytes.alloc(encrypter.fixed_iv_length + 8))
       nonce.tryWrite(encrypter.secrets.server_write_IV).throw(t)
       nonce.tryWrite(this.nonce_explicit).throw(t)
 
-      const additional_data = new Cursor(Bytes.tryAllocUnsafe(8 + 1 + 2 + 2).throw(t))
+      const additional_data = new Cursor(Bytes.alloc(8 + 1 + 2 + 2))
       additional_data.tryWriteUint64(sequence).throw(t)
       additional_data.tryWriteUint8(record.type).throw(t)
       additional_data.tryWriteUint16(record.version).throw(t)
-      additional_data.tryWriteUint16(record.fragment.trySize().throw(t) - 24).throw(t)
+      additional_data.tryWriteUint16(record.fragment.sizeOrThrow() - 24).throw(t)
 
       // Console.debug("<- nonce", nonce.bytes.length, Bytes.toHex(nonce.bytes))
       // Console.debug("<- ciphertext", this.block.length, Bytes.toHex(this.block))

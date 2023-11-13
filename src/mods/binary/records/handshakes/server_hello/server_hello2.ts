@@ -1,7 +1,6 @@
-import { BinaryReadError, BinaryWriteError, Opaque, SafeOpaque } from "@hazae41/binary";
+import { Opaque, SafeOpaque } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
 import { None, Option, Some } from "@hazae41/option";
-import { Ok, Result } from "@hazae41/result";
 import { ReadableList } from "mods/binary/lists/readable.js";
 import { List } from "mods/binary/lists/writable.js";
 import { Number16 } from "mods/binary/numbers/number16.js";
@@ -26,43 +25,37 @@ export class ServerHello2 {
     readonly extensions: Option<Vector<Number16, List<Extension<ResolvedExtension>>>>
   ) { }
 
-  trySize(): Result<number, never> {
-    return new Ok(0
+  sizeOrThrow() {
+    return 0
       + 2
-      + this.random.trySize().get()
-      + this.session_id.trySize().get()
+      + this.random.sizeOrThrow()
+      + this.session_id.sizeOrThrow()
       + 2
-      + this.compression_methods.trySize().get()
-      + this.extensions.mapOrSync(0, x => x.trySize().get()))
+      + this.compression_methods.sizeOrThrow()
+      + this.extensions.mapOrSync(0, x => x.sizeOrThrow())
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      cursor.tryWriteUint16(this.server_version).throw(t)
-      this.random.tryWrite(cursor).throw(t)
-      this.session_id.tryWrite(cursor).throw(t)
-      cursor.tryWriteUint16(this.cipher_suite).throw(t)
-      this.compression_methods.tryWrite(cursor).throw(t)
-      this.extensions.mapSync(x => x.tryWrite(cursor).throw(t))
-
-      return Ok.void()
-    })
+  writeOrThrow(cursor: Cursor) {
+    cursor.writeUint16OrThrow(this.server_version)
+    this.random.writeOrThrow(cursor)
+    this.session_id.writeOrThrow(cursor)
+    cursor.writeUint16OrThrow(this.cipher_suite)
+    this.compression_methods.writeOrThrow(cursor)
+    this.extensions.mapSync(x => x.writeOrThrow(cursor))
   }
 
-  static tryRead(cursor: Cursor): Result<ServerHello2, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const server_version = cursor.tryReadUint16().throw(t)
-      const random = Random.tryRead(cursor).throw(t)
-      const session_id = ReadableVector(Number8, SafeOpaque).tryRead(cursor).throw(t)
-      const cipher_suite = cursor.tryReadUint16().throw(t)
-      const compression_methods = ReadableVector(Number8, ReadableList(Number8)).tryRead(cursor).throw(t)
+  static readOrThrow(cursor: Cursor) {
+    const server_version = cursor.readUint16OrThrow()
+    const random = Random.readOrThrow(cursor)
+    const session_id = ReadableVector(Number8, SafeOpaque).readOrThrow(cursor)
+    const cipher_suite = cursor.readUint16OrThrow()
+    const compression_methods = ReadableVector(Number8, ReadableList(Number8)).readOrThrow(cursor)
 
-      const extensions = cursor.remaining > 0
-        ? new Some(ReadableVector(Number16, ReadableList(ResolvedExtension)).tryRead(cursor).throw(t))
-        : new None()
+    const extensions = cursor.remaining > 0
+      ? new Some(ReadableVector(Number16, ReadableList(ResolvedExtension)).readOrThrow(cursor))
+      : new None()
 
-      return new Ok(new ServerHello2(server_version, random, session_id, cipher_suite, compression_methods, extensions))
-    })
+    return new ServerHello2(server_version, random, session_id, cipher_suite, compression_methods, extensions)
   }
 
 }

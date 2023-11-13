@@ -1,6 +1,5 @@
-import { BinaryReadError, BinaryWriteError, Opaque, SafeOpaque } from "@hazae41/binary";
+import { Opaque, SafeOpaque } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Result } from "@hazae41/result";
 import { Number8 } from "mods/binary/numbers/number8.js";
 import { ReadableVector } from "mods/binary/vectors/readable.js";
 import { Vector } from "mods/binary/vectors/writable.js";
@@ -21,16 +20,16 @@ export class ECPoint {
     return new this(point)
   }
 
-  trySize(): Result<number, never> {
-    return this.point.trySize()
+  sizeOrThrow() {
+    return this.point.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return this.point.tryWrite(cursor)
+  writeOrThrow(cursor: Cursor) {
+    this.point.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<ECPoint, BinaryReadError> {
-    return ReadableVector(Number8, SafeOpaque).tryRead(cursor).mapSync(ECPoint.new)
+  static readOrThrow(cursor: Cursor) {
+    return new ECPoint(ReadableVector(Number8, SafeOpaque).readOrThrow(cursor))
   }
 
 }

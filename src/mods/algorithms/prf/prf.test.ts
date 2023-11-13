@@ -1,7 +1,7 @@
 import { Bytes } from "@hazae41/bytes"
 import { assert, test } from "@hazae41/phobos"
 import { relative, resolve } from "path"
-import { PRF } from "./prf.js"
+import { prfOrThrow } from "./prf.js"
 
 const directory = resolve("./dist/test/")
 const { pathname } = new URL(import.meta.url)
@@ -16,7 +16,7 @@ test("PRF (master secret)", async ({ message }) => {
   const start = Date.now()
 
   const seed = Bytes.concat([client_random, server_random])
-  const result = await PRF("SHA-1", premaster_secret, "master secret", seed, 48).then(r => r.unwrap())
+  const result = await prfOrThrow("SHA-1", premaster_secret, "master secret", seed, 48)
 
   const end = Date.now()
 

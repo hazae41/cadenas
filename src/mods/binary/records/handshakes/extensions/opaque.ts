@@ -1,19 +1,16 @@
-import { BinaryReadError, Opaque, UnsafeOpaque } from "@hazae41/binary"
+import { Opaque, SafeOpaque } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Ok, Result } from "@hazae41/result"
 import { Number16 } from "mods/binary/numbers/number16.js"
 import { ReadableVector } from "mods/binary/vectors/readable.js"
 import { Extension } from "./extension.js"
 
-export class OpaqueExtension {
+export namespace OpaqueExtension {
 
-  static tryRead(cursor: Cursor): Result<Extension<Opaque>, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const extension_type = cursor.tryReadUint16().throw(t)
-      const extension_data = ReadableVector(Number16, UnsafeOpaque).tryRead(cursor).throw(t)
+  export function readOrThrow(cursor: Cursor): Extension<Opaque> {
+    const extension_type = cursor.readUint16OrThrow()
+    const extension_data = ReadableVector(Number16, SafeOpaque).readOrThrow(cursor)
 
-      return new Ok(new Extension<Opaque>(extension_type, extension_data))
-    })
+    return new Extension<Opaque>(extension_type, extension_data)
   }
 
 }
