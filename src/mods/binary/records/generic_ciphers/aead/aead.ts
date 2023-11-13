@@ -1,4 +1,4 @@
-import { BinaryError, BinaryReadError, BinaryWriteError, Opaque, Writable } from "@hazae41/binary";
+import { Opaque, Writable } from "@hazae41/binary";
 import { Bytes } from "@hazae41/bytes";
 import { Cursor } from "@hazae41/cursor";
 import { Ok, Result } from "@hazae41/result";
@@ -13,26 +13,20 @@ export class GenericAEADCipher {
     readonly block: Bytes
   ) { }
 
-  trySize(): Result<number, never> {
-    return new Ok(this.nonce_explicit.length + this.block.length)
+  sizeOrThrow() {
+    return this.nonce_explicit.length + this.block.length
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      cursor.tryWrite(this.nonce_explicit).throw(t)
-      cursor.tryWrite(this.block).throw(t)
-
-      return Ok.void()
-    })
+  writeOrThrow(cursor: Cursor) {
+    cursor.writeOrThrow(this.nonce_explicit)
+    cursor.writeOrThrow(this.block)
   }
 
-  static tryRead(cursor: Cursor): Result<GenericAEADCipher, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const nonce_explicit = cursor.tryRead(8).throw(t)
-      const block = cursor.tryRead(cursor.remaining).throw(t)
+  static readOrThrow(cursor: Cursor) {
+    const nonce_explicit = cursor.readAndCopyOrThrow(8)
+    const block = cursor.readAndCopyOrThrow(cursor.remaining)
 
-      return new Ok(new GenericAEADCipher(nonce_explicit, block))
-    })
+    return new GenericAEADCipher(nonce_explicit, block)
   }
 
   static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: AEADEncrypter, sequence: bigint): Promise<Result<GenericAEADCipher, Writable.SizeError<T> | Writable.WriteError<T> | BinaryError | CryptoError>> {

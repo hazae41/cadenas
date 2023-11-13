@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Ok, Result } from "@hazae41/result"
 
 export class Number24 {
   readonly #class = Number24
@@ -15,16 +13,16 @@ export class Number24 {
     return new Number24(value)
   }
 
-  trySize(): Result<number, never> {
-    return new Ok(this.#class.size)
+  sizeOrThrow() {
+    return this.#class.size
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return cursor.tryWriteUint24(this.value)
+  writeOrThrow(cursor: Cursor) {
+    cursor.writeUint24OrThrow(this.value)
   }
 
-  static tryRead(cursor: Cursor): Result<Number24, BinaryReadError> {
-    return cursor.tryReadUint24().mapSync(Number24.new)
+  static readOrThrow(cursor: Cursor) {
+    return new Number24(cursor.readUint24OrThrow())
   }
 
 }

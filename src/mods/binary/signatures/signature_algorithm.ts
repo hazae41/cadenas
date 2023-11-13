@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Ok, Result } from "@hazae41/result"
 
 export class SignatureAlgorithm {
 
@@ -26,16 +24,16 @@ export class SignatureAlgorithm {
     return new SignatureAlgorithm(type)
   }
 
-  trySize(): Result<number, never> {
-    return new Ok(1)
+  sizeOrThrow() {
+    return 1
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return cursor.tryWriteUint8(this.type)
+  writeOrThrow(cursor: Cursor) {
+    return cursor.writeUint8OrThrow(this.type)
   }
 
-  static tryRead(cursor: Cursor): Result<SignatureAlgorithm, BinaryReadError> {
-    return cursor.tryReadUint8().mapSync(SignatureAlgorithm.new)
+  static readOrThrow(cursor: Cursor) {
+    return new SignatureAlgorithm(cursor.readUint8OrThrow())
   }
 
 }

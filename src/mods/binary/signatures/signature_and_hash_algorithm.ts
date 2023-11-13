@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Ok, Result } from "@hazae41/result";
 import { HashAlgorithm } from "mods/binary/signatures/hash_algorithm.js";
 import { SignatureAlgorithm } from "mods/binary/signatures/signature_algorithm.js";
 
@@ -15,29 +13,20 @@ export class SignatureAndHashAlgorithm {
     readonly signature: SignatureAlgorithm
   ) { }
 
-  trySize(): Result<number, never> {
-    const hash = this.hash.trySize().get()
-    const signature = this.signature.trySize().get()
-
-    return new Ok(hash + signature)
+  sizeOrThrow() {
+    return this.hash.sizeOrThrow() + this.signature.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      this.hash.tryWrite(cursor).throw(t)
-      this.signature.tryWrite(cursor).throw(t)
-
-      return Ok.void()
-    })
+  writeOrThrow(cursor: Cursor) {
+    this.hash.writeOrThrow(cursor)
+    this.signature.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<SignatureAndHashAlgorithm, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const hash = HashAlgorithm.tryRead(cursor).throw(t)
-      const signature = SignatureAlgorithm.tryRead(cursor).throw(t)
+  static readOrThrow(cursor: Cursor) {
+    const hash = HashAlgorithm.readOrThrow(cursor)
+    const signature = SignatureAlgorithm.readOrThrow(cursor)
 
-      return new Ok(new SignatureAndHashAlgorithm(hash, signature))
-    })
+    return new SignatureAndHashAlgorithm(hash, signature)
   }
 
 }

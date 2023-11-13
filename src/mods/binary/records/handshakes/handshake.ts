@@ -1,13 +1,12 @@
-import { BinaryReadError, BinaryWriteError, Opaque, Readable, UnsafeOpaque, Writable } from "@hazae41/binary"
+import { Opaque, Writable } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Ok, Result } from "@hazae41/result"
 import { Record } from "mods/binary/records/record.js"
 
-export interface Handshakeable<T extends Writable> extends Writable.Infer<T> {
+export interface Handshakeable extends Writable {
   readonly handshake_type: number
 }
 
-export class Handshake<T extends Writable.Infer<T>> {
+export class Handshake<T extends Writable> {
   readonly #class = Handshake
 
   static readonly record_type = Record.types.handshake
@@ -30,7 +29,7 @@ export class Handshake<T extends Writable.Infer<T>> {
     readonly fragment: T
   ) { }
 
-  static from<T extends Handshakeable<T>>(handshake: T) {
+  static from<T extends Handshakeable>(handshake: T) {
     return new Handshake(handshake.handshake_type, handshake)
   }
 
@@ -38,32 +37,26 @@ export class Handshake<T extends Writable.Infer<T>> {
     return this.#class.record_type
   }
 
-  trySize(): Result<number, Writable.SizeError<T>> {
-    return this.fragment.trySize().mapSync(x => 1 + 3 + x)
+  sizeOrThrow() {
+    return 1 + 3 + this.fragment.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      cursor.tryWriteUint8(this.type).throw(t)
+  writeOrThrow(cursor: Cursor) {
+    cursor.writeUint8OrThrow(this.type)
 
-      const size = this.fragment.trySize().throw(t)
-      cursor.tryWriteUint24(size).throw(t)
+    const size = this.fragment.sizeOrThrow()
+    cursor.writeUint24OrThrow(size)
 
-      this.fragment.tryWrite(cursor).throw(t)
-
-      return Ok.void()
-    })
+    this.fragment.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<Handshake<Opaque>, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const type = cursor.tryReadUint8().throw(t)
-      const size = cursor.tryReadUint24().throw(t)
-      const bytes = cursor.tryRead(size).throw(t)
-      const fragment = Readable.tryReadFromBytes(UnsafeOpaque, bytes).throw(t)
+  static readOrThrow(cursor: Cursor) {
+    const type = cursor.readUint8OrThrow()
+    const size = cursor.readUint24OrThrow()
+    const bytes = cursor.readAndCopyOrThrow(size)
+    const fragment = new Opaque(bytes)
 
-      return new Ok(new Handshake<Opaque>(type, fragment))
-    })
+    return new Handshake<Opaque>(type, fragment)
   }
 
 }

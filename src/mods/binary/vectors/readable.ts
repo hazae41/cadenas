@@ -1,19 +1,16 @@
-import { BinaryReadError, Readable, Writable } from "@hazae41/binary";
+import { Readable, Writable } from "@hazae41/binary";
 import { Cursor } from "@hazae41/cursor";
-import { Ok, Result } from "@hazae41/result";
 import { NumberClass, NumberX } from "mods/binary/numbers/number.js";
 import { Vector } from "mods/binary/vectors/writable.js";
 
-export const ReadableVector = <L extends NumberX, W extends Writable.Infer<W>, ReadError>(vlength: NumberClass<L>, readable: Readable<W, ReadError>) => class {
+export const ReadableVector = <L extends NumberX, W extends Writable>($length: NumberClass<L>, $readable: Readable<W>) => class {
 
-  static tryRead(cursor: Cursor): Result<Vector<L, W>, ReadError | BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const length = vlength.tryRead(cursor).throw(t).value
-      const bytes = cursor.tryRead(length).throw(t)
-      const value = Readable.tryReadFromBytes(readable, bytes).throw(t)
+  static readOrThrow(cursor: Cursor): Vector<L, W> {
+    const length = $length.readOrThrow(cursor).value
+    const bytes = cursor.readOrThrow(length)
+    const value = Readable.readFromBytesOrThrow($readable, bytes)
 
-      return new Ok(new (Vector(vlength))(value))
-    })
+    return new (Vector($length))(value)
   }
 
 }

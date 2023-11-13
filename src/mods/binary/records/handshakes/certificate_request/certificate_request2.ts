@@ -1,6 +1,5 @@
-import { BinaryReadError, BinaryWriteError, Opaque, SafeOpaque } from "@hazae41/binary"
+import { Opaque, SafeOpaque } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Ok, Result } from "@hazae41/result"
 import { ReadableList } from "mods/binary/lists/readable.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number16 } from "mods/binary/numbers/number16.js"
@@ -30,16 +29,16 @@ export class ClientCertificateType {
     return new ClientCertificateType(type)
   }
 
-  trySize(): Result<number, never> {
-    return new Ok(1)
+  sizeOrThrow() {
+    return 1
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return cursor.tryWriteUint8(this.type)
+  writeOrThrow(cursor: Cursor) {
+    cursor.writeUint8OrThrow(this.type)
   }
 
-  static tryRead(cursor: Cursor): Result<ClientCertificateType, BinaryReadError> {
-    return cursor.tryReadUint8().mapSync(ClientCertificateType.new)
+  static readOrThrow(cursor: Cursor) {
+    return new ClientCertificateType(cursor.readUint8OrThrow())
   }
 
 }
@@ -54,30 +53,25 @@ export class CertificateRequest2 {
     readonly certificate_authorities: Vector<Number16, Opaque>
   ) { }
 
-  trySize(): Result<number, never> {
-    return new Ok(0
-      + this.certificate_types.trySize().get()
-      + this.supported_signature_algorithms.trySize().get()
-      + this.certificate_authorities.trySize().get())
+  sizeOrThrow() {
+    return 0
+      + this.certificate_types.sizeOrThrow()
+      + this.supported_signature_algorithms.sizeOrThrow()
+      + this.certificate_authorities.sizeOrThrow()
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      this.certificate_types.tryWrite(cursor).throw(t)
-      this.supported_signature_algorithms.tryWrite(cursor).throw(t)
-      this.certificate_authorities.tryWrite(cursor).throw(t)
-
-      return Ok.void()
-    })
+  writeOrThrow(cursor: Cursor) {
+    this.certificate_types.writeOrThrow(cursor)
+    this.supported_signature_algorithms.writeOrThrow(cursor)
+    this.certificate_authorities.writeOrThrow(cursor)
   }
 
-  static tryRead(cursor: Cursor): Result<CertificateRequest2, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const certificate_types = ReadableVector(Number8, ReadableList(ClientCertificateType)).tryRead(cursor).throw(t)
-      const supported_signature_algorithms = ReadableVector(Number16, ReadableList(SignatureAndHashAlgorithm)).tryRead(cursor).throw(t)
-      const certificate_authorities = ReadableVector(Number16, SafeOpaque).tryRead(cursor).throw(t)
+  static readOrThrow(cursor: Cursor) {
+    const certificate_types = ReadableVector(Number8, ReadableList(ClientCertificateType)).readOrThrow(cursor)
+    const supported_signature_algorithms = ReadableVector(Number16, ReadableList(SignatureAndHashAlgorithm)).readOrThrow(cursor)
+    const certificate_authorities = ReadableVector(Number16, SafeOpaque).readOrThrow(cursor)
 
-      return new Ok(new CertificateRequest2(certificate_types, supported_signature_algorithms, certificate_authorities))
-    })
+    return new CertificateRequest2(certificate_types, supported_signature_algorithms, certificate_authorities)
   }
+
 }

@@ -1,6 +1,4 @@
-import { BinaryReadError, BinaryWriteError } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Ok, Result } from "@hazae41/result"
 import { Record } from "mods/binary/records/record.js"
 
 export class Alert {
@@ -52,26 +50,20 @@ export class Alert {
     return this.#class.record_type
   }
 
-  trySize(): Result<number, never> {
-    return new Ok(1 + 1)
+  sizeOrThrow() {
+    return 2 // 1 + 1
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      cursor.tryWriteUint8(this.level).throw(t)
-      cursor.tryWriteUint8(this.description).throw(t)
-
-      return Ok.void()
-    })
+  writeOrThrow(cursor: Cursor) {
+    cursor.writeUint8OrThrow(this.level)
+    cursor.writeUint8OrThrow(this.description)
   }
 
-  static tryRead(cursor: Cursor): Result<Alert, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const level = cursor.tryReadUint8().throw(t)
-      const description = cursor.tryReadUint8().throw(t)
+  static readOrThrow(cursor: Cursor) {
+    const level = cursor.readUint8OrThrow()
+    const description = cursor.readUint8OrThrow()
 
-      return new Ok(new Alert(level, description))
-    })
+    return new Alert(level, description)
   }
 
 }

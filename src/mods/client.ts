@@ -1,6 +1,6 @@
 import { Base16 } from "@hazae41/base16"
-import { BinaryError, Opaque, Readable, Writable } from "@hazae41/binary"
-import { Bytes, BytesError } from "@hazae41/bytes"
+import { Opaque, Readable, Writable } from "@hazae41/binary"
+import { Bytes } from "@hazae41/bytes"
 import { SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Future } from "@hazae41/future"
@@ -462,7 +462,7 @@ export class TlsClientDuplex {
       const p = BigInts.tryImport(dh_p.value.bytes).throw(t)
       const Ys = BigInts.tryImport(dh_Ys.value.bytes).throw(t)
 
-      const dh_yc = Bytes.tryRandom(dh_p.value.bytes.length).throw(t)
+      const dh_yc = Bytes.random(dh_p.value.bytes.length)
 
       const yc = BigInts.tryImport(dh_yc).throw(t)
 

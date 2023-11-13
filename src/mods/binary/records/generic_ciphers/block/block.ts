@@ -1,4 +1,4 @@
-import { BinaryReadError, BinaryWriteError, Opaque, Writable } from "@hazae41/binary"
+import { Opaque, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { Cursor } from "@hazae41/cursor"
 import { Ok, Result } from "@hazae41/result"
@@ -23,26 +23,20 @@ export class GenericBlockCipher {
     readonly block: Bytes
   ) { }
 
-  trySize(): Result<number, never> {
-    return new Ok(this.iv.length + this.block.length)
+  sizeOrThrow() {
+    return this.iv.length + this.block.length
   }
 
-  tryWrite(cursor: Cursor): Result<void, BinaryWriteError> {
-    return Result.unthrowSync(t => {
-      cursor.tryWrite(this.iv).throw(t)
-      cursor.tryWrite(this.block).throw(t)
-
-      return Ok.void()
-    })
+  writeOrThrow(cursor: Cursor) {
+    cursor.writeOrThrow(this.iv)
+    cursor.writeOrThrow(this.block)
   }
 
-  static tryRead(cursor: Cursor): Result<GenericBlockCipher, BinaryReadError> {
-    return Result.unthrowSync(t => {
-      const iv = cursor.tryRead(16).throw(t)
-      const block = cursor.tryRead(cursor.remaining).throw(t)
+  static readOrThrow(cursor: Cursor) {
+    const iv = cursor.readAndCopyOrThrow(16)
+    const block = cursor.readAndCopyOrThrow(cursor.remaining)
 
-      return new Ok(new GenericBlockCipher(iv, block))
-    })
+    return new GenericBlockCipher(iv, block)
   }
 
   static async tryEncrypt<T extends Writable.Infer<T>>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint): Promise<Result<GenericBlockCipher, Writable.SizeError<T> | Writable.WriteError<T> | BinaryWriteError | CryptoError>> {
