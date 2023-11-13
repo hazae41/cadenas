@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@hazae41/base16": "^1.0.16",
-    "@hazae41/binary": "^1.3.2",
+    "@hazae41/binary": "^1.3.3",
     "@hazae41/box": "^1.0.11",
     "@hazae41/bytes": "^1.2.7",
     "@hazae41/cascade": "^1.1.30",

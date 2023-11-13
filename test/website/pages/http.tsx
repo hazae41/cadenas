@@ -30,9 +30,9 @@ export default function Home() {
         .pipeTo(tcp.writable, {})
         .catch(console.error)
 
-      // const headers = new Headers({ "Content-Type": "application/json" })
-      // const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
-      const res = await fetch("https://twitter.com", { stream: { readable: tls.input.readable, writable: tls.output.writable } })
+      const headers = { "Content-Type": "application/json" }
+      const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
+      const res = await fetch("https://eth.llamarpc.com", { method: "POST", headers, body, stream: { readable: tls.input.readable, writable: tls.output.writable } })
 
       // const res = await fetch("https://www.facebook.com", { stream: tls })
 
