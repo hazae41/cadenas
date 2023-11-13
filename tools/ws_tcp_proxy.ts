@@ -1,3 +1,6 @@
+// deno-lint-ignore-file no-inner-declarations
+/// <reference lib="esnext" />
+/// <reference lib="deno.ns" />
 import { iterateReader, writeAll } from "https://deno.land/std@0.187.0/streams/mod.ts";
 
 const server = Deno.listen({ port: 8080 })
@@ -7,7 +10,7 @@ for await (const conn of server)
 
 async function pipeToWsAndLog(symbol: string, reader: Deno.Reader, socket: WebSocket) {
   for await (const bytes of iterateReader(reader)) {
-    Console.debug(symbol, bytes)
+    // console.debug(symbol, bytes)
     socket.send(bytes)
   }
 }
@@ -19,28 +22,38 @@ async function onconn(conn: Deno.Conn) {
     try {
       const { socket, response } = Deno.upgradeWebSocket(request);
 
-      const target = await Deno.connect({ hostname: "proxy.brume.money", port: 443, transport: "tcp" })
+      const target = await Deno.connect({ hostname: "twitter.com", port: 443, transport: "tcp" })
 
       socket.binaryType = "arraybuffer"
 
+      function closeSocket() {
+        if (socket.readyState !== WebSocket.OPEN)
+          return
+        console.log("close socket")
+        socket.close()
+      }
+
+      function closeTarget() {
+        console.log("close target")
+        target.close()
+      }
+
       socket.addEventListener("message", async e => {
+        const bytes = new Uint8Array(e.data)
+        // console.debug("->", bytes)
+
         try {
-          const bytes = new Uint8Array(e.data)
-          Console.debug("->", bytes)
           await writeAll(target, bytes)
         } catch (_: unknown) {
-          socket.close()
-          target.close()
-          return
+          closeSocket()
         }
       })
 
+      socket.addEventListener("close", () => closeTarget())
+
       pipeToWsAndLog("<-", target, socket)
-        .catch(console.error)
-        .finally(() => {
-          socket.close()
-          target.close()
-        })
+        .catch(() => { })
+        .finally(() => closeSocket())
 
       await respondWith(response)
     } catch (_: unknown) {
