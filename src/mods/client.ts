@@ -6,6 +6,7 @@ import { Future } from "@hazae41/future"
 import { None } from "@hazae41/option"
 import { CloseEvents, ErrorEvents, Plume, SuperEventTarget } from "@hazae41/plume"
 import { Err, Ok, Panic, Result } from "@hazae41/result"
+import { OIDs, X509 } from "@hazae41/x509"
 import { BigInts } from "libs/bigint/bigint.js"
 import { BigMath } from "libs/bigmath/index.js"
 import { prfOrThrow } from "mods/algorithms/prf/prf.js"
@@ -403,15 +404,55 @@ export class TlsClientDuplex {
 
       Console.debug(certificate)
 
-      // const server_certificates = certificate.certificate_list.value.array
-      // .map(it => X509.Certificate.fromBytes(it.value.bytes))
+      const server_certificates = certificate.certificate_list.value.array
+        .map(it => X509.tryReadAndResolveFromBytes(X509.Certificate, it.value.bytes).throw(t))
 
+      const now = new Date()
 
-      // Console.debug(server_certificates)
-      // Console.debug(server_certificates.map(it => it.tbsCertificate.issuer.toX501()))
-      // Console.debug(server_certificates.map(it => it.tbsCertificate.subject.toX501()))
+      if (server_certificates.length === 0)
+        return new Err(new Error(`No certificates`))
 
-      this.#state = { ...state, action: "server_certificate", server_certificates: [] }
+      for (let i = 0; i < server_certificates.length; i++) {
+        const current = server_certificates[i]
+
+        if (now > current.tbsCertificate.validity.notAfter.value)
+          return new Err(new Error(`Certificate is expired`))
+        if (now < current.tbsCertificate.validity.notBefore.value)
+          return new Err(new Error(`Certificate is not yet valid`))
+
+        if (current.algorithmIdentifier.algorithm.value.inner !== OIDs.keys.sha256WithRSAEncryption)
+          return new Err(new Error(`Unsupported signature algorithm`))
+
+        const signed = X509.tryWriteToBytes(current.tbsCertificate).throw(t)
+
+        const next = server_certificates.at(i + 1)
+
+        if (next == null) {
+          // TODO get root certificate authority
+          console.warn("Could not verify certificate chain")
+          break
+        }
+
+        const publicKey = X509.tryWriteToBytes(next.tbsCertificate.subjectPublicKeyInfo).throw(t)
+
+        if (i === 0) {
+          // TODO: Verify domain name
+          // TODO: Verify RSA to ECDH
+        }
+
+        const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
+        const signature = current.signatureValue.bytes
+
+        const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, true, ["verify"])
+        const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signed)
+
+        if (!verified)
+          return new Err(new Error(`Invalid signature`))
+
+        continue
+      }
+
+      this.#state = { ...state, action: "server_certificate", server_certificates }
 
       return Ok.void()
     })

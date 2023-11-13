@@ -32,7 +32,7 @@
     "@hazae41/option": "^1.0.27",
     "@hazae41/plume": "^2.1.8",
     "@hazae41/result": "^1.1.11",
-    "@hazae41/x509": "^1.2.0"
+    "@hazae41/x509": "^1.2.1"
   },
   "devDependencies": {
     "@hazae41/phobos": "^1.0.10",
