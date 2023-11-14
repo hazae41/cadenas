@@ -7,8 +7,8 @@
   "repository": "github:hazae41/cadenas",
   "author": "hazae41",
   "license": "MIT",
-  "main": "./dist/cjs/index.cjs",
-  "module": "./dist/esm/index.mjs",
+  "main": "./dist/cjs/src/index.cjs",
+  "module": "./dist/esm/src/index.mjs",
   "types": "./dist/types/index.d.ts",
   "sideEffects": false,
   "files": [
@@ -17,6 +17,7 @@
     "./dist/types"
   ],
   "scripts": {
+    "macro": "saumon build -r ./src",
     "build": "rimraf dist && rollup -c",
     "test": "node ./dist/test/index.test.mjs",
     "prepare": "npm run build"
@@ -33,24 +34,27 @@
     "@hazae41/option": "^1.0.27",
     "@hazae41/plume": "^2.1.8",
     "@hazae41/result": "^1.1.11",
+    "@hazae41/symbol-dispose-polyfill": "^1.0.2",
     "@hazae41/x509": "^1.2.4"
   },
   "devDependencies": {
     "@hazae41/phobos": "^1.0.10",
     "@hazae41/rimraf": "^1.0.1",
+    "@hazae41/saumon": "^0.2.7",
     "@rollup/plugin-inject": "^5.0.5",
     "@rollup/plugin-typescript": "^11.1.5",
     "@types/node": "^20.9.0",
     "rollup": "^4.4.1",
     "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-node-externals": "^6.1.2",
+    "tslib": "^2.6.2",
     "typescript": "^5.2.2"
   },
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/esm/index.mjs",
-      "require": "./dist/cjs/index.cjs"
+      "import": "./dist/esm/src/index.mjs",
+      "require": "./dist/cjs/src/index.cjs"
     }
   },
   "keywords": [

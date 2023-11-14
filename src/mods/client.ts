@@ -1,4 +1,7 @@
+import "@hazae41/symbol-dispose-polyfill"
+
 import { IA5String } from "@hazae41/asn1"
+import { Base16 } from "@hazae41/base16"
 import { Opaque, Readable, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { SuperTransformStream } from "@hazae41/cascade"
@@ -36,11 +39,13 @@ import { ServerKeyExchange2DHSigned } from "./binary/records/handshakes/server_k
 import { ServerKeyExchange2ECDHPreSigned, ServerKeyExchange2ECDHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_ecdh_signed.js"
 import { HashAlgorithm } from "./binary/signatures/hash_algorithm.js"
 import { SignatureAlgorithm } from "./binary/signatures/signature_algorithm.js"
+import { CCADB } from "./ccadb/ccadb.js"
 import { Secp256r1 } from "./ciphers/curves/secp256r1.js"
 import { Console } from "./console/index.js"
 import { FatalAlertError, InvalidTlsStateError, TlsClientError, UnsupportedCipherError, UnsupportedVersionError, WarningAlertError } from "./errors.js"
 import { Extensions } from "./extensions.js"
 import { ClientChangeCipherSpecState, HandshakeState, ServerCertificateState, ServerKeyExchangeState, TlsClientDuplexState } from "./state.js"
+
 
 export interface TlsClientDuplexParams {
   ciphers: Cipher[]
@@ -416,28 +421,12 @@ export class TlsClientDuplex {
 
       for (let i = 0; i < server_certificates.length; i++) {
         const current = server_certificates[i]
+        const next = server_certificates.at(i + 1)
 
         if (now > current.tbsCertificate.validity.notAfter.value)
           return new Err(new Error(`Certificate is expired`))
         if (now < current.tbsCertificate.validity.notBefore.value)
           return new Err(new Error(`Certificate is not yet valid`))
-
-        if (current.algorithmIdentifier.algorithm.value.inner !== OIDs.keys.sha256WithRSAEncryption) {
-          console.warn("Unsupported signature algorithm", current.algorithmIdentifier.algorithm.value.inner)
-          continue
-        }
-
-        const signed = X509.tryWriteToBytes(current.tbsCertificate).throw(t)
-
-        const next = server_certificates.at(i + 1)
-
-        if (next == null) {
-          // TODO get root certificate authority
-          console.warn("Could not verify certificate chain")
-          break
-        }
-
-        const publicKey = X509.tryWriteToBytes(next.tbsCertificate.subjectPublicKeyInfo).throw(t)
 
         if (i === 0) {
           /**
@@ -485,16 +474,57 @@ export class TlsClientDuplex {
           }
         }
 
+        if (current.algorithmIdentifier.algorithm.value.inner !== OIDs.keys.sha256WithRSAEncryption) {
+          console.warn("Unsupported signature algorithm", current.algorithmIdentifier.algorithm.value.inner)
+          continue
+        }
+
+        if (next != null) {
+          const signed = X509.tryWriteToBytes(current.tbsCertificate).throw(t)
+          const publicKey = X509.tryWriteToBytes(next.tbsCertificate.subjectPublicKeyInfo).throw(t)
+
+          const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
+          const signature = current.signatureValue.bytes
+
+          const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, true, ["verify"])
+          const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signed)
+
+          if (!verified)
+            return new Err(new Error(`Invalid signature`))
+
+          continue
+        }
+
+        /**
+         * Check against root certificate authority
+         */
+
+        const issuer = current.tbsCertificate.issuer.toX501OrThrow()
+        const trusted = CCADB.trusteds[issuer]
+
+        if (trusted == null) {
+          console.warn("Could not verify certificate chain")
+          break
+        }
+
+        const { notAfter, publicKeyHex } = trusted
+
+        if (notAfter != null && now > new Date(notAfter))
+          return new Err(new Error(`Certificate is expired`))
+
+        const signed = X509.tryWriteToBytes(current.tbsCertificate).throw(t)
+        using publicKey = Base16.get().padStartAndDecodeOrThrow(publicKeyHex)
+
         const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
         const signature = current.signatureValue.bytes
 
-        const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, true, ["verify"])
+        const key = await crypto.subtle.importKey("spki", publicKey.bytes, signatureAlgorithm, true, ["verify"])
         const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signed)
 
         if (!verified)
           return new Err(new Error(`Invalid signature`))
 
-        continue
+        break
       }
 
       this.#state = { ...state, action: "server_certificate", server_certificates }
