@@ -1,3 +1,4 @@
+import { IA5String } from "@hazae41/asn1"
 import { Opaque, Readable, Writable } from "@hazae41/binary"
 import { Bytes } from "@hazae41/bytes"
 import { SuperTransformStream } from "@hazae41/cascade"
@@ -6,7 +7,7 @@ import { Future } from "@hazae41/future"
 import { None } from "@hazae41/option"
 import { CloseEvents, ErrorEvents, Plume, SuperEventTarget } from "@hazae41/plume"
 import { Err, Ok, Panic, Result } from "@hazae41/result"
-import { OIDs, X509 } from "@hazae41/x509"
+import { OIDs, SubjectAltName, X509 } from "@hazae41/x509"
 import { BigInts } from "libs/bigint/bigint.js"
 import { BigMath } from "libs/bigmath/index.js"
 import { prfOrThrow } from "mods/algorithms/prf/prf.js"
@@ -41,7 +42,7 @@ import { ClientChangeCipherSpecState, HandshakeState, ServerKeyExchangeState, Tl
 
 export interface TlsClientDuplexParams {
   ciphers: Cipher[]
-  host_name?: string
+  host_name: string
 }
 
 export type TlsClientDuplexReadEvents = CloseEvents & ErrorEvents & {
@@ -260,7 +261,6 @@ export class TlsClientDuplex {
 
   async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }): Promise<Result<void, Error>> {
     return await Result.unthrow(async t => {
-
       if (state.encrypter.cipher_type === "block") {
         const cipher = BlockCiphertextRecord.tryFrom(record).throw(t)
         const plain = await cipher.tryDecrypt(state.encrypter, state.server_sequence++)
@@ -407,6 +407,8 @@ export class TlsClientDuplex {
       const server_certificates = certificate.certificate_list.value.array
         .map(it => X509.tryReadAndResolveFromBytes(X509.Certificate, it.value.bytes).throw(t))
 
+      console.log(server_certificates)
+
       const now = new Date()
 
       if (server_certificates.length === 0)
@@ -420,8 +422,10 @@ export class TlsClientDuplex {
         if (now < current.tbsCertificate.validity.notBefore.value)
           return new Err(new Error(`Certificate is not yet valid`))
 
-        if (current.algorithmIdentifier.algorithm.value.inner !== OIDs.keys.sha256WithRSAEncryption)
-          return new Err(new Error(`Unsupported signature algorithm`))
+        if (current.algorithmIdentifier.algorithm.value.inner !== OIDs.keys.sha256WithRSAEncryption) {
+          console.warn("Unsupported signature algorithm", current.algorithmIdentifier.algorithm.value.inner)
+          continue
+        }
 
         const signed = X509.tryWriteToBytes(current.tbsCertificate).throw(t)
 
@@ -436,8 +440,49 @@ export class TlsClientDuplex {
         const publicKey = X509.tryWriteToBytes(next.tbsCertificate.subjectPublicKeyInfo).throw(t)
 
         if (i === 0) {
-          // TODO: Verify domain name
-          // TODO: Verify RSA to ECDH
+          /**
+           * Verify subjectAltName against host_name
+           * @returns 
+           */
+          const verify = () => {
+            if (current.tbsCertificate.extensions == null)
+              return false
+
+            for (const extension of current.tbsCertificate.extensions?.extensions) {
+              if (extension.extnID.value.inner === OIDs.keys.subjectAltName) {
+                const subjectAltName = extension.extnValue as SubjectAltName
+
+                for (const name of subjectAltName.inner.names) {
+                  if (name instanceof IA5String) {
+                    if (name.value === this.params.host_name)
+                      return true
+
+                    const self = this.params.host_name.split(".")
+                    const other = name.value.split(".")
+
+                    if (self.length !== other.length)
+                      continue
+
+                    const unstarred = other.map((x, i) => {
+                      if (x === "*")
+                        return self[i]
+                      return x
+                    }).join(".")
+
+                    if (unstarred === this.params.host_name)
+                      return true
+                    continue
+                  }
+                }
+              }
+            }
+
+            return false
+          }
+
+          if (!verify()) {
+            console.warn("Could not verify domain name")
+          }
         }
 
         const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
@@ -479,6 +524,28 @@ export class TlsClientDuplex {
 
       if (server_key_exchange instanceof ServerKeyExchange2ECDHSigned) {
         Console.debug(server_key_exchange)
+
+        // async function tryValidate(server_ecdh_params: ServerKeyExchange2ECDHSigned) {
+        //   const { params, signed_params } = server_ecdh_params
+
+        //   if (signed_params.algorithm.hash.type !== HashAlgorithm.types.sha256) {
+        //     console.warn("Unsupported hash algorithm", signed_params.algorithm.hash.type)
+        //     return Ok.void()
+        //   }
+
+        //   if (signed_params.algorithm.signature.type !== SignatureAlgorithm.types.rsa) {
+        //     console.warn("Unsupported signature algorithm", signed_params.algorithm.signature.type)
+        //     return Ok.void()
+        //   }
+
+        //   const signed = Writable.tryWriteToBytes(params).throw(t)
+
+        //   const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
+        //   const signature = signed_params.signature.value.bytes
+
+        //   const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, true, ["verify"])
+        //   const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signed)
+        // }
 
         const server_ecdh_params = server_key_exchange.params
 
