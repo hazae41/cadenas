@@ -20,11 +20,11 @@ async function createTlsStream(tcp: ReadableWritablePair<Opaque, Writable>) {
 
   tcp.readable
     .pipeTo(tls.inner.writable, {})
-    .catch(console.error)
+    .catch(e => console.error({ e }))
 
   tls.inner.readable
     .pipeTo(tcp.writable, {})
-    .catch(console.error)
+    .catch(e => console.error({ e }))
 
   return tls
 }

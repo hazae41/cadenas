@@ -33,12 +33,14 @@ import { ClientKeyExchange2ECDH } from "./binary/records/handshakes/client_key_e
 import { ServerECDHParams } from "./binary/records/handshakes/server_key_exchange/server_ecdh_params.js"
 import { ReadableServerKeyExchange2 } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2.js"
 import { ServerKeyExchange2DHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_dh_signed.js"
-import { ServerKeyExchange2ECDHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_ecdh_signed.js"
+import { ServerKeyExchange2ECDHPreSigned, ServerKeyExchange2ECDHSigned } from "./binary/records/handshakes/server_key_exchange/server_key_exchange2_ecdh_signed.js"
+import { HashAlgorithm } from "./binary/signatures/hash_algorithm.js"
+import { SignatureAlgorithm } from "./binary/signatures/signature_algorithm.js"
 import { Secp256r1 } from "./ciphers/curves/secp256r1.js"
 import { Console } from "./console/index.js"
 import { FatalAlertError, InvalidTlsStateError, TlsClientError, UnsupportedCipherError, UnsupportedVersionError, WarningAlertError } from "./errors.js"
 import { Extensions } from "./extensions.js"
-import { ClientChangeCipherSpecState, HandshakeState, ServerKeyExchangeState, TlsClientDuplexState } from "./state.js"
+import { ClientChangeCipherSpecState, HandshakeState, ServerCertificateState, ServerKeyExchangeState, TlsClientDuplexState } from "./state.js"
 
 export interface TlsClientDuplexParams {
   ciphers: Cipher[]
@@ -165,7 +167,7 @@ export class TlsClientDuplex {
 
       const client_hello = ClientHello2.default(this.params.ciphers, this.params.host_name)
 
-      const client_random = Writable.tryWriteToBytes(client_hello.random).throw(t)
+      const client_random = Writable.tryWriteToBytes(client_hello.random).throw(t) as Bytes<32>
       const client_extensions = Extensions.getClientExtensions(client_hello).throw(t)
 
       const client_hello_handshake = Handshake.from(client_hello)
@@ -384,12 +386,12 @@ export class TlsClientDuplex {
       if (cipher === undefined)
         return new Err(new UnsupportedCipherError(server_hello.cipher_suite))
 
-      const server_random = Writable.tryWriteToBytes(server_hello.random).throw(t)
+      const server_random = Writable.tryWriteToBytes(server_hello.random).throw(t) as Bytes<32>
       const server_extensions = Extensions.getServerExtensions(server_hello, state.client_extensions).throw(t)
 
       Console.debug(server_extensions)
 
-      this.#state = { ...state, step: "server_hello", version, cipher, server_random, server_extensions }
+      this.#state = { ...state, step: "server_hello", action: "server_hello", version, cipher, server_random, server_extensions }
 
       return Ok.void()
     })
@@ -406,8 +408,6 @@ export class TlsClientDuplex {
 
       const server_certificates = certificate.certificate_list.value.array
         .map(it => X509.tryReadAndResolveFromBytes(X509.Certificate, it.value.bytes).throw(t))
-
-      console.log(server_certificates)
 
       const now = new Date()
 
@@ -525,28 +525,40 @@ export class TlsClientDuplex {
       if (server_key_exchange instanceof ServerKeyExchange2ECDHSigned) {
         Console.debug(server_key_exchange)
 
-        // async function tryValidate(server_ecdh_params: ServerKeyExchange2ECDHSigned) {
-        //   const { params, signed_params } = server_ecdh_params
+        if (state.action !== "server_certificate")
+          return new Err(new InvalidTlsStateError())
 
-        //   if (signed_params.algorithm.hash.type !== HashAlgorithm.types.sha256) {
-        //     console.warn("Unsupported hash algorithm", signed_params.algorithm.hash.type)
-        //     return Ok.void()
-        //   }
+        const publicKey = X509.tryWriteToBytes(state.server_certificates[0].tbsCertificate.subjectPublicKeyInfo).throw(t)
 
-        //   if (signed_params.algorithm.signature.type !== SignatureAlgorithm.types.rsa) {
-        //     console.warn("Unsupported signature algorithm", signed_params.algorithm.signature.type)
-        //     return Ok.void()
-        //   }
+        async function tryValidate(server_key_exchange: ServerKeyExchange2ECDHSigned, state: ServerCertificateState) {
+          const { params, signed_params } = server_key_exchange
 
-        //   const signed = Writable.tryWriteToBytes(params).throw(t)
+          if (signed_params.algorithm.hash.type !== HashAlgorithm.types.sha256) {
+            console.warn("Unsupported hash algorithm", signed_params.algorithm.hash.type)
+            return Ok.void()
+          }
 
-        //   const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
-        //   const signature = signed_params.signature.value.bytes
+          if (signed_params.algorithm.signature.type !== SignatureAlgorithm.types.rsa) {
+            console.warn("Unsupported signature algorithm", signed_params.algorithm.signature.type)
+            return Ok.void()
+          }
 
-        //   const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, true, ["verify"])
-        //   const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signed)
-        // }
+          const presigned = new ServerKeyExchange2ECDHPreSigned(state.client_random, state.server_random, params)
+          const bytes = Writable.tryWriteToBytes(presigned).throw(t)
 
+          const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
+          const signature = signed_params.signature.value.bytes
+
+          const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, true, ["verify"])
+          const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, bytes)
+
+          if (!verified)
+            return new Err(new Error(`Invalid signature`))
+
+          return Ok.void()
+        }
+
+        await tryValidate(server_key_exchange, state).then(r => r.inspectErrSync(e => console.error({ e })).throw(t))
         const server_ecdh_params = server_key_exchange.params
 
         this.#state = { ...state, action: "server_key_exchange", server_ecdh_params }

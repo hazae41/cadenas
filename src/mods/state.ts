@@ -1,3 +1,4 @@
+import { Bytes } from "@hazae41/bytes"
 import { Certificate } from "@hazae41/x509"
 import { CertificateRequest2 } from "./binary/records/handshakes/certificate_request/certificate_request2.js"
 import { ServerDHParams } from "./binary/records/handshakes/server_key_exchange/server_dh_params.js"
@@ -30,7 +31,7 @@ export type HandshakeState =
 
 export type ClientHelloData = {
   messages: Uint8Array[]
-  client_random: Uint8Array
+  client_random: Bytes<32>
   client_extensions: Extensions
 }
 
@@ -44,13 +45,14 @@ export type ClientHelloState = ClientHelloData & {
 export type ServerHelloData = ClientHelloData & {
   version: number
   cipher: Cipher
-  server_random: Uint8Array
+  server_random: Bytes<32>
   server_extensions: Extensions
 }
 
 export type ServerHelloState = ServerHelloData & {
   type: "handshake"
   step: "server_hello"
+  action: "server_hello"
   client_encrypted: false
   server_encrypted: false
 }
