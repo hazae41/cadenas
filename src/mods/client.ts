@@ -419,6 +419,26 @@ export class TlsClientDuplex {
       if (server_certificates.length === 0)
         return new Err(new Error(`No certificates`))
 
+      {
+        const last = server_certificates[server_certificates.length - 1]
+
+        const issuer = last.tbsCertificate.issuer.toX501OrThrow()
+        const trusted = CCADB.trusteds[issuer]
+
+        if (trusted == null)
+          return new Err(new Error(`No matching root certificate authority`))
+
+        const { notAfter, certHex } = trusted
+
+        if (notAfter != null && now > new Date(notAfter))
+          return new Err(new Error(`Root certificate is distrusted`))
+
+        using certSlice = Base16.get().padStartAndDecodeOrThrow(certHex)
+        const certX509 = X509.tryReadAndResolveFromBytes(X509.Certificate, certSlice.bytes).throw(t)
+
+        server_certificates.push(certX509)
+      }
+
       for (let i = 0; i < server_certificates.length; i++) {
         const current = server_certificates[i]
         const next = server_certificates.at(i + 1)
@@ -474,57 +494,27 @@ export class TlsClientDuplex {
           }
         }
 
+        if (next == null)
+          break
+
         if (current.algorithmIdentifier.algorithm.value.inner !== OIDs.keys.sha256WithRSAEncryption) {
           console.warn("Unsupported signature algorithm", current.algorithmIdentifier.algorithm.value.inner)
           continue
         }
 
-        if (next != null) {
-          const signed = X509.tryWriteToBytes(current.tbsCertificate).throw(t)
-          const publicKey = X509.tryWriteToBytes(next.tbsCertificate.subjectPublicKeyInfo).throw(t)
-
-          const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
-          const signature = current.signatureValue.bytes
-
-          const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, true, ["verify"])
-          const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signed)
-
-          if (!verified)
-            return new Err(new Error(`Invalid signature`))
-
-          continue
-        }
-
-        /**
-         * Check against root certificate authority
-         */
-
-        const issuer = current.tbsCertificate.issuer.toX501OrThrow()
-        const trusted = CCADB.trusteds[issuer]
-
-        if (trusted == null) {
-          console.warn("Could not verify certificate chain")
-          break
-        }
-
-        const { notAfter, publicKeyHex } = trusted
-
-        if (notAfter != null && now > new Date(notAfter))
-          return new Err(new Error(`Certificate is expired`))
-
         const signed = X509.tryWriteToBytes(current.tbsCertificate).throw(t)
-        using publicKey = Base16.get().padStartAndDecodeOrThrow(publicKeyHex)
+        const publicKey = X509.tryWriteToBytes(next.tbsCertificate.subjectPublicKeyInfo).throw(t)
 
         const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
         const signature = current.signatureValue.bytes
 
-        const key = await crypto.subtle.importKey("spki", publicKey.bytes, signatureAlgorithm, true, ["verify"])
+        const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, true, ["verify"])
         const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signed)
 
         if (!verified)
           return new Err(new Error(`Invalid signature`))
 
-        break
+        continue
       }
 
       this.#state = { ...state, action: "server_certificate", server_certificates }

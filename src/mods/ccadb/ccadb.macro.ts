@@ -10,7 +10,7 @@ import { Nullable } from "@hazae41/option"
 export namespace CCADB {
 
   export interface Trusted {
-    readonly publicKeyHex: string
+    readonly certHex: string
     readonly notAfter?: string
   }
 
@@ -40,16 +40,15 @@ export namespace CCADB {
         const x509 = X509.readAndResolveFromBytesOrThrow(X509.Certificate, pem)
 
         const issuer = x509.tbsCertificate.issuer.toX501OrThrow()
-        const publicKey = X509.writeToBytesOrThrow(x509.tbsCertificate.subjectPublicKeyInfo)
-        const publicKeyHex = Buffer.from(publicKey).toString("hex")
+        const certHex = Buffer.from(pem).toString("hex")
 
         if (trusteds[issuer])
           console.warn(`Duplicate issuer: ${issuer}`)
 
         if (notAfter)
-          trusteds[issuer] = { notAfter, publicKeyHex }
+          trusteds[issuer] = { notAfter, certHex }
         else
-          trusteds[issuer] = { publicKeyHex }
+          trusteds[issuer] = { certHex }
       } catch (e: unknown) {
         console.warn(e)
       }

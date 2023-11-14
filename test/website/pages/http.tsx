@@ -16,7 +16,7 @@ async function createTlsStream(tcp: ReadableWritablePair<Opaque, Writable>) {
     Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
   ]
 
-  const tls = new TlsClientDuplex({ host_name: "eth.llamarpc.com", ciphers })
+  const tls = new TlsClientDuplex({ host_name: "twitter.com", ciphers })
 
   tcp.readable
     .pipeTo(tls.inner.writable, {})
@@ -56,9 +56,13 @@ export default function Home() {
         return
       await mutex.lock(async tls => {
         const start = Date.now()
-        const headers = { "Content-Type": "application/json" }
-        const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
-        const res = await fetch("https://eth.llamarpc.com", { method: "POST", headers, body, stream: tls.outer, preventAbort: true, preventCancel: true, preventClose: true })
+
+        // const headers = { "Content-Type": "application/json" }
+        // const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
+        // const res = await fetch("https://eth.llamarpc.com", { method: "POST", headers, body, stream: tls.outer, preventAbort: true, preventCancel: true, preventClose: true })
+
+        const res = await fetch("https://twitter.com", { stream: tls.outer, preventAbort: true, preventCancel: true, preventClose: true })
+
         console.log(Date.now() - start, "ms")
         console.log(res.status, res.statusText)
         const text = await res.text()

@@ -22,7 +22,7 @@ async function onconn(conn: Deno.Conn) {
     try {
       const { socket, response } = Deno.upgradeWebSocket(request);
 
-      const target = await Deno.connect({ hostname: "eth.llamarpc.com", port: 443, transport: "tcp" })
+      const target = await Deno.connect({ hostname: "twitter.com", port: 443, transport: "tcp" })
 
       socket.binaryType = "arraybuffer"
 
