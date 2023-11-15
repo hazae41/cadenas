@@ -587,9 +587,9 @@ export class TlsClientDuplex {
           return Ok.void()
         }
 
-        await tryValidate(server_key_exchange, state).then(r => r.inspectErrSync(e => console.error({ e })).throw(t))
-        const server_ecdh_params = server_key_exchange.params
+        await tryValidate(server_key_exchange, state).then(r => r.throw(t))
 
+        const server_ecdh_params = server_key_exchange.params
         this.#state = { ...state, action: "server_key_exchange", server_ecdh_params }
 
         return Ok.void()
