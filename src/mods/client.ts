@@ -53,6 +53,7 @@ export interface TlsClientDuplexParams {
 }
 
 export type TlsClientDuplexReadEvents = CloseEvents & ErrorEvents & {
+  certificates: (certificates: X509.Certificate[]) => Result<void, Error>
   handshaked: () => void
 }
 
@@ -413,6 +414,14 @@ export class TlsClientDuplex {
 
       const server_certificates = certificate.certificate_list.value.array
         .map(it => X509.tryReadAndResolveFromBytes(X509.Certificate, it.value.bytes).throw(t))
+
+      const handled = await this.events.input.emit("certificates", [server_certificates])
+
+      if (handled.isSome()) {
+        handled.get().throw(t)
+        this.#state = { ...state, action: "server_certificate", server_certificates }
+        return Ok.void()
+      }
 
       const now = new Date()
 
