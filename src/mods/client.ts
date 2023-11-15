@@ -128,24 +128,20 @@ export class TlsClientDuplex {
       .catch(() => { })
   }
 
-  async #onInputClose(): Promise<Ok<void>> {
+  async #onInputClose() {
     Console.debug(`${this.#class.name}.onReadClose`)
 
     this.#input.closed = {}
 
     await this.events.input.emit("close", [undefined])
-
-    return Ok.void()
   }
 
-  async #onOutputClose(): Promise<Ok<void>> {
+  async #onOutputClose() {
     Console.debug(`${this.#class.name}.onWriteClose`)
 
     this.#output.closed = {}
 
     await this.events.output.emit("close", [undefined])
-
-    return Ok.void()
   }
 
   async #onInputError(reason?: unknown) {
