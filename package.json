@@ -35,7 +35,7 @@
     "@hazae41/plume": "^2.1.8",
     "@hazae41/result": "^1.1.11",
     "@hazae41/symbol-dispose-polyfill": "^1.0.2",
-    "@hazae41/x509": "^1.2.4"
+    "@hazae41/x509": "^1.2.5"
   },
   "devDependencies": {
     "@hazae41/phobos": "^1.0.10",
