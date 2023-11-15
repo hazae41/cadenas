@@ -26,6 +26,10 @@ async function createTlsStream(tcp: ReadableWritablePair<Opaque, Writable>) {
     .pipeTo(tcp.writable, {})
     .catch(e => console.error({ e }))
 
+  // tls.events.input.on("certificates", () => {
+  //   return new Some(new Err(`Wrong certificate`))
+  // })
+
   return tls
 }
 
