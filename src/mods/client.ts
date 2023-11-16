@@ -461,6 +461,8 @@ export class TlsClientDuplex {
           const verify = () => {
             if (current.tbsCertificate.extensions == null)
               return false
+            if (this.params.host_name == null)
+              return false
 
             for (const extension of current.tbsCertificate.extensions?.extensions) {
               if (extension.extnID.value.inner === OIDs.keys.subjectAltName) {
