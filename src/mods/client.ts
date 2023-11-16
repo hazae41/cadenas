@@ -49,7 +49,7 @@ import { ClientChangeCipherSpecState, HandshakeState, ServerCertificateState, Se
 
 export interface TlsClientDuplexParams {
   ciphers: Cipher[]
-  host_name: string
+  host_name?: string
 }
 
 export type TlsClientDuplexReadEvents = CloseEvents & ErrorEvents & {
@@ -459,9 +459,11 @@ export class TlsClientDuplex {
            * @returns 
            */
           const verify = () => {
-            if (current.tbsCertificate.extensions == null)
+            const { host_name } = this.params
+
+            if (host_name == null)
               return false
-            if (this.params.host_name == null)
+            if (current.tbsCertificate.extensions == null)
               return false
 
             for (const extension of current.tbsCertificate.extensions?.extensions) {
@@ -473,7 +475,7 @@ export class TlsClientDuplex {
                     if (name.value === this.params.host_name)
                       return true
 
-                    const self = this.params.host_name.split(".")
+                    const self = host_name.split(".")
                     const other = name.value.split(".")
 
                     if (self.length !== other.length)
