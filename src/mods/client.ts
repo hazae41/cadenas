@@ -94,10 +94,10 @@ export class TlsClientDuplex {
     })
 
     const preInputer = this.#input.start()
-    const preOutputer = this.#output.start()
+    const postOutputer = this.#output.start()
 
     const postInputer = new TransformStream<Opaque, Opaque>({})
-    const postOutputer = new TransformStream<Writable, Writable>({})
+    const preOutputer = new TransformStream<Writable, Writable>({})
 
     /**
      * Inner protocol (TCP?)
@@ -461,8 +461,12 @@ export class TlsClientDuplex {
           const verify = () => {
             const { host_name } = this.params
 
+            /**
+             * Do not check
+             */
             if (host_name == null)
-              return false
+              return true
+
             if (current.tbsCertificate.extensions == null)
               return false
 
