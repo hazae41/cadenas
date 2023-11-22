@@ -320,9 +320,9 @@ export class TlsClientDuplex {
   async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     return await Result.unthrow<Result<void, Error>>(async t => {
       if (state.type !== "handshake")
-        return new Err(new InvalidTlsStateError())
+        throw new InvalidTlsStateError()
 
-      const handshake = record.fragment.tryReadInto(Handshake).throw(t)
+      const handshake = record.fragment.readIntoOrThrow(Handshake)
 
       if (handshake.type !== Handshake.types.hello_request)
         state.messages.push(new Uint8Array(record.fragment.bytes))
