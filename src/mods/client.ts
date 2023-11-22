@@ -42,7 +42,7 @@ import { SignatureAlgorithm } from "./binary/signatures/signature_algorithm.js"
 import { CCADB } from "./ccadb/ccadb.js"
 import { Secp256r1 } from "./ciphers/curves/secp256r1.js"
 import { Console } from "./console/index.js"
-import { FatalAlertError, InvalidTlsStateError, TlsClientError, UnsupportedCipherError, UnsupportedVersionError, WarningAlertError } from "./errors.js"
+import { FatalAlertError, InvalidTlsStateError, UnsupportedCipherError, UnsupportedVersionError, WarningAlertError } from "./errors.js"
 import { Extensions } from "./extensions.js"
 import { ClientChangeCipherSpecState, HandshakeState, ServerCertificateState, ServerKeyExchangeState, TlsClientDuplexState } from "./state.js"
 
@@ -229,49 +229,45 @@ export class TlsClientDuplex {
     }
   }
 
-  async #onOutputTransform(chunk: Writable): Promise<Result<void, Error>> {
-    return await Result.unthrow(async t => {
-      if (this.#state.type !== "handshaked")
-        return new Err(new InvalidTlsStateError())
+  async #onOutputTransform(chunk: Writable) {
+    if (this.#state.type !== "handshaked")
+      throw new InvalidTlsStateError()
 
-      const state = this.#state
+    const state = this.#state
 
-      const { version, encrypter } = state
-      const type = Record.types.application_data
+    const { version, encrypter } = state
+    const type = Record.types.application_data
 
-      const plaintext = new PlaintextRecord(type, version, chunk)
-      const ciphertext = await plaintext.tryEncrypt(encrypter, state.client_sequence++).then(r => r.throw(t))
+    const plaintext = new PlaintextRecord(type, version, chunk)
+    const ciphertext = await plaintext.tryEncrypt(encrypter, state.client_sequence++).then(r => r.unwrap())
 
-      this.#output.enqueue(ciphertext)
-
-      return Ok.void()
-    })
+    this.#output.enqueue(ciphertext)
   }
 
   async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (state.server_encrypted)
       await this.#onCiphertextRecord(record, state)
-
-    await this.#onPlaintextRecord(record, state)
+    else
+      await this.#onPlaintextRecord(record, state)
   }
 
   async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }) {
     if (state.encrypter.cipher_type === "block") {
-      const cipher = BlockCiphertextRecord.tryFrom(record).unwrap()
-      const plain = await cipher.tryDecrypt(state.encrypter, state.server_sequence++)
-      return await this.#onPlaintextRecord(plain.unwrap(), state)
+      const cipher = BlockCiphertextRecord.fromOrThrow(record)
+      const plain = await cipher.decryptOrThrow(state.encrypter, state.server_sequence++)
+      return await this.#onPlaintextRecord(plain, state)
     }
 
     if (state.encrypter.cipher_type === "aead") {
-      const cipher = AEADCiphertextRecord.tryFrom(record).unwrap()
-      const plain = await cipher.tryDecrypt(state.encrypter, state.server_sequence++)
-      return await this.#onPlaintextRecord(plain.unwrap(), state)
+      const cipher = AEADCiphertextRecord.fromOrThrow(record)
+      const plain = await cipher.decryptOrThrow(state.encrypter, state.server_sequence++)
+      return await this.#onPlaintextRecord(plain, state)
     }
 
     throw new Panic(`Invalid cipher type`)
   }
 
-  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, Error>> {
+  async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (record.type === Alert.record_type)
       return await this.#onAlert(record, state)
     if (record.type === Handshake.record_type)
@@ -282,57 +278,47 @@ export class TlsClientDuplex {
       return await this.#onApplicationData(record, state)
 
     console.warn(record)
-    return Ok.void()
   }
 
-  async #onAlert(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, Error>> {
-    return await Result.unthrow(async t => {
-      const alert = record.fragment.tryReadInto(Alert).throw(t)
+  async #onAlert(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
+    const alert = record.fragment.readIntoOrThrow(Alert)
 
-      Console.debug(alert)
+    Console.debug(alert)
 
-      if (alert.level === Alert.levels.fatal)
-        return new Err(new FatalAlertError(alert))
+    if (alert.level === Alert.levels.fatal)
+      throw new FatalAlertError(alert)
 
-      if (alert.description === Alert.descriptions.close_notify)
-        return new Ok(this.#input.terminate())
+    if (alert.description === Alert.descriptions.close_notify)
+      return this.#input.terminate()
 
-      if (alert.level === Alert.levels.warning)
-        return new Ok(console.warn(new WarningAlertError(alert)))
+    if (alert.level === Alert.levels.warning)
+      return console.warn(new WarningAlertError(alert))
 
-      console.warn(`Unknown alert level ${alert.level}`)
-      return Ok.void()
-    })
+    console.warn(`Unknown alert level ${alert.level}`)
   }
 
-  async #onChangeCipherSpec(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, Error>> {
-    return await Result.unthrow(async t => {
-      if (state.type !== "handshake")
-        return new Err(new InvalidTlsStateError())
-      if (state.step !== "client_finished")
-        return new Err(new InvalidTlsStateError())
+  async #onChangeCipherSpec(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
+    if (state.type !== "handshake")
+      throw new InvalidTlsStateError()
+    if (state.step !== "client_finished")
+      throw new InvalidTlsStateError()
 
-      const change_cipher_spec = record.fragment.tryReadInto(ChangeCipherSpec).throw(t)
+    const change_cipher_spec = record.fragment.readIntoOrThrow(ChangeCipherSpec)
 
-      Console.debug(change_cipher_spec)
+    Console.debug(change_cipher_spec)
 
-      this.#state = { ...state, step: "server_change_cipher_spec", server_encrypted: true, server_sequence: BigInt(0) }
-
-      return Ok.void()
-    })
+    this.#state = { ...state, step: "server_change_cipher_spec", server_encrypted: true, server_sequence: BigInt(0) }
   }
 
-  async #onApplicationData(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, TlsClientError>> {
+  async #onApplicationData(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (state.type !== "handshaked")
-      return new Err(new InvalidTlsStateError())
+      throw new InvalidTlsStateError()
 
     this.#input.enqueue(record.fragment)
-
-    return Ok.void()
   }
 
-  async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, Error>> {
-    return await Result.unthrow(async t => {
+  async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
+    return await Result.unthrow<Result<void, Error>>(async t => {
       if (state.type !== "handshake")
         return new Err(new InvalidTlsStateError())
 
@@ -356,7 +342,7 @@ export class TlsClientDuplex {
 
       console.warn(handshake)
       return Ok.void()
-    })
+    }).then(r => r.unwrap())
   }
 
   async #onServerHello(handshake: Handshake<Opaque>, state: HandshakeState): Promise<Result<void, Error>> {
@@ -378,7 +364,7 @@ export class TlsClientDuplex {
       if (cipher === undefined)
         return new Err(new UnsupportedCipherError(server_hello.cipher_suite))
 
-      const server_random = Writable.tryWriteToBytes(server_hello.random).throw(t) as Bytes<32>
+      const server_random = Writable.tryWriteToBytes(server_hello.random).throw(t) as Uint8Array<32>
       const server_extensions = Extensions.getServerExtensions(server_hello, state.client_extensions).throw(t)
 
       Console.debug(server_extensions)

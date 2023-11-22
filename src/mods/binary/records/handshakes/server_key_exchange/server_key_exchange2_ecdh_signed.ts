@@ -1,4 +1,4 @@
-import { Bytes } from "@hazae41/bytes"
+import { Uint8Array } from "@hazae41/bytes"
 import { Cursor } from "@hazae41/cursor"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
 import { DigitallySigned } from "mods/binary/signatures/digitally_signed.js"
@@ -34,8 +34,8 @@ export class ServerKeyExchange2ECDHSigned {
 export class ServerKeyExchange2ECDHPreSigned {
 
   constructor(
-    readonly client_random: Bytes<32>,
-    readonly server_random: Bytes<32>,
+    readonly client_random: Uint8Array<32>,
+    readonly server_random: Uint8Array<32>,
     readonly params: ServerECDHParams,
   ) { }
 

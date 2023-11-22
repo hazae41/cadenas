@@ -1,7 +1,6 @@
 import { Opaque, Writable } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
 import { Panic, Result } from "@hazae41/result"
-import { CryptoError } from "libs/crypto/crypto.js"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { AEADEncrypter, BlockEncrypter, Encrypter } from "mods/ciphers/encryptions/encryption.js"
@@ -88,10 +87,9 @@ export class BlockCiphertextRecord {
     readonly fragment: GenericBlockCipher
   ) { }
 
-  static tryFrom(record: PlaintextRecord<Opaque>): Result<BlockCiphertextRecord, Error> {
-    const fragment = record.fragment.tryReadInto(GenericBlockCipher)
-
-    return fragment.mapSync(fragment => new BlockCiphertextRecord(record.type, record.version, fragment))
+  static fromOrThrow(record: PlaintextRecord<Opaque>) {
+    const fragment = record.fragment.readIntoOrThrow(GenericBlockCipher)
+    return new BlockCiphertextRecord(record.type, record.version, fragment)
   }
 
   sizeOrThrow() {
@@ -108,10 +106,9 @@ export class BlockCiphertextRecord {
     this.fragment.writeOrThrow(cursor)
   }
 
-  async tryDecrypt(encrypter: BlockEncrypter, sequence: bigint): Promise<Result<PlaintextRecord<Opaque>, CryptoError>> {
-    const fragment = await this.fragment.tryDecrypt(this, encrypter, sequence)
-
-    return fragment.mapSync(fragment => new PlaintextRecord(this.type, this.version, fragment))
+  async decryptOrThrow(encrypter: BlockEncrypter, sequence: bigint) {
+    const fragment = await this.fragment.decryptOrThrow(this, encrypter, sequence)
+    return new PlaintextRecord(this.type, this.version, fragment)
   }
 
 }
@@ -124,10 +121,9 @@ export class AEADCiphertextRecord {
     readonly fragment: GenericAEADCipher
   ) { }
 
-  static tryFrom(record: PlaintextRecord<Opaque>): Result<AEADCiphertextRecord, Error> {
-    const fragment = record.fragment.tryReadInto(GenericAEADCipher)
-
-    return fragment.mapSync(fragment => new AEADCiphertextRecord(record.type, record.version, fragment))
+  static fromOrThrow(record: PlaintextRecord<Opaque>) {
+    const fragment = record.fragment.readIntoOrThrow(GenericAEADCipher)
+    return new AEADCiphertextRecord(record.type, record.version, fragment)
   }
 
   sizeOrThrow() {
@@ -144,10 +140,9 @@ export class AEADCiphertextRecord {
     this.fragment.writeOrThrow(cursor)
   }
 
-  async tryDecrypt(encrypter: AEADEncrypter, sequence: bigint): Promise<Result<PlaintextRecord<Opaque>, Error>> {
-    const fragment = await this.fragment.tryDecrypt(this, encrypter, sequence)
-
-    return fragment.mapSync(fragment => new PlaintextRecord(this.type, this.version, fragment))
+  async decryptOrThrow(encrypter: AEADEncrypter, sequence: bigint) {
+    const fragment = await this.fragment.decryptOrThrow(this, encrypter, sequence)
+    return new PlaintextRecord(this.type, this.version, fragment)
   }
 
 }

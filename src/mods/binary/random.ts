@@ -1,11 +1,11 @@
-import { Bytes } from "@hazae41/bytes"
+import { Bytes, Uint8Array } from "@hazae41/bytes"
 import { Cursor } from "@hazae41/cursor"
 
 export class Random {
 
   constructor(
     readonly gmt_unix_time: number,
-    readonly random_bytes: Bytes<28>
+    readonly random_bytes: Uint8Array<28>
   ) { }
 
   static default() {

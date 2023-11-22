@@ -1,8 +1,7 @@
 import { Opaque, Writable } from "@hazae41/binary"
-import { Bytes } from "@hazae41/bytes"
+import { Bytes, Uint8Array } from "@hazae41/bytes"
 import { Cursor } from "@hazae41/cursor"
 import { Ok, Result } from "@hazae41/result"
-import { CryptoError } from "libs/crypto/crypto.js"
 import { BlockCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js"
 import { BlockEncrypter } from "mods/ciphers/encryptions/encryption.js"
 
@@ -19,8 +18,8 @@ function modulup(x: number, m: number) {
 
 export class GenericBlockCipher {
   constructor(
-    readonly iv: Bytes<16>,
-    readonly block: Bytes
+    readonly iv: Uint8Array<16>,
+    readonly block: Uint8Array
   ) { }
 
   sizeOrThrow() {
@@ -69,18 +68,16 @@ export class GenericBlockCipher {
     })
   }
 
-  async tryDecrypt(record: BlockCiphertextRecord, encrypter: BlockEncrypter, sequence: bigint): Promise<Result<Opaque, CryptoError>> {
-    return await Result.unthrow(async t => {
-      const plaintext = await encrypter.tryDecrypt(this.iv, this.block).then(r => r.throw(t))
+  async decryptOrThrow(record: BlockCiphertextRecord, encrypter: BlockEncrypter, sequence: bigint) {
+    const plaintext = await encrypter.tryDecrypt(this.iv, this.block).then(r => r.unwrap())
 
-      const content = plaintext.subarray(0, -encrypter.macher.mac_length)
-      const mac = plaintext.subarray(-encrypter.macher.mac_length)
+    const content = plaintext.subarray(0, -encrypter.macher.mac_length)
+    const mac = plaintext.subarray(-encrypter.macher.mac_length)
 
-      // Console.debug("<- content", content.length, Bytes.toHex(content))
-      // Console.debug("<- mac", mac.length, Bytes.toHex(mac))
+    // Console.debug("<- content", content.length, Bytes.toHex(content))
+    // Console.debug("<- mac", mac.length, Bytes.toHex(mac))
 
-      return new Ok(new Opaque(content))
-    })
+    return new Opaque(content)
   }
 
 }
