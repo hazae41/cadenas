@@ -4,7 +4,7 @@ import { BytesOrCopiable } from "@hazae41/box";
 export namespace BigBytes {
 
   export function exportOrThrow(value: bigint) {
-    return Base16.get().padStartAndDecodeOrThrow(value.toString(16))
+    return Base16.get().padStartAndDecodeOrThrow(value.toString(16)).copyAndDispose()
   }
 
   export function importOrThrow(bytes: BytesOrCopiable) {

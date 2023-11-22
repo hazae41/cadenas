@@ -579,8 +579,8 @@ export class TlsClientDuplex {
     const Yc = BigMath.umodpow(g, yc, p)
     const Z = BigMath.umodpow(Ys, yc, p)
 
-    const dh_Yc = BigBytes.exportOrThrow(Yc).copyAndDispose()
-    const dh_Z = BigBytes.exportOrThrow(Z).copyAndDispose()
+    const dh_Yc = BigBytes.exportOrThrow(Yc)
+    const dh_Z = BigBytes.exportOrThrow(Z)
 
     return { dh_Yc, dh_Z }
   }
