@@ -3,7 +3,7 @@ import "@hazae41/symbol-dispose-polyfill"
 import { IA5String } from "@hazae41/asn1"
 import { Base16 } from "@hazae41/base16"
 import { Opaque, Readable, Writable } from "@hazae41/binary"
-import { Bytes } from "@hazae41/bytes"
+import { Bytes, Uint8Array } from "@hazae41/bytes"
 import { SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Future } from "@hazae41/future"
@@ -162,40 +162,36 @@ export class TlsClientDuplex {
     await this.events.output.emit("error", [reason])
   }
 
-  async #onOutputStart(): Promise<Result<void, Error>> {
-    return await Result.unthrow(async t => {
-      if (this.#state.type !== "none")
-        return new Err(new InvalidTlsStateError())
+  async #onOutputStart() {
+    if (this.#state.type !== "none")
+      throw new InvalidTlsStateError()
 
-      const client_hello = ClientHello2.default(this.params.ciphers, this.params.host_name)
+    const client_hello = ClientHello2.default(this.params.ciphers, this.params.host_name)
 
-      const client_random = Writable.tryWriteToBytes(client_hello.random).throw(t) as Bytes<32>
-      const client_extensions = Extensions.getClientExtensions(client_hello).throw(t)
+    const client_random = Writable.writeToBytesOrThrow(client_hello.random) as Uint8Array<32>
+    const client_extensions = Extensions.getClientExtensions(client_hello).unwrap()
 
-      const client_hello_handshake = Handshake.from(client_hello)
-      const messages = [Writable.tryWriteToBytes(client_hello_handshake).throw(t)]
+    const client_hello_handshake = Handshake.from(client_hello)
+    const messages = [Writable.writeToBytesOrThrow(client_hello_handshake)]
 
-      this.#state = { ...this.#state, type: "handshake", messages, step: "client_hello", client_random, client_extensions }
+    this.#state = { ...this.#state, type: "handshake", messages, step: "client_hello", client_random, client_extensions }
 
-      const client_hello_handshake_record = PlaintextRecord.from(client_hello_handshake, 0x0301)
-      this.#output.enqueue(client_hello_handshake_record)
+    const client_hello_handshake_record = PlaintextRecord.from(client_hello_handshake, 0x0301)
+    this.#output.enqueue(client_hello_handshake_record)
 
-      await Plume.tryWaitOrCloseOrError(this.events.input, "handshaked", (future: Future<Ok<void>>) => {
-        future.resolve(Ok.void())
-        return new None()
-      }).then(r => r.throw(t))
-
-      return Ok.void()
+    await Plume.waitOrCloseOrError(this.events.input, "handshaked", (future: Future<void>) => {
+      future.resolve()
+      return new None()
     })
   }
 
-  async #onInputTransform(chunk: Opaque): Promise<Result<void, Error>> {
+  async #onInputTransform(chunk: Opaque) {
     // Console.debug(this.#class.name, "<-", chunk)
 
     if (this.#buffer.offset)
-      return await this.#onReadBuffered(chunk.bytes)
+      await this.#onReadBuffered(chunk.bytes)
     else
-      return await this.#onReadDirect(chunk.bytes)
+      await this.#onReadDirect(chunk.bytes)
   }
 
   /**
@@ -203,14 +199,12 @@ export class TlsClientDuplex {
    * @param chunk 
    * @returns 
    */
-  async #onReadBuffered(chunk: Uint8Array): Promise<Result<void, Error>> {
-    return await Result.unthrow(async t => {
-      this.#buffer.tryWrite(chunk).throw(t)
-      const full = new Uint8Array(this.#buffer.before)
+  async #onReadBuffered(chunk: Uint8Array) {
+    this.#buffer.writeOrThrow(chunk)
+    const full = new Uint8Array(this.#buffer.before)
 
-      this.#buffer.offset = 0
-      return await this.#onReadDirect(full)
-    })
+    this.#buffer.offset = 0
+    await this.#onReadDirect(full)
   }
 
   /**
@@ -218,23 +212,21 @@ export class TlsClientDuplex {
    * @param chunk 
    * @returns 
    */
-  async #onReadDirect(chunk: Uint8Array): Promise<Result<void, Error>> {
-    return await Result.unthrow(async t => {
-      const cursor = new Cursor(chunk)
+  async #onReadDirect(chunk: Uint8Array) {
+    const cursor = new Cursor(chunk)
 
-      while (cursor.remaining) {
-        const record = Readable.tryReadOrRollback(PlaintextRecord, cursor).ignore()
+    while (cursor.remaining) {
+      let record: PlaintextRecord<Opaque>
 
-        if (record.isErr()) {
-          this.#buffer.tryWrite(cursor.after).throw(t)
-          break
-        }
-
-        await this.#onRecord(record.get(), this.#state).then(r => r.throw(t))
+      try {
+        record = Readable.readOrRollbackAndThrow(PlaintextRecord, cursor)
+      } catch (e) {
+        this.#buffer.writeOrThrow(cursor.after)
+        break
       }
 
-      return Ok.void()
-    })
+      await this.#onRecord(record, this.#state)
+    }
   }
 
   async #onOutputTransform(chunk: Writable): Promise<Result<void, Error>> {
@@ -256,29 +248,27 @@ export class TlsClientDuplex {
     })
   }
 
-  async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, Error>> {
+  async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
     if (state.server_encrypted)
-      return await this.#onCiphertextRecord(record, state)
+      await this.#onCiphertextRecord(record, state)
 
-    return await this.#onPlaintextRecord(record, state)
+    await this.#onPlaintextRecord(record, state)
   }
 
-  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }): Promise<Result<void, Error>> {
-    return await Result.unthrow(async t => {
-      if (state.encrypter.cipher_type === "block") {
-        const cipher = BlockCiphertextRecord.tryFrom(record).throw(t)
-        const plain = await cipher.tryDecrypt(state.encrypter, state.server_sequence++)
-        return await this.#onPlaintextRecord(plain.throw(t), state)
-      }
+  async #onCiphertextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState & { server_encrypted: true }) {
+    if (state.encrypter.cipher_type === "block") {
+      const cipher = BlockCiphertextRecord.tryFrom(record).unwrap()
+      const plain = await cipher.tryDecrypt(state.encrypter, state.server_sequence++)
+      return await this.#onPlaintextRecord(plain.unwrap(), state)
+    }
 
-      if (state.encrypter.cipher_type === "aead") {
-        const cipher = AEADCiphertextRecord.tryFrom(record).throw(t)
-        const plain = await cipher.tryDecrypt(state.encrypter, state.server_sequence++)
-        return await this.#onPlaintextRecord(plain.throw(t), state)
-      }
+    if (state.encrypter.cipher_type === "aead") {
+      const cipher = AEADCiphertextRecord.tryFrom(record).unwrap()
+      const plain = await cipher.tryDecrypt(state.encrypter, state.server_sequence++)
+      return await this.#onPlaintextRecord(plain.unwrap(), state)
+    }
 
-      throw new Panic(`Invalid cipher type`)
-    })
+    throw new Panic(`Invalid cipher type`)
   }
 
   async #onPlaintextRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState): Promise<Result<void, Error>> {
