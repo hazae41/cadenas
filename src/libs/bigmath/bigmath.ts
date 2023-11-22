@@ -50,7 +50,8 @@ export function umodpow(base: bigint, exponent: bigint, modulus: bigint): bigint
     if ((exponent % b2) === b1)
       result = (result * base) % modulus
 
-    exponent = exponent / b2
+    exponent /= b2
+
     base = (base ** b2) % modulus
   }
 

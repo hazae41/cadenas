@@ -1,4 +1,4 @@
-import { Ok, Panic, Result } from "@hazae41/result"
+import { Panic } from "@hazae41/result"
 import { Cipher } from "mods/ciphers/cipher.js"
 import { DHE_RSA } from "mods/ciphers/key_exchanges/dhe_rsa/dhe_rsa.js"
 import { ECDHE_RSA } from "mods/ciphers/key_exchanges/ecdhe_rsa/ecdhe_rsa.js"
@@ -18,11 +18,11 @@ export type ReadableServerKeyExchange2 =
 
 export namespace ReadableServerKeyExchange2 {
 
-  export function tryGet(cipher: Cipher): Result<ReadableServerKeyExchange2, never> {
+  export function getOrThrow(cipher: Cipher): ReadableServerKeyExchange2 {
     if (cipher.key_exchange === DHE_RSA)
-      return new Ok(ServerKeyExchange2DHSigned)
+      return ServerKeyExchange2DHSigned
     if (cipher.key_exchange === ECDHE_RSA)
-      return new Ok(ServerKeyExchange2ECDHSigned)
+      return ServerKeyExchange2ECDHSigned
 
     throw new Panic(`Invalid key exchange`)
   }

@@ -1,7 +1,6 @@
 import { Opaque, Writable } from "@hazae41/binary"
 import { Bytes, Uint8Array } from "@hazae41/bytes"
 import { Cursor } from "@hazae41/cursor"
-import { Ok, Result } from "@hazae41/result"
 import { BlockCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js"
 import { BlockEncrypter } from "mods/ciphers/encryptions/encryption.js"
 
@@ -38,38 +37,37 @@ export class GenericBlockCipher {
     return new GenericBlockCipher(iv, block)
   }
 
-  static async tryEncrypt<T extends Writable>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint): Promise<Result<GenericBlockCipher, Error>> {
-    return await Result.unthrow(async t => {
-      const iv = Bytes.random(16)
+  static async encryptOrThrow<T extends Writable>(record: PlaintextRecord<T>, encrypter: BlockEncrypter, sequence: bigint) {
+    const iv = Bytes.random(16)
 
-      const content = Writable.tryWriteToBytes(record.fragment).throw(t)
+    const content = Writable.writeToBytesOrThrow(record.fragment)
 
-      const premac = new Cursor(Bytes.alloc(8 + record.sizeOrThrow()))
-      premac.tryWriteUint64(sequence).throw(t)
-      record.writeOrThrow(premac)
+    const premac = new Cursor(new Uint8Array(8 + record.sizeOrThrow()))
+    premac.writeUint64OrThrow(sequence)
+    record.writeOrThrow(premac)
 
-      const mac = await encrypter.macher.tryWrite(premac.bytes).then(r => r.throw(t))
+    const mac = await encrypter.macher.writeOrThrow(premac.bytes)
 
-      const length = content.length + mac.length
-      const padding_length = modulup(length + 1, 16)
-      const padding = Bytes.alloc(padding_length + 1)
-      padding.fill(padding_length)
+    const length = content.length + mac.length
+    const padding_length = modulup(length + 1, 16)
+    const padding = new Uint8Array(padding_length + 1)
 
-      const plaintext = Bytes.concat([content, mac, padding])
-      const ciphertext = await encrypter.tryEncrypt(iv, plaintext).then(r => r.throw(t))
+    padding.fill(padding_length)
 
-      // Console.debug("-> iv", iv.length, Bytes.toHex(iv))
-      // Console.debug("-> plaintext", plaintext.length, Bytes.toHex(plaintext))
-      // Console.debug("-> content", content.length, Bytes.toHex(content))
-      // Console.debug("-> mac", mac.length, Bytes.toHex(mac))
-      // Console.debug("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
+    const plaintext = Bytes.concat([content, mac, padding])
+    const ciphertext = await encrypter.encryptOrThrow(iv, plaintext)
 
-      return new Ok(new GenericBlockCipher(iv, ciphertext))
-    })
+    // Console.debug("-> iv", iv.length, Bytes.toHex(iv))
+    // Console.debug("-> plaintext", plaintext.length, Bytes.toHex(plaintext))
+    // Console.debug("-> content", content.length, Bytes.toHex(content))
+    // Console.debug("-> mac", mac.length, Bytes.toHex(mac))
+    // Console.debug("-> ciphertext", ciphertext.length, Bytes.toHex(ciphertext))
+
+    return new GenericBlockCipher(iv, ciphertext)
   }
 
   async decryptOrThrow(record: BlockCiphertextRecord, encrypter: BlockEncrypter, sequence: bigint) {
-    const plaintext = await encrypter.tryDecrypt(this.iv, this.block).then(r => r.unwrap())
+    const plaintext = await encrypter.decryptOrThrow(this.iv, this.block)
 
     const content = plaintext.subarray(0, -encrypter.macher.mac_length)
     const mac = plaintext.subarray(-encrypter.macher.mac_length)

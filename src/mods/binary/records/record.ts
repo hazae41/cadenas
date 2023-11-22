@@ -1,6 +1,6 @@
 import { Opaque, Writable } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Panic, Result } from "@hazae41/result"
+import { Panic } from "@hazae41/result"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { AEADEncrypter, BlockEncrypter, Encrypter } from "mods/ciphers/encryptions/encryption.js"
@@ -56,23 +56,21 @@ export class PlaintextRecord<T extends Writable> {
     return new PlaintextRecord<Opaque>(type, version, fragment)
   }
 
-  async #tryEncryptBlock(encrypter: BlockEncrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord, Error>> {
-    const fragment = await GenericBlockCipher.tryEncrypt<T>(this, encrypter, sequence)
-
-    return fragment.mapSync(fragment => new BlockCiphertextRecord(this.type, this.version, fragment))
+  async #encryptBlockOrThrow(encrypter: BlockEncrypter, sequence: bigint) {
+    const fragment = await GenericBlockCipher.encryptOrThrow<T>(this, encrypter, sequence)
+    return new BlockCiphertextRecord(this.type, this.version, fragment)
   }
 
-  async #tryEncryptAEAD(encrypter: AEADEncrypter, sequence: bigint): Promise<Result<AEADCiphertextRecord, Error>> {
-    const fragment = await GenericAEADCipher.tryEncrypt<T>(this, encrypter, sequence)
-
-    return fragment.mapSync(fragment => new AEADCiphertextRecord(this.type, this.version, fragment))
+  async #encryptAeadOrThrow(encrypter: AEADEncrypter, sequence: bigint) {
+    const fragment = await GenericAEADCipher.encryptOrThrow<T>(this, encrypter, sequence)
+    return new AEADCiphertextRecord(this.type, this.version, fragment)
   }
 
-  async tryEncrypt(encrypter: Encrypter, sequence: bigint): Promise<Result<BlockCiphertextRecord | AEADCiphertextRecord, Error>> {
+  async encryptOrThrow(encrypter: Encrypter, sequence: bigint) {
     if (encrypter.cipher_type === "block")
-      return this.#tryEncryptBlock(encrypter, sequence)
+      return this.#encryptBlockOrThrow(encrypter, sequence)
     if (encrypter.cipher_type === "aead")
-      return this.#tryEncryptAEAD(encrypter, sequence)
+      return this.#encryptAeadOrThrow(encrypter, sequence)
 
     throw new Panic(`Invalid cipher type`)
   }

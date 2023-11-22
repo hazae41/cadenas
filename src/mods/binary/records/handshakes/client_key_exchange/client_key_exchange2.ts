@@ -1,4 +1,4 @@
-import { Err, Ok, Result } from "@hazae41/result";
+import { Panic } from "@hazae41/result";
 import { ClientKeyExchange2DH } from "mods/binary/records/handshakes/client_key_exchange/client_key_exchange2_dh.js";
 import { Cipher } from "mods/ciphers/cipher.js";
 import { DHE_RSA } from "mods/ciphers/key_exchanges/dhe_rsa/dhe_rsa.js";
@@ -15,13 +15,13 @@ export type ReadableClientKeyExchange2 =
 
 export namespace ReadableClientKeyExchange2 {
 
-  export function tryGet(cipher: Cipher): Result<ReadableClientKeyExchange2, unknown> {
+  export function getOrThrow(cipher: Cipher): ReadableClientKeyExchange2 {
     if (cipher.key_exchange === DHE_RSA)
-      return new Ok(ClientKeyExchange2DH)
+      return ClientKeyExchange2DH
     if (cipher.key_exchange === ECDHE_RSA)
-      return new Ok(ClientKeyExchange2ECDH)
+      return ClientKeyExchange2ECDH
 
-    return new Err(new Error(`Unsupported key exchange`))
+    throw new Panic(`Unsupported key exchange`)
   }
 
 }
