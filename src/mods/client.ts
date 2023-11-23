@@ -455,7 +455,7 @@ export class TlsClientDuplex {
       throw new Error("Could not verify domain name")
 
     /**
-     * Verify against root certificate authorities
+     * Grab root certificate authority
      */
     if (!this.params.authorized) {
       const last = server_certificates[server_certificates.length - 1]
