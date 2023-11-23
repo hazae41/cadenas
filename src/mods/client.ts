@@ -10,7 +10,7 @@ import { Future } from "@hazae41/future"
 import { None } from "@hazae41/option"
 import { CloseEvents, ErrorEvents, Plume, SuperEventTarget } from "@hazae41/plume"
 import { Panic } from "@hazae41/result"
-import { OIDs, SubjectAltName, X509 } from "@hazae41/x509"
+import { OIDs, OtherName, SubjectAltName, X509 } from "@hazae41/x509"
 import { BigBytes } from "libs/bigint/bigint.js"
 import { BigMath } from "libs/bigmath/index.js"
 import { prfOrThrow } from "mods/algorithms/prf/prf.js"
@@ -48,8 +48,20 @@ import { ClientChangeCipherSpecState, HandshakeState, ServerKeyExchangeState, Tl
 
 
 export interface TlsClientDuplexParams {
-  ciphers: Cipher[]
-  host_name?: string
+  /**
+   * Supported ciphers
+   */
+  readonly ciphers: Cipher[]
+
+  /**
+   * Used for SNI and certificates verification, leave null to disable
+   */
+  readonly host_name?: string
+
+  /**
+   * Do not verify certificates against root certificate authorities
+   */
+  readonly authorized?: boolean
 }
 
 export type TlsClientDuplexReadEvents = CloseEvents & ErrorEvents & {
@@ -105,7 +117,7 @@ export class TlsClientDuplex {
     this.inner = {
       readable: postOutputer.readable,
       writable: preInputer.writable
-    }
+    } as const
 
     /**
      * Outer protocol (HTTP?)
@@ -113,7 +125,7 @@ export class TlsClientDuplex {
     this.outer = {
       readable: postInputer.readable,
       writable: preOutputer.writable
-    }
+    } as const
 
     preInputer.readable
       .pipeTo(postInputer.writable)
@@ -368,6 +380,59 @@ export class TlsClientDuplex {
     this.#state = { ...state, step: "server_hello", action: "server_hello", version, cipher, server_random, server_extensions }
   }
 
+  #verifyHostNameOrThrow(certificate: X509.Certificate) {
+    const { host_name } = this.params
+
+    /**
+     * Do not check if no host name is provided
+     */
+    if (host_name == null)
+      return true
+
+    if (certificate.tbsCertificate.extensions == null)
+      throw new Error("Could not verify domain name")
+
+    for (const extension of certificate.tbsCertificate.extensions?.extensions) {
+      if (extension.extnID.value.inner === OIDs.keys.subjectAltName) {
+        const subjectAltName = extension.extnValue as SubjectAltName
+
+        for (const name of subjectAltName.inner.names) {
+          if (name instanceof OtherName)
+            continue
+          if (name instanceof IA5String) {
+            /**
+             * Verify exact match
+             */
+            if (name.value === host_name)
+              return true
+
+            /**
+             * Verify with wildcards
+             */
+
+            const self: string[] = host_name.split(".")
+            const other: string[] = name.value.split(".")
+
+            if (self.length !== other.length)
+              continue
+
+            const unstarred = other.map((x, i) => {
+              if (x === "*")
+                return self[i]
+              return x
+            }).join(".")
+
+            if (unstarred === host_name)
+              return true
+            continue
+          }
+        }
+      }
+    }
+
+    throw new Error("Could not verify domain name")
+  }
+
   async #onCertificate(handshake: Handshake<Opaque>, state: HandshakeState) {
     if (state.step !== "server_hello")
       throw new InvalidTlsStateError()
@@ -378,19 +443,21 @@ export class TlsClientDuplex {
 
     const server_certificates = certificate.certificate_list.value.array.map(it => X509.readAndResolveFromBytesOrThrow(X509.Certificate, it.value.bytes))
 
-    const handled = await this.events.input.emit("certificates", [server_certificates])
-
-    if (handled.isSome()) {
-      this.#state = { ...state, action: "server_certificate", server_certificates }
-      return
-    }
-
     const now = new Date()
 
     if (server_certificates.length === 0)
       throw new Error(`Empty certificates`)
 
-    {
+    /**
+     * Verify host name
+     */
+    if (this.#verifyHostNameOrThrow(server_certificates[0]) !== true)
+      throw new Error("Could not verify domain name")
+
+    /**
+     * Verify against root certificate authorities
+     */
+    if (!this.params.authorized) {
       const last = server_certificates[server_certificates.length - 1]
 
       const issuer = last.tbsCertificate.issuer.toX501OrThrow()
@@ -410,6 +477,9 @@ export class TlsClientDuplex {
       server_certificates.push(certX509)
     }
 
+    /**
+     * Verify certificate chain (including root certificate authority)
+     */
     for (let i = 0; i < server_certificates.length; i++) {
       const current = server_certificates[i]
       const next = server_certificates.at(i + 1)
@@ -419,66 +489,11 @@ export class TlsClientDuplex {
       if (now < current.tbsCertificate.validity.notBefore.value)
         throw new Error(`Certificate is not yet valid`)
 
-      if (i === 0) {
-        /**
-         * Verify subjectAltName against host_name
-         * @returns 
-         */
-        const verify = () => {
-          const { host_name } = this.params
-
-          /**
-           * Do not check
-           */
-          if (host_name == null)
-            return true
-
-          if (current.tbsCertificate.extensions == null)
-            return false
-
-          for (const extension of current.tbsCertificate.extensions?.extensions) {
-            if (extension.extnID.value.inner === OIDs.keys.subjectAltName) {
-              const subjectAltName = extension.extnValue as SubjectAltName
-
-              for (const name of subjectAltName.inner.names) {
-                if (name instanceof IA5String) {
-                  if (name.value === this.params.host_name)
-                    return true
-
-                  const self = host_name.split(".")
-                  const other = name.value.split(".")
-
-                  if (self.length !== other.length)
-                    continue
-
-                  const unstarred = other.map((x, i) => {
-                    if (x === "*")
-                      return self[i]
-                    return x
-                  }).join(".")
-
-                  if (unstarred === this.params.host_name)
-                    return true
-                  continue
-                }
-              }
-            }
-          }
-
-          return false
-        }
-
-        if (!verify())
-          throw new Error("Could not verify domain name")
-      }
-
       if (next == null)
         break
 
-      if (current.algorithmIdentifier.algorithm.value.inner !== OIDs.keys.sha256WithRSAEncryption) {
-        console.warn("Unsupported signature algorithm", current.algorithmIdentifier.algorithm.value.inner)
-        continue
-      }
+      if (current.algorithmIdentifier.algorithm.value.inner !== OIDs.keys.sha256WithRSAEncryption)
+        throw new Error(`Unsupported signature algorithm ${current.algorithmIdentifier.algorithm.value.inner}`)
 
       const signed = X509.writeToBytesOrThrow(current.tbsCertificate)
       const publicKey = X509.writeToBytesOrThrow(next.tbsCertificate.subjectPublicKeyInfo)
@@ -494,6 +509,8 @@ export class TlsClientDuplex {
 
       continue
     }
+
+    await this.events.input.emit("certificates", [server_certificates])
 
     this.#state = { ...state, action: "server_certificate", server_certificates }
   }
