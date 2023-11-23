@@ -526,10 +526,11 @@ export class TlsClientDuplex {
     if (server_key_exchange instanceof ServerKeyExchange2DHSigned) {
       Console.debug(server_key_exchange)
 
+      const { params } = server_key_exchange
+
       console.warn("Could not verify key exchange")
 
-      const server_dh_params = server_key_exchange.params
-      this.#state = { ...state, action: "server_key_exchange", server_dh_params }
+      this.#state = { ...state, action: "server_key_exchange", server_dh_params: params }
 
       return
     }
@@ -562,8 +563,7 @@ export class TlsClientDuplex {
       if (!verified)
         throw new Error(`Invalid signature`)
 
-      const server_ecdh_params = server_key_exchange.params
-      this.#state = { ...state, action: "server_key_exchange", server_ecdh_params }
+      this.#state = { ...state, action: "server_key_exchange", server_ecdh_params: params }
 
       return
     }
