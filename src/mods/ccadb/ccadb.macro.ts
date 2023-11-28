@@ -11,7 +11,6 @@ import { Nullable } from "@hazae41/option"
 export namespace CCADB {
 
   export interface Trusted {
-    readonly certHex: string
     readonly notAfter?: string
   }
 
@@ -43,16 +42,14 @@ export namespace CCADB {
         const spki = Writable.writeToBytesOrThrow(x509.tbsCertificate.subjectPublicKeyInfo.toDER())
         const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", spki))
 
-        const hashHex = Buffer.from(hash).toString("hex")
-        const certHex = Buffer.from(pem).toString("hex")
+        const key = Buffer.from(hash).toString("hex")
 
-        if (trusteds[hashHex])
-          console.warn(`Duplicate spki: ${hashHex}`)
+        if (trusteds[key])
+          console.warn(`Duplicate spki: ${key}`)
 
-        if (notAfter)
-          trusteds[hashHex] = { notAfter, certHex }
-        else
-          trusteds[hashHex] = { certHex }
+        trusteds[key] = notAfter
+          ? { notAfter }
+          : {}
       } catch (e: unknown) {
         console.warn(e)
       }
