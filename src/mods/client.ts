@@ -454,61 +454,66 @@ export class TlsClientDuplex {
     if (this.#verifyHostNameOrThrow(server_certificates[0]) !== true)
       throw new Error("Could not verify domain name")
 
-    /**
-     * Grab root certificate authority
-     */
-    if (!this.params.authorized) {
-      const last = server_certificates[server_certificates.length - 1]
-
-      const issuer = last.tbsCertificate.issuer.toX501OrThrow()
-      const trusted = CCADB.trusteds[issuer]
-
-      if (trusted == null)
-        throw new Error(`No matching root certificate authority`)
-
-      const { notAfter, certHex } = trusted
-
-      if (notAfter != null && now > new Date(notAfter))
-        throw new Error(`Root certificate is distrusted`)
-
-      using certSlice = Base16.get().padStartAndDecodeOrThrow(certHex)
-      const certX509 = X509.readAndResolveFromBytesOrThrow(X509.Certificate, certSlice.bytes)
-
-      server_certificates.push(certX509)
-    }
+    let authorized = this.params.authorized
 
     /**
-     * Verify certificate chain (including root certificate authority)
+     * Verify certificate chain
      */
-    for (let i = 0; i < server_certificates.length; i++) {
+    for (let i = 0; authorized !== true && i < server_certificates.length; i++) {
       const current = server_certificates[i]
-      const next = server_certificates.at(i + 1)
 
       if (now > current.tbsCertificate.validity.notAfter.value)
         throw new Error(`Certificate is expired`)
       if (now < current.tbsCertificate.validity.notBefore.value)
         throw new Error(`Certificate is not yet valid`)
 
+      const next = server_certificates.at(i + 1)
+
       if (next == null)
         break
+
+      const issuer = current.tbsCertificate.issuer.toX501OrThrow()
+      const subject = next.tbsCertificate.subject.toX501OrThrow()
+
+      if (issuer !== subject)
+        throw new Error(`Invalid certificate chain`)
+
+      const spki = Writable.writeToBytesOrThrow(next.tbsCertificate.subjectPublicKeyInfo.toDER())
+      const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", spki))
+
+      const payload = Writable.writeToBytesOrThrow(current.tbsCertificate.toDER())
 
       if (current.algorithmIdentifier.algorithm.value.inner !== OIDs.keys.sha256WithRSAEncryption)
         throw new Error(`Unsupported signature algorithm ${current.algorithmIdentifier.algorithm.value.inner}`)
 
-      const signed = X509.writeToBytesOrThrow(current.tbsCertificate)
-      const publicKey = X509.writeToBytesOrThrow(next.tbsCertificate.subjectPublicKeyInfo)
-
       const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
       const signature = current.signatureValue.bytes
 
-      const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, true, ["verify"])
-      const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signed)
+      const identity = await crypto.subtle.importKey("spki", spki, signatureAlgorithm, true, ["verify"])
+      const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", identity, signature, payload)
 
       if (!verified)
         throw new Error(`Invalid signature`)
 
-      continue
+      const trusted = CCADB.trusteds[Base16.get().encodeOrThrow(hash)]
+
+      if (trusted == null)
+        continue
+
+      const { notAfter } = trusted
+
+      if (notAfter != null && (now > new Date(notAfter)))
+        continue
+
+      /**
+       * This certificate was signed by a trusted identity
+       */
+      authorized = true
+      break
     }
+
+    if (authorized !== true)
+      throw new Error(`Could not verify certificate chain`)
 
     await this.events.input.emit("certificates", [server_certificates])
 

@@ -5,6 +5,7 @@ import { $run$ } from "@hazae41/saumon"
 import { PEM, X509 } from "@hazae41/x509"
 import fs from "fs/promises"
 
+import { Writable } from "@hazae41/binary"
 import { Nullable } from "@hazae41/option"
 
 export namespace CCADB {
@@ -39,16 +40,19 @@ export namespace CCADB {
         const pem = PEM.tryDecode(cert.PEM.slice(1, -1)).unwrap()
         const x509 = X509.readAndResolveFromBytesOrThrow(X509.Certificate, pem)
 
-        const issuer = x509.tbsCertificate.issuer.toX501OrThrow()
+        const spki = Writable.writeToBytesOrThrow(x509.tbsCertificate.subjectPublicKeyInfo.toDER())
+        const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", spki))
+
+        const hashHex = Buffer.from(hash).toString("hex")
         const certHex = Buffer.from(pem).toString("hex")
 
-        if (trusteds[issuer])
-          console.warn(`Duplicate issuer: ${issuer}`)
+        if (trusteds[hashHex])
+          console.warn(`Duplicate spki: ${hashHex}`)
 
         if (notAfter)
-          trusteds[issuer] = { notAfter, certHex }
+          trusteds[hashHex] = { notAfter, certHex }
         else
-          trusteds[issuer] = { certHex }
+          trusteds[hashHex] = { certHex }
       } catch (e: unknown) {
         console.warn(e)
       }
