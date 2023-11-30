@@ -393,7 +393,7 @@ export class TlsClientDuplex {
       throw new Error("Could not verify domain name")
 
     for (const extension of certificate.tbsCertificate.extensions?.extensions) {
-      if (extension.extnID.value.inner === OIDs.keys.subjectAltName) {
+      if (extension.extnID.value === OIDs.keys.subjectAltName) {
         const subjectAltName = extension.extnValue as SubjectAltName
 
         for (const name of subjectAltName.inner.names) {
@@ -483,8 +483,8 @@ export class TlsClientDuplex {
 
       const payload = Writable.writeToBytesOrThrow(current.tbsCertificate.toDER())
 
-      if (current.algorithmIdentifier.algorithm.value.inner !== OIDs.keys.sha256WithRSAEncryption)
-        throw new Error(`Unsupported signature algorithm ${current.algorithmIdentifier.algorithm.value.inner}`)
+      if (current.algorithmIdentifier.algorithm.value !== OIDs.keys.sha256WithRSAEncryption)
+        throw new Error(`Unsupported signature algorithm ${current.algorithmIdentifier.algorithm.value}`)
 
       const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
       const signature = current.signatureValue.bytes
