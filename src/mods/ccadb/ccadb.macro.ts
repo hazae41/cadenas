@@ -27,14 +27,6 @@ export namespace CCADB {
     const trusteds: Record<string, Trusted> = {}
 
     for (const cert of certs) {
-      const notAfter = cert["Distrust for TLS After Date"]
-
-      if (notAfter && new Date() > new Date(notAfter))
-        continue
-
-      if (cert["Mozilla Applied Constraints"])
-        continue
-
       try {
         const pem = PEM.tryDecode(cert.PEM.slice(1, -1)).unwrap()
         const x509 = X509.readAndResolveFromBytesOrThrow(X509.Certificate, pem)
@@ -44,8 +36,22 @@ export namespace CCADB {
 
         const key = Buffer.from(hash).toString("hex")
 
-        if (trusteds[key])
-          console.warn(`Duplicate spki: ${key}`)
+        if (trusteds[key]) {
+          console.warn(key, `Duplicated`)
+          continue
+        }
+
+        const notAfter = cert["Distrust for TLS After Date"]
+
+        if (notAfter && new Date() > new Date(notAfter)) {
+          console.warn(key, `Expired at ${notAfter}`)
+          continue
+        }
+
+        if (cert["Mozilla Applied Constraints"]) {
+          console.warn(key, `Mozilla Applied Constraints ${cert["Mozilla Applied Constraints"]}`)
+          continue
+        }
 
         trusteds[key] = notAfter
           ? { notAfter }
