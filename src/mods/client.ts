@@ -180,15 +180,19 @@ export class TlsClientDuplex {
 
     const client_hello = ClientHello2.default(this.params.ciphers, this.params.host_name)
 
+    Console.debug(client_hello)
+
     const client_random = Writable.writeToBytesOrThrow(client_hello.random) as Uint8Array<32>
     const client_extensions = Extensions.getClientExtensions(client_hello)
 
     const client_hello_handshake = Handshake.from(client_hello)
+
     const messages = [Writable.writeToBytesOrThrow(client_hello_handshake)]
 
     this.#state = { ...this.#state, type: "handshake", messages, step: "client_hello", client_random, client_extensions }
 
     const client_hello_handshake_record = PlaintextRecord.from(client_hello_handshake, 0x0301)
+
     this.#output.enqueue(client_hello_handshake_record)
 
     await Plume.waitOrCloseOrError(this.events.input, "handshaked", (future: Future<void>) => {
@@ -456,12 +460,6 @@ export class TlsClientDuplex {
 
     let authorized = this.params.authorized
 
-    console.log(server_certificates)
-
-    {
-
-    }
-
     /**
      * Verify certificate chain
      */
@@ -568,29 +566,38 @@ export class TlsClientDuplex {
 
       const { params, signed_params } = server_key_exchange
 
-      if (signed_params.algorithm.hash.type !== HashAlgorithm.types.sha256)
-        throw new Error(`Unsupported hash algorithm ${signed_params.algorithm.hash.type}`)
+      if (signed_params.algorithm.signature.type === SignatureAlgorithm.types.rsa) {
+        if (signed_params.algorithm.hash.type !== HashAlgorithm.types.sha256)
+          throw new Error(`Unsupported hash algorithm ${signed_params.algorithm.hash.type}`)
 
-      if (signed_params.algorithm.signature.type !== SignatureAlgorithm.types.rsa)
-        throw new Error(`Unsupported signature algorithm${signed_params.algorithm.signature.type}`)
+        const publicKey = X509.writeToBytesOrThrow(state.server_certificates[0].tbsCertificate.subjectPublicKeyInfo)
 
-      const publicKey = X509.writeToBytesOrThrow(state.server_certificates[0].tbsCertificate.subjectPublicKeyInfo)
+        const presigned = new ServerKeyExchange2ECDHPreSigned(state.client_random, state.server_random, params)
+        const bytes = Writable.writeToBytesOrThrow(presigned)
 
-      const presigned = new ServerKeyExchange2ECDHPreSigned(state.client_random, state.server_random, params)
-      const bytes = Writable.writeToBytesOrThrow(presigned)
+        const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
+        const signature = signed_params.signature.value.bytes
 
-      const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
-      const signature = signed_params.signature.value.bytes
+        const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, true, ["verify"])
+        const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, bytes)
 
-      const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, true, ["verify"])
-      const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, bytes)
+        if (!verified)
+          throw new Error(`Invalid signature`)
 
-      if (!verified)
-        throw new Error(`Invalid signature`)
+        this.#state = { ...state, action: "server_key_exchange", server_ecdh_params: params }
 
-      this.#state = { ...state, action: "server_key_exchange", server_ecdh_params: params }
+        return
+      }
 
-      return
+      if (signed_params.algorithm.signature.type === SignatureAlgorithm.types.ecdsa) {
+        console.warn("Could not verify key exchange")
+
+        this.#state = { ...state, action: "server_key_exchange", server_ecdh_params: params }
+
+        return
+      }
+
+      throw new Error(`Unsupported signature algorithm ${signed_params.algorithm.signature.type}`)
     }
 
     console.warn(server_key_exchange)

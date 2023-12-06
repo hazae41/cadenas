@@ -20,12 +20,16 @@ export class SignatureAlgorithms {
     return new SignatureAlgorithms(supported_signature_algorithms)
   }
 
-  static default() {
-    const { rsaWithSha256 } = SignatureAndHashAlgorithm.instances
-
-    const supported_signature_algorithms = Vector(Number16).from(List.from([rsaWithSha256]))
+  static from(supported_signature_algorithms_list: SignatureAndHashAlgorithm[]) {
+    const supported_signature_algorithms = Vector(Number16).from(List.from(supported_signature_algorithms_list))
 
     return new this(supported_signature_algorithms)
+  }
+
+  static default() {
+    const { rsa_pkcs1_sha256, ecdsa_secp256r1_sha256, ed25519, ed448 } = SignatureAndHashAlgorithm.instances
+
+    return this.from([rsa_pkcs1_sha256, ecdsa_secp256r1_sha256])
   }
 
   get extension_type() {

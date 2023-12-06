@@ -6,14 +6,18 @@ export class SignatureAlgorithm {
     anonymous: 0,
     rsa: 1,
     dsa: 2,
-    ecdsa: 3
+    ecdsa: 3,
+    ed25519: 7,
+    ed448: 8
   } as const
 
   static readonly instances = {
     anonymous: new SignatureAlgorithm(SignatureAlgorithm.types.anonymous),
     rsa: new SignatureAlgorithm(SignatureAlgorithm.types.rsa),
     dsa: new SignatureAlgorithm(SignatureAlgorithm.types.dsa),
-    ecdsa: new SignatureAlgorithm(SignatureAlgorithm.types.ecdsa)
+    ecdsa: new SignatureAlgorithm(SignatureAlgorithm.types.ecdsa),
+    ed25519: new SignatureAlgorithm(SignatureAlgorithm.types.ed25519),
+    ed448: new SignatureAlgorithm(SignatureAlgorithm.types.ed448)
   } as const
 
   constructor(

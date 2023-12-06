@@ -10,7 +10,6 @@ import { Random } from "mods/binary/random.js"
 import { ECPointFormats } from "mods/binary/records/handshakes/extensions/ec_point_formats/ec_point_formats.js"
 import { EllipticCurves } from "mods/binary/records/handshakes/extensions/elliptic_curves/elliptic_curves.js"
 import { Extension } from "mods/binary/records/handshakes/extensions/extension.js"
-import { OpaqueExtension } from "mods/binary/records/handshakes/extensions/opaque.js"
 import { ResolvedExtension } from "mods/binary/records/handshakes/extensions/resolved.js"
 import { SignatureAlgorithms } from "mods/binary/records/handshakes/extensions/signature_algorithms/signature_algorithms.js"
 import { Handshake } from "mods/binary/records/handshakes/handshake.js"
@@ -88,7 +87,7 @@ export class ClientHello2 {
     const compression_methods = ReadableVector(Number8, ReadableList(Number8)).readOrThrow(cursor)
 
     const extensions = cursor.remaining > 0
-      ? new Some(ReadableVector(Number16, ReadableList(OpaqueExtension)).readOrThrow(cursor))
+      ? new Some(ReadableVector(Number16, ReadableList(ResolvedExtension)).readOrThrow(cursor))
       : new None()
 
     return new ClientHello2(version, random, session_id, cipher_suites, compression_methods, extensions)

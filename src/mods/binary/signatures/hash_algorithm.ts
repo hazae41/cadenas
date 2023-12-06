@@ -10,6 +10,7 @@ export class HashAlgorithm {
     sha256: 4,
     sha384: 5,
     sha512: 6,
+    intrinsic: 8
   } as const
 
   static readonly instances = {
@@ -19,7 +20,8 @@ export class HashAlgorithm {
     sha224: new HashAlgorithm(HashAlgorithm.types.sha224),
     sha256: new HashAlgorithm(HashAlgorithm.types.sha256),
     sha384: new HashAlgorithm(HashAlgorithm.types.sha384),
-    sha512: new HashAlgorithm(HashAlgorithm.types.sha512)
+    sha512: new HashAlgorithm(HashAlgorithm.types.sha512),
+    intrinsic: new HashAlgorithm(HashAlgorithm.types.intrinsic)
   } as const
 
   constructor(

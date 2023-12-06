@@ -5,7 +5,10 @@ import { SignatureAlgorithm } from "mods/binary/signatures/signature_algorithm.j
 export class SignatureAndHashAlgorithm {
 
   static readonly instances = {
-    rsaWithSha256: new this(HashAlgorithm.instances.sha256, SignatureAlgorithm.instances.rsa)
+    rsa_pkcs1_sha256: new this(HashAlgorithm.instances.sha256, SignatureAlgorithm.instances.rsa),
+    ecdsa_secp256r1_sha256: new this(HashAlgorithm.instances.sha256, SignatureAlgorithm.instances.ecdsa),
+    ed25519: new this(HashAlgorithm.instances.intrinsic, SignatureAlgorithm.instances.ed25519),
+    ed448: new this(HashAlgorithm.instances.intrinsic, SignatureAlgorithm.instances.ed448)
   } as const
 
   constructor(

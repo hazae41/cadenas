@@ -19,6 +19,8 @@ export type ResolvedExtension =
 export namespace ResolvedExtension {
 
   function resolveOrThrow(type: number, cursor: Cursor): Vector<Number16, ResolvedExtension> {
+    // if (type === Extension.types.server_name)
+    //   return ReadableVector(Number16, ServerNameList).readOrThrow(cursor)
     if (type === Extension.types.signature_algorithms)
       return ReadableVector(Number16, SignatureAlgorithms).readOrThrow(cursor)
     if (type === Extension.types.elliptic_curves)
