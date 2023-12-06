@@ -2,6 +2,7 @@ import { Opaque, Writable } from "@hazae41/binary"
 import { Ciphers, TlsClientDuplex } from "@hazae41/cadenas"
 import { fetch } from "@hazae41/fleche"
 import { Mutex } from "@hazae41/mutex"
+import { None } from "@hazae41/option"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { WebSocketStream, createWebSocketStream } from "../src/transports/websocket"
 
@@ -18,6 +19,11 @@ async function createTlsStream(tcp: ReadableWritablePair<Opaque, Writable>) {
 
   const tls = new TlsClientDuplex({ host_name: "twitter.com", ciphers })
 
+  tls.events.input.on("certificates", c => {
+    console.log("certificates", c)
+    return new None()
+  })
+
   tcp.readable
     .pipeTo(tls.inner.writable, {})
     .catch(e => console.error({ e }))
@@ -25,10 +31,6 @@ async function createTlsStream(tcp: ReadableWritablePair<Opaque, Writable>) {
   tls.inner.readable
     .pipeTo(tcp.writable, {})
     .catch(e => console.error({ e }))
-
-  // tls.events.input.on("certificates", () => {
-  //   return new Some(new Err(`Wrong certificate`))
-  // })
 
   return tls
 }

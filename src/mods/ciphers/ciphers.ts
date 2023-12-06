@@ -7,6 +7,7 @@ import { SHA } from "mods/ciphers/hashes/sha/sha.js"
 import { SHA256 } from "mods/ciphers/hashes/sha256/sha256.js"
 import { SHA384 } from "mods/ciphers/hashes/sha384/sha384.js"
 import { DHE_RSA } from "mods/ciphers/key_exchanges/dhe_rsa/dhe_rsa.js"
+import { ECDHE_ECDSA } from "./index.js"
 import { ECDHE_RSA } from "./key_exchanges/ecdhe_rsa/ecdhe_rsa.js"
 
 /**
@@ -25,3 +26,8 @@ export const TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 = new Cipher(0x009E, DHE_RSA, A
 export const TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 = new Cipher(0x009F, DHE_RSA, AES_256_GCM, SHA384)
 
 export const TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 = new Cipher(0xC030, ECDHE_RSA, AES_256_GCM, SHA384)
+
+/**
+ * Strong ciphers
+ */
+export const TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 = new Cipher(0xC02C, ECDHE_ECDSA, AES_256_GCM, SHA384)

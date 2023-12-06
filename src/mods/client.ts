@@ -456,6 +456,12 @@ export class TlsClientDuplex {
 
     let authorized = this.params.authorized
 
+    console.log(server_certificates)
+
+    {
+
+    }
+
     /**
      * Verify certificate chain
      */
@@ -467,21 +473,29 @@ export class TlsClientDuplex {
       if (now < current.tbsCertificate.validity.notBefore.value)
         throw new Error(`Certificate is not yet valid`)
 
-      const next = server_certificates.at(i + 1)
-
-      if (next == null)
-        break
-
       const issuer = current.tbsCertificate.issuer.toX501OrThrow()
+
+      let next = server_certificates.at(i + 1)
+
+      if (next == null) {
+        const trusted = CCADB.trusteds[issuer]
+
+        if (trusted == null)
+          continue
+
+        const raw = Base16.get().padStartAndDecodeOrThrow(trusted.certBase16).copyAndDispose()
+        const x509 = X509.readAndResolveFromBytesOrThrow(X509.Certificate, raw)
+
+        next = x509
+      }
+
       const subject = next.tbsCertificate.subject.toX501OrThrow()
 
       if (issuer !== subject)
         throw new Error(`Invalid certificate chain`)
 
       const spki = Writable.writeToBytesOrThrow(next.tbsCertificate.subjectPublicKeyInfo.toDER())
-      const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", spki))
-
-      const payload = Writable.writeToBytesOrThrow(current.tbsCertificate.toDER())
+      const data = Writable.writeToBytesOrThrow(current.tbsCertificate.toDER())
 
       if (current.algorithmIdentifier.algorithm.value !== OIDs.keys.sha256WithRSAEncryption)
         throw new Error(`Unsupported signature algorithm ${current.algorithmIdentifier.algorithm.value}`)
@@ -490,19 +504,25 @@ export class TlsClientDuplex {
       const signature = current.signatureValue.bytes
 
       const identity = await crypto.subtle.importKey("spki", spki, signatureAlgorithm, true, ["verify"])
-      const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", identity, signature, payload)
+      const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", identity, signature, data)
 
       if (!verified)
         throw new Error(`Invalid signature`)
 
-      const trusted = CCADB.trusteds[Base16.get().encodeOrThrow(hash)]
+      const trusted = CCADB.trusteds[issuer]
 
       if (trusted == null)
         continue
 
       const { notAfter } = trusted
 
-      if (notAfter != null && (now > new Date(notAfter)))
+      if (notAfter && now > new Date(notAfter))
+        continue
+
+      const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", spki))
+      using hash2 = Base16.get().padStartAndDecodeOrThrow(trusted.hashBase16)
+
+      if (!Bytes.equals(hash, hash2.bytes))
         continue
 
       /**

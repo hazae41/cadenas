@@ -11,6 +11,8 @@ import { Nullable } from "@hazae41/option"
 export namespace CCADB {
 
   export interface Trusted {
+    readonly hashBase16: string
+    readonly certBase16: string
     readonly notAfter?: string
   }
 
@@ -20,6 +22,8 @@ export namespace CCADB {
       "Mozilla Applied Constraints": string
       "PEM": `'${string}'`
     }
+
+    const now = new Date()
 
     const ccadb = await fs.readFile("./tools/ccadb/ccadb.json", "utf8")
     const certs = JSON.parse(ccadb) as Row[]
@@ -34,28 +38,29 @@ export namespace CCADB {
         const spki = Writable.writeToBytesOrThrow(x509.tbsCertificate.subjectPublicKeyInfo.toDER())
         const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", spki))
 
-        const key = Buffer.from(hash).toString("hex")
+        const x501 = x509.tbsCertificate.subject.toX501OrThrow()
 
-        if (trusteds[key]) {
-          console.warn(key, `Duplicated`)
+        const certBase16 = Buffer.from(pem).toString("hex")
+        const hashBase16 = Buffer.from(hash).toString("hex")
+
+        if (trusteds[x501]) {
+          console.warn(hashBase16, `Duplicated`)
           continue
         }
 
         const notAfter = cert["Distrust for TLS After Date"]
 
-        if (notAfter && new Date() > new Date(notAfter)) {
-          console.warn(key, `Expired at ${notAfter}`)
+        if (notAfter && now > new Date(notAfter)) {
+          console.warn(hashBase16, `Expired at ${notAfter}`)
           continue
         }
 
         if (cert["Mozilla Applied Constraints"]) {
-          console.warn(key, `Mozilla Applied Constraints ${cert["Mozilla Applied Constraints"]}`)
+          console.warn(hashBase16, `Mozilla Applied Constraints ${cert["Mozilla Applied Constraints"]}`)
           continue
         }
 
-        trusteds[key] = notAfter
-          ? { notAfter }
-          : {}
+        trusteds[x501] = { hashBase16, certBase16, notAfter }
       } catch (e: unknown) {
         console.warn(e)
       }
