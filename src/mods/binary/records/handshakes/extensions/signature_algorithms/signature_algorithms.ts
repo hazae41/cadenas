@@ -29,7 +29,7 @@ export class SignatureAlgorithms {
   static default() {
     const { rsa_pkcs1_sha256, ecdsa_secp256r1_sha256, ed25519, ed448 } = SignatureAndHashAlgorithm.instances
 
-    return this.from([rsa_pkcs1_sha256, ecdsa_secp256r1_sha256])
+    return this.from([rsa_pkcs1_sha256, ecdsa_secp256r1_sha256, ed25519])
   }
 
   get extension_type() {
