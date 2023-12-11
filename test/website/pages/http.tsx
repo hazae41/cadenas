@@ -8,6 +8,7 @@ import { WebSocketStream, createWebSocketStream } from "../src/transports/websoc
 
 async function createTlsStream(tcp: ReadableWritablePair<Opaque, Writable>) {
   Cadenas.Console.debugging = true
+
   const ciphers = [
     // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
     // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
@@ -16,6 +17,7 @@ async function createTlsStream(tcp: ReadableWritablePair<Opaque, Writable>) {
     // Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
     // Ciphers.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
     // Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+    Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
     Ciphers.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
   ]
 
