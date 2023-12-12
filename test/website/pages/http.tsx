@@ -21,7 +21,7 @@ async function createTlsStream(tcp: ReadableWritablePair<Opaque, Writable>) {
     Ciphers.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
   ]
 
-  const tls = new TlsClientDuplex({ host_name: "sig.api.vechain.energy", ciphers })
+  const tls = new TlsClientDuplex({ host_name: "sig.eth.samczsun.com", ciphers })
 
   tls.events.input.on("certificates", c => {
     console.log("certificates", c)
@@ -70,7 +70,7 @@ export default function Home() {
         const headers = { "Content-Type": "application/json" }
         const body = JSON.stringify({ "jsonrpc": "2.0", "method": "web3_clientVersion", "params": [], "id": 67 })
 
-        const res = await fetch("https://sig.api.vechain.energy/0xa5e95932", { method: "POST", headers, body, stream: tls.outer, preventAbort: true, preventCancel: true, preventClose: true })
+        const res = await fetch("https://sig.eth.samczsun.com/api/v1/signatures?function=0xa5e95932", { stream: tls.outer, preventAbort: true, preventCancel: true, preventClose: true })
 
         console.log(Date.now() - start, "ms")
         console.log(res.status, res.statusText)

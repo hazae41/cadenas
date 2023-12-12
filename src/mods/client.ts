@@ -510,6 +510,33 @@ export class TlsClientDuplex {
         verified = await crypto.subtle.verify(signatureAlgorithm, identityKey, signatureBytes, dataBytes)
       }
 
+      else if (current.algorithmIdentifier.algorithm.value === "1.2.840.10045.4.3.2" /* ecdsaWithSHA256 */) {
+        if (identitySpki.algorithm.algorithm.value !== "1.2.840.10045.2.1" /* ecPublicKey */)
+          throw new Error(`Invalid public key algorithm ${identitySpki.algorithm.algorithm.value}`)
+        if (!(identitySpki.algorithm.parameters instanceof ObjectIdentifier))
+          throw new Error(`Invalid public key parameters ${identitySpki.algorithm.parameters}`)
+
+        if (identitySpki.algorithm.parameters.value === "1.2.840.10045.3.1.7" /* secp256r1 */) {
+          const identityAlgorithm = { name: "ECDSA", namedCurve: "P-256" }
+          const identityKey = await crypto.subtle.importKey("spki", identityBytes, identityAlgorithm, false, ["verify"])
+
+          const dataBytes = Writable.writeToBytesOrThrow(current.tbsCertificate.toDER())
+
+          const signatureAlgorithm = { name: "ECDSA", hash: { name: "SHA-256" } }
+          const signatureBytes = current.signatureValue.bytes
+          const signatureAsn1 = Readable.readFromBytesOrThrow(Sequence.DER, signatureBytes)
+
+          const rAsn1 = signatureAsn1.triplets[0].readIntoOrThrow(Integer.DER)
+          const sAsn1 = signatureAsn1.triplets[1].readIntoOrThrow(Integer.DER)
+
+          const rAndS = new Cursor(new Uint8Array(32 * 2))
+          rAndS.writeOrThrow(BigBytes.exportOrThrow(rAsn1.value))
+          rAndS.writeOrThrow(BigBytes.exportOrThrow(sAsn1.value))
+
+          verified = await crypto.subtle.verify(signatureAlgorithm, identityKey, rAndS.bytes, dataBytes)
+        }
+      }
+
       else if (current.algorithmIdentifier.algorithm.value === "1.2.840.10045.4.3.3" /* ecdsaWithSHA384 */) {
         if (identitySpki.algorithm.algorithm.value !== "1.2.840.10045.2.1" /* ecPublicKey */)
           throw new Error(`Invalid public key algorithm ${identitySpki.algorithm.algorithm.value}`)
