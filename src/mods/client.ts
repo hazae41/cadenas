@@ -1,17 +1,16 @@
 import "@hazae41/symbol-dispose-polyfill"
 
-import { IA5String, Integer, Sequence } from "@hazae41/asn1"
+import { IA5String, Integer, ObjectIdentifier, Sequence } from "@hazae41/asn1"
 import { Base16 } from "@hazae41/base16"
 import { Opaque, Readable, Writable } from "@hazae41/binary"
 import { Bytes, Uint8Array } from "@hazae41/bytes"
 import { SuperTransformStream } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
-import { Ed25519 } from "@hazae41/ed25519"
 import { Future } from "@hazae41/future"
 import { None } from "@hazae41/option"
 import { CloseEvents, ErrorEvents, Plume, SuperEventTarget } from "@hazae41/plume"
 import { Panic } from "@hazae41/result"
-import { OIDs, OtherName, SubjectAltName, X509 } from "@hazae41/x509"
+import { OtherName, SubjectAltName, X509 } from "@hazae41/x509"
 import { BigBytes } from "libs/bigint/bigint.js"
 import { BigMath } from "libs/bigmath/index.js"
 import { prfOrThrow } from "mods/algorithms/prf/prf.js"
@@ -398,7 +397,7 @@ export class TlsClientDuplex {
       throw new Error("Could not verify domain name")
 
     for (const extension of certificate.tbsCertificate.extensions?.extensions) {
-      if (extension.extnID.value === OIDs.keys.subjectAltName) {
+      if (extension.extnID.value === "2.5.29.17" /* subjectAltName */) {
         const subjectAltName = extension.extnValue as SubjectAltName
 
         for (const name of subjectAltName.inner.names) {
@@ -493,17 +492,50 @@ export class TlsClientDuplex {
       if (issuer !== subject)
         throw new Error(`Invalid certificate chain`)
 
-      const spki = Writable.writeToBytesOrThrow(next.tbsCertificate.subjectPublicKeyInfo.toDER())
-      const data = Writable.writeToBytesOrThrow(current.tbsCertificate.toDER())
+      const identitySpki = next.tbsCertificate.subjectPublicKeyInfo
+      const identityBytes = Writable.writeToBytesOrThrow(identitySpki.toDER())
+      const identityHash = new Uint8Array(await crypto.subtle.digest("SHA-256", identityBytes))
 
-      if (current.algorithmIdentifier.algorithm.value !== OIDs.keys.sha256WithRSAEncryption)
-        throw new Error(`Unsupported signature algorithm ${current.algorithmIdentifier.algorithm.value}`)
+      let verified = false
 
-      const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
-      const signature = current.signatureValue.bytes
+      if (current.algorithmIdentifier.algorithm.value === "1.2.840.113549.1.1.11" /* sha256WithRSAEncryption */) {
+        const identityAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
+        const identityKey = await crypto.subtle.importKey("spki", identityBytes, identityAlgorithm, false, ["verify"])
 
-      const identity = await crypto.subtle.importKey("spki", spki, signatureAlgorithm, false, ["verify"])
-      const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", identity, signature, data)
+        const dataBytes = Writable.writeToBytesOrThrow(current.tbsCertificate.toDER())
+
+        const signatureAlgorithm = "RSASSA-PKCS1-v1_5"
+        const signatureBytes = current.signatureValue.bytes
+
+        verified = await crypto.subtle.verify(signatureAlgorithm, identityKey, signatureBytes, dataBytes)
+      }
+
+      else if (current.algorithmIdentifier.algorithm.value === "1.2.840.10045.4.3.3" /* ecdsaWithSHA384 */) {
+        if (identitySpki.algorithm.algorithm.value !== "1.2.840.10045.2.1" /* ecPublicKey */)
+          throw new Error(`Invalid public key algorithm ${identitySpki.algorithm.algorithm.value}`)
+        if (!(identitySpki.algorithm.parameters instanceof ObjectIdentifier))
+          throw new Error(`Invalid public key parameters ${identitySpki.algorithm.parameters}`)
+
+        if (identitySpki.algorithm.parameters.value === "1.3.132.0.34" /* secp384r1 */) {
+          const identityAlgorithm = { name: "ECDSA", namedCurve: "P-384" }
+          const identityKey = await crypto.subtle.importKey("spki", identityBytes, identityAlgorithm, false, ["verify"])
+
+          const dataBytes = Writable.writeToBytesOrThrow(current.tbsCertificate.toDER())
+
+          const signatureAlgorithm = { name: "ECDSA", hash: { name: "SHA-384" } }
+          const signatureBytes = current.signatureValue.bytes
+          const signatureAsn1 = Readable.readFromBytesOrThrow(Sequence.DER, signatureBytes)
+
+          const rAsn1 = signatureAsn1.triplets[0].readIntoOrThrow(Integer.DER)
+          const sAsn1 = signatureAsn1.triplets[1].readIntoOrThrow(Integer.DER)
+
+          const rAndS = new Cursor(new Uint8Array(48 * 2))
+          rAndS.writeOrThrow(BigBytes.exportOrThrow(rAsn1.value))
+          rAndS.writeOrThrow(BigBytes.exportOrThrow(sAsn1.value))
+
+          verified = await crypto.subtle.verify(signatureAlgorithm, identityKey, rAndS.bytes, dataBytes)
+        }
+      }
 
       if (!verified)
         throw new Error(`Invalid signature`)
@@ -518,10 +550,9 @@ export class TlsClientDuplex {
       if (notAfter && now > new Date(notAfter))
         continue
 
-      const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", spki))
-      using hash2 = Base16.get().padStartAndDecodeOrThrow(trusted.hashBase16)
+      using trustedIdentityHash = Base16.get().padStartAndDecodeOrThrow(trusted.hashBase16)
 
-      if (!Bytes.equals(hash, hash2.bytes))
+      if (!Bytes.equals(identityHash, trustedIdentityHash.bytes))
         continue
 
       /**
@@ -571,16 +602,17 @@ export class TlsClientDuplex {
         if (signed_params.algorithm.hash.type !== HashAlgorithm.types.sha256)
           throw new Error(`Unsupported hash algorithm ${signed_params.algorithm.hash.type}`)
 
-        const publicKey = X509.writeToBytesOrThrow(state.server_certificates[0].tbsCertificate.subjectPublicKeyInfo)
+        const identitySpki = X509.writeToBytesOrThrow(state.server_certificates[0].tbsCertificate.subjectPublicKeyInfo)
+        const identityAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
+        const identityKey = await crypto.subtle.importKey("spki", identitySpki, identityAlgorithm, false, ["verify"])
 
-        const struct = new ServerKeyExchange2ECDHPreSigned(state.client_random, state.server_random, params)
-        const bytes = Writable.writeToBytesOrThrow(struct)
+        const dataStruct = new ServerKeyExchange2ECDHPreSigned(state.client_random, state.server_random, params)
+        const dataBytes = Writable.writeToBytesOrThrow(dataStruct)
 
-        const signatureAlgorithm = { name: "RSASSA-PKCS1-v1_5", hash: { name: "SHA-256" } }
-        const signature = signed_params.signature.value.bytes
+        const signatureAlgorithm = "RSASSA-PKCS1-v1_5"
+        const signatureBytes = signed_params.signature.value.bytes
 
-        const key = await crypto.subtle.importKey("spki", publicKey, signatureAlgorithm, false, ["verify"])
-        const verified = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, bytes)
+        const verified = await crypto.subtle.verify(signatureAlgorithm, identityKey, signatureBytes, dataBytes)
 
         if (verified !== true)
           throw new Error(`Invalid signature`)
@@ -594,52 +626,28 @@ export class TlsClientDuplex {
         if (signed_params.algorithm.hash.type !== HashAlgorithm.types.sha256)
           throw new Error(`Unsupported hash algorithm ${signed_params.algorithm.hash.type}`)
 
-        const publicKey = X509.writeToBytesOrThrow(state.server_certificates[0].tbsCertificate.subjectPublicKeyInfo)
+        const identitySpki = X509.writeToBytesOrThrow(state.server_certificates[0].tbsCertificate.subjectPublicKeyInfo)
+        const identityAlgorithm = { name: "ECDSA", namedCurve: "P-256" }
+        const identityKey = await crypto.subtle.importKey("spki", identitySpki, identityAlgorithm, false, ["verify"])
 
-        const struct = new ServerKeyExchange2ECDHPreSigned(state.client_random, state.server_random, params)
-        const bytes = Writable.writeToBytesOrThrow(struct)
+        const dataStruct = new ServerKeyExchange2ECDHPreSigned(state.client_random, state.server_random, params)
+        const dataBytes = Writable.writeToBytesOrThrow(dataStruct)
 
-        const keyAlgorithm = { name: "ECDSA", namedCurve: "P-256" }
-        const sigAlgorithm = { name: "ECDSA", hash: { name: "SHA-256" } }
-        const signature = signed_params.signature.value.bytes
+        const signatureAlgorithm = { name: "ECDSA", hash: { name: "SHA-256" } }
+        const signatureBytes = signed_params.signature.value.bytes
+        const signatureAsn1 = Readable.readFromBytesOrThrow(Sequence.DER, signatureBytes)
 
-        const asn1 = Readable.readFromBytesOrThrow(Sequence.DER, signature)
-        const r = asn1.triplets[0].readIntoOrThrow(Integer.DER)
-        const s = asn1.triplets[1].readIntoOrThrow(Integer.DER)
+        const rAsn1 = signatureAsn1.triplets[0].readIntoOrThrow(Integer.DER)
+        const sAsn1 = signatureAsn1.triplets[1].readIntoOrThrow(Integer.DER)
 
-        const rs = new Cursor(new Uint8Array(64))
-        rs.writeOrThrow(BigBytes.exportOrThrow(r.value))
-        rs.writeOrThrow(BigBytes.exportOrThrow(s.value))
+        const rAndS = new Cursor(new Uint8Array(32 * 2))
+        rAndS.writeOrThrow(BigBytes.exportOrThrow(rAsn1.value))
+        rAndS.writeOrThrow(BigBytes.exportOrThrow(sAsn1.value))
 
-        const key = await crypto.subtle.importKey("spki", publicKey, keyAlgorithm, false, ["verify"])
-        const verified = await crypto.subtle.verify(sigAlgorithm, key, rs.bytes, bytes)
-
-        if (verified !== true)
-          console.warn(`Invalid signature`)
-
-        this.#state = { ...state, action: "server_key_exchange", server_ecdh_params: params }
-
-        return
-      }
-
-      if (signed_params.algorithm.signature.type === SignatureAlgorithm.types.ed25519) {
-        if (signed_params.algorithm.hash.type !== HashAlgorithm.types.sha256)
-          throw new Error(`Unsupported hash algorithm ${signed_params.algorithm.hash.type}`)
-
-        const { PublicKey, Signature } = Ed25519.get()
-
-        const publicKey = state.server_certificates[0].tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.bytes
-
-        const struct = new ServerKeyExchange2ECDHPreSigned(state.client_random, state.server_random, params)
-        const bytes = Writable.writeToBytesOrThrow(struct)
-
-        using identity = await PublicKey.importOrThrow(publicKey)
-        using signature = Signature.importOrThrow(signed_params.signature.value.bytes)
-
-        const verified = await identity.verifyOrThrow(bytes, signature)
+        const verified = await crypto.subtle.verify(signatureAlgorithm, identityKey, rAndS.bytes, dataBytes)
 
         if (verified !== true)
-          console.warn(`Invalid signature`)
+          throw new Error(`Invalid signature`)
 
         this.#state = { ...state, action: "server_key_exchange", server_ecdh_params: params }
 
