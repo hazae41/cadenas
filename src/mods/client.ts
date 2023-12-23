@@ -13,6 +13,7 @@ import { Panic } from "@hazae41/result"
 import { OtherName, SubjectAltName, X509 } from "@hazae41/x509"
 import { BigBytes } from "libs/bigint/bigint.js"
 import { BigMath } from "libs/bigmath/index.js"
+import { Resizer } from "libs/resizer/resizer.js"
 import { prfOrThrow } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
 import { Number24 } from "mods/binary/numbers/number24.js"
@@ -83,7 +84,7 @@ export class TlsClientDuplex {
   readonly inner: ReadableWritablePair<Writable, Opaque>
   readonly outer: ReadableWritablePair<Opaque, Writable>
 
-  #buffer = new Cursor(Bytes.alloc(65_535))
+  #buffer = new Resizer()
 
   #state: TlsClientDuplexState = { type: "none", client_encrypted: false, server_encrypted: false }
 
@@ -204,7 +205,7 @@ export class TlsClientDuplex {
   async #onInputTransform(chunk: Opaque) {
     // Console.debug(this.#class.name, "<-", chunk)
 
-    if (this.#buffer.offset)
+    if (this.#buffer.inner.offset)
       await this.#onReadBuffered(chunk.bytes)
     else
       await this.#onReadDirect(chunk.bytes)
@@ -217,9 +218,9 @@ export class TlsClientDuplex {
    */
   async #onReadBuffered(chunk: Uint8Array) {
     this.#buffer.writeOrThrow(chunk)
-    const full = new Uint8Array(this.#buffer.before)
+    const full = new Uint8Array(this.#buffer.inner.before)
 
-    this.#buffer.offset = 0
+    this.#buffer.inner.offset = 0
     await this.#onReadDirect(full)
   }
 
