@@ -84,7 +84,7 @@ export class TlsClientDuplex {
   readonly inner: ReadableWritablePair<Writable, Opaque>
   readonly outer: ReadableWritablePair<Opaque, Writable>
 
-  #buffer = new Resizer()
+  readonly #buffer = new Resizer()
 
   #state: TlsClientDuplexState = { type: "none", client_encrypted: false, server_encrypted: false }
 
