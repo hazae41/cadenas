@@ -33,7 +33,7 @@
     "@hazae41/ed25519": "^2.1.10",
     "@hazae41/future": "^1.0.3",
     "@hazae41/option": "^1.0.27",
-    "@hazae41/plume": "^2.2.1",
+    "@hazae41/plume": "^2.2.3",
     "@hazae41/result": "^1.1.16",
     "@hazae41/symbol-dispose-polyfill": "^1.0.2",
     "@hazae41/x509": "^1.2.6"
