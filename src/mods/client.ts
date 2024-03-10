@@ -4,11 +4,11 @@ import { IA5String, Integer, ObjectIdentifier, Sequence } from "@hazae41/asn1"
 import { Base16 } from "@hazae41/base16"
 import { Opaque, Readable, Writable } from "@hazae41/binary"
 import { Bytes, Uint8Array } from "@hazae41/bytes"
-import { SuperTransformStream } from "@hazae41/cascade"
+import { CloseEvents, ErrorEvents, HalfDuplex, OpenEvents } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Future } from "@hazae41/future"
 import { None } from "@hazae41/option"
-import { CloseEvents, ErrorEvents, Plume, SuperEventTarget } from "@hazae41/plume"
+import { Plume } from "@hazae41/plume"
 import { Panic } from "@hazae41/result"
 import { OtherName, SubjectAltName, X509 } from "@hazae41/x509"
 import { BigBytes } from "libs/bigint/bigint.js"
@@ -47,7 +47,6 @@ import { FatalAlertError, InvalidTlsStateError, UnsupportedCipherError, Unsuppor
 import { Extensions } from "./extensions.js"
 import { ClientChangeCipherSpecState, HandshakeState, ServerKeyExchangeState, TlsClientDuplexState } from "./state.js"
 
-
 export interface TlsClientDuplexParams {
   /**
    * Supported ciphers
@@ -65,24 +64,13 @@ export interface TlsClientDuplexParams {
   readonly authorized?: boolean
 }
 
-export type TlsClientDuplexReadEvents = CloseEvents & ErrorEvents & {
+export type TlsClientDuplexReadEvents = OpenEvents & CloseEvents & ErrorEvents & {
   certificates: (certificates: X509.Certificate[]) => void
   handshaked: () => void
 }
 
-export class TlsClientDuplex {
+export class TlsClientDuplex extends HalfDuplex<Opaque, Writable, TlsClientDuplexReadEvents> {
   readonly #class = TlsClientDuplex
-
-  readonly events = {
-    input: new SuperEventTarget<TlsClientDuplexReadEvents>(),
-    output: new SuperEventTarget<CloseEvents & ErrorEvents>()
-  } as const
-
-  readonly #input: SuperTransformStream<Opaque, Opaque>
-  readonly #output: SuperTransformStream<Writable, Writable>
-
-  readonly inner: ReadableWritablePair<Writable, Opaque>
-  readonly outer: ReadableWritablePair<Opaque, Writable>
 
   readonly #buffer = new Resizer()
 
@@ -91,88 +79,22 @@ export class TlsClientDuplex {
   constructor(
     readonly params: TlsClientDuplexParams
   ) {
-    /**
-     * Input pipeline (outer <- inner) (client <- server)
-     */
-    this.#input = new SuperTransformStream({
-      transform: this.#onInputTransform.bind(this)
+    super()
+
+    this.input.events.on("message", async chunk => {
+      await this.#onInputTransform(chunk)
+      return new None()
     })
 
-    /**
-     * Output pipeline (outer -> inner) (client -> server)
-     */
-    this.#output = new SuperTransformStream({
-      start: this.#onOutputStart.bind(this),
-      transform: this.#onOutputTransform.bind(this)
+    this.output.events.on("open", async () => {
+      await this.#onOutputStart()
+      return new None()
     })
 
-    const preInputer = this.#input.start()
-    const postOutputer = this.#output.start()
-
-    const postInputer = new TransformStream<Opaque, Opaque>({})
-    const preOutputer = new TransformStream<Writable, Writable>({})
-
-    /**
-     * Inner protocol (TCP?)
-     */
-    this.inner = {
-      readable: postOutputer.readable,
-      writable: preInputer.writable
-    } as const
-
-    /**
-     * Outer protocol (HTTP?)
-     */
-    this.outer = {
-      readable: postInputer.readable,
-      writable: preOutputer.writable
-    } as const
-
-    preInputer.readable
-      .pipeTo(postInputer.writable)
-      .then(() => this.#onInputClose())
-      .catch(e => this.#onInputError(e))
-      .catch(() => { })
-
-    preOutputer.readable
-      .pipeTo(postOutputer.writable)
-      .then(() => this.#onOutputClose())
-      .catch(e => this.#onOutputError(e))
-      .catch(() => { })
-  }
-
-  async #onInputClose() {
-    Console.debug(`${this.#class.name}.onReadClose`)
-
-    this.#input.closed = {}
-
-    await this.events.input.emit("close", [undefined])
-  }
-
-  async #onOutputClose() {
-    Console.debug(`${this.#class.name}.onWriteClose`)
-
-    this.#output.closed = {}
-
-    await this.events.output.emit("close", [undefined])
-  }
-
-  async #onInputError(reason?: unknown) {
-    Console.debug(`${this.#class.name}.onReadError`, { reason })
-
-    this.#input.closed = { reason }
-    this.#output.error(reason)
-
-    await this.events.input.emit("error", [reason])
-  }
-
-  async #onOutputError(reason?: unknown) {
-    Console.debug(`${this.#class.name}.onWriteError`, { reason })
-
-    this.#output.closed = { reason }
-    this.#input.error(reason)
-
-    await this.events.output.emit("error", [reason])
+    this.output.events.on("message", async chunk => {
+      await this.#onOutputTransform(chunk)
+      return new None()
+    })
   }
 
   async #onOutputStart() {
@@ -194,9 +116,9 @@ export class TlsClientDuplex {
 
     const client_hello_handshake_record = PlaintextRecord.from(client_hello_handshake, 0x0301)
 
-    this.#output.enqueue(client_hello_handshake_record)
+    await this.output.enqueue(client_hello_handshake_record)
 
-    await Plume.waitOrCloseOrError(this.events.input, "handshaked", (future: Future<void>) => {
+    await Plume.waitOrCloseOrError(this.events, "handshaked", (future: Future<void>) => {
       future.resolve()
       return new None()
     })
@@ -258,7 +180,7 @@ export class TlsClientDuplex {
     const plaintext = new PlaintextRecord(type, version, chunk)
     const ciphertext = await plaintext.encryptOrThrow(encrypter, state.client_sequence++)
 
-    this.#output.enqueue(ciphertext)
+    await this.output.enqueue(ciphertext)
   }
 
   async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
@@ -306,7 +228,7 @@ export class TlsClientDuplex {
       throw new FatalAlertError(alert)
 
     if (alert.description === Alert.descriptions.close_notify)
-      return this.#input.terminate()
+      return await this.input.close()
 
     if (alert.level === Alert.levels.warning)
       return console.warn(new WarningAlertError(alert))
@@ -331,7 +253,7 @@ export class TlsClientDuplex {
     if (state.type !== "handshaked")
       throw new InvalidTlsStateError()
 
-    this.#input.enqueue(record.fragment)
+    await this.input.enqueue(record.fragment)
   }
 
   async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
@@ -593,7 +515,7 @@ export class TlsClientDuplex {
     if (authorized !== true)
       throw new Error(`Could not verify certificate chain`)
 
-    await this.events.input.emit("certificates", [server_certificates])
+    await this.events.emit("certificates", server_certificates)
 
     this.#state = { ...state, action: "server_certificate", server_certificates }
   }
@@ -797,7 +719,7 @@ export class TlsClientDuplex {
       const record_certificate = PlaintextRecord.from(handshake_certificate, state.version)
 
       state.messages.push(Writable.writeToBytesOrThrow(handshake_certificate))
-      this.#output.enqueue(record_certificate)
+      await this.output.enqueue(record_certificate)
     }
 
     let secrets: Secrets
@@ -809,7 +731,7 @@ export class TlsClientDuplex {
       const record_client_key_exchange = PlaintextRecord.from(handshake_client_key_exchange, state.version)
 
       state.messages.push(Writable.writeToBytesOrThrow(handshake_client_key_exchange))
-      this.#output.enqueue(record_client_key_exchange)
+      await this.output.enqueue(record_client_key_exchange)
 
       secrets = await this.#computeSecretsOrThrow(state, dh_Z)
     }
@@ -821,7 +743,7 @@ export class TlsClientDuplex {
       const record_client_key_exchange = PlaintextRecord.from(handshake_client_key_exchange, state.version)
 
       state.messages.push(Writable.writeToBytesOrThrow(handshake_client_key_exchange))
-      this.#output.enqueue(record_client_key_exchange)
+      await this.output.enqueue(record_client_key_exchange)
 
       secrets = await this.#computeSecretsOrThrow(state, ecdh_Z)
     }
@@ -837,7 +759,7 @@ export class TlsClientDuplex {
 
     this.#state = state2
 
-    this.#output.enqueue(record_change_cipher_spec)
+    await this.output.enqueue(record_change_cipher_spec)
 
     const { handshake_md, prf_md } = state2.cipher.hash
 
@@ -848,7 +770,7 @@ export class TlsClientDuplex {
     const finished = PlaintextRecord.from(Handshake.from(new Finished2(verify_data)), state.version)
     const cfinished = await finished.encryptOrThrow(state2.encrypter, state2.client_sequence++)
 
-    this.#output.enqueue(cfinished)
+    await this.output.enqueue(cfinished)
 
     this.#state = { ...state2, step: "client_finished" }
   }
@@ -863,7 +785,7 @@ export class TlsClientDuplex {
 
     this.#state = { ...state, type: "handshaked" }
 
-    await this.events.input.emit("handshaked", [])
+    await this.events.emit("handshaked")
   }
 
 }
