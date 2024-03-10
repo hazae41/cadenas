@@ -8,7 +8,7 @@ import { CloseEvents, ErrorEvents, HalfDuplex, OpenEvents } from "@hazae41/casca
 import { Cursor } from "@hazae41/cursor"
 import { Future } from "@hazae41/future"
 import { None } from "@hazae41/option"
-import { Plume } from "@hazae41/plume"
+import { Plume, SuperEventTarget } from "@hazae41/plume"
 import { Panic } from "@hazae41/result"
 import { OtherName, SubjectAltName, X509 } from "@hazae41/x509"
 import { BigBytes } from "libs/bigint/bigint.js"
@@ -69,8 +69,11 @@ export type TlsClientDuplexEvents = OpenEvents & CloseEvents & ErrorEvents & {
   handshaked: () => void
 }
 
-export class TlsClientDuplex extends HalfDuplex<Opaque, Writable, TlsClientDuplexEvents> {
-  readonly #class = TlsClientDuplex
+export class TlsClientDuplex {
+
+  readonly tls = new HalfDuplex<Opaque, Writable>()
+
+  readonly events = new SuperEventTarget<TlsClientDuplexEvents>()
 
   readonly #buffer = new Resizer()
 
@@ -79,7 +82,8 @@ export class TlsClientDuplex extends HalfDuplex<Opaque, Writable, TlsClientDuple
   constructor(
     readonly params: TlsClientDuplexParams
   ) {
-    super()
+    this.tls.events.on("close", () => this.events.emit("close"))
+    this.tls.events.on("error", e => this.events.emit("error", e))
 
     this.input.events.on("message", async chunk => {
       await this.#onInputTransform(chunk)
@@ -95,6 +99,22 @@ export class TlsClientDuplex extends HalfDuplex<Opaque, Writable, TlsClientDuple
       await this.#onOutputTransform(chunk)
       return new None()
     })
+  }
+
+  get inner() {
+    return this.tls.inner
+  }
+
+  get outer() {
+    return this.tls.outer
+  }
+
+  get input() {
+    return this.tls.input
+  }
+
+  get output() {
+    return this.tls.output
   }
 
   async #onOutputStart() {
