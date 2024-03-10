@@ -118,6 +118,18 @@ export class TlsClientDuplex {
     return this.tls.output
   }
 
+  get closed() {
+    return this.tls.closed
+  }
+
+  async error(reason?: unknown) {
+    await this.tls.error(reason)
+  }
+
+  async close() {
+    await this.tls.close()
+  }
+
   async #onOutputStart() {
     if (this.#state.type !== "none")
       throw new InvalidTlsStateError()
