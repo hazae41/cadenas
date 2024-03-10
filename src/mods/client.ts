@@ -64,12 +64,12 @@ export interface TlsClientDuplexParams {
   readonly authorized?: boolean
 }
 
-export type TlsClientDuplexReadEvents = OpenEvents & CloseEvents & ErrorEvents & {
+export type TlsClientDuplexEvents = OpenEvents & CloseEvents & ErrorEvents & {
   certificates: (certificates: X509.Certificate[]) => void
   handshaked: () => void
 }
 
-export class TlsClientDuplex extends HalfDuplex<Opaque, Writable, TlsClientDuplexReadEvents> {
+export class TlsClientDuplex extends HalfDuplex<Opaque, Writable, TlsClientDuplexEvents> {
   readonly #class = TlsClientDuplex
 
   readonly #buffer = new Resizer()
