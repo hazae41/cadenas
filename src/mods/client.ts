@@ -4,7 +4,7 @@ import { IA5String, Integer, ObjectIdentifier, Sequence } from "@hazae41/asn1"
 import { Base16 } from "@hazae41/base16"
 import { Opaque, Readable, Writable } from "@hazae41/binary"
 import { Bytes, Uint8Array } from "@hazae41/bytes"
-import { CloseEvents, ErrorEvents, HalfDuplex, OpenEvents } from "@hazae41/cascade"
+import { CloseEvents, ErrorEvents, HalfDuplex } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Future } from "@hazae41/future"
 import { None } from "@hazae41/option"
@@ -64,10 +64,11 @@ export interface TlsClientDuplexParams {
   readonly authorized?: boolean
 }
 
-export type TlsClientDuplexEvents = OpenEvents & CloseEvents & ErrorEvents & {
-  certificates: (certificates: X509.Certificate[]) => void
-  handshaked: () => void
-}
+export type TlsClientDuplexEvents =
+  & CloseEvents
+  & ErrorEvents
+  & { certificates: (certificates: X509.Certificate[]) => void }
+  & { handshaked: () => void }
 
 export class TlsClientDuplex {
 
