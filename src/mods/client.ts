@@ -102,6 +102,14 @@ export class TlsClientDuplex {
     })
   }
 
+  [Symbol.dispose]() {
+    this.close().catch(console.error)
+  }
+
+  async [Symbol.asyncDispose]() {
+    await this.close()
+  }
+
   get inner() {
     return this.tls.inner
   }
@@ -116,6 +124,10 @@ export class TlsClientDuplex {
 
   get output() {
     return this.tls.output
+  }
+
+  get closing() {
+    return this.tls.closing
   }
 
   get closed() {
