@@ -72,8 +72,7 @@ export type TlsClientDuplexEvents =
 
 export class TlsClientDuplex {
 
-  readonly tls = new FullDuplex<Opaque, Writable>()
-
+  readonly duplex = new FullDuplex<Opaque, Writable>()
   readonly events = new SuperEventTarget<TlsClientDuplexEvents>()
 
   readonly #buffer = new Resizer()
@@ -83,8 +82,8 @@ export class TlsClientDuplex {
   constructor(
     readonly params: TlsClientDuplexParams
   ) {
-    this.tls.events.on("close", () => this.events.emit("close"))
-    this.tls.events.on("error", e => this.events.emit("error", e))
+    this.duplex.events.on("close", () => this.events.emit("close"))
+    this.duplex.events.on("error", e => this.events.emit("error", e))
 
     this.input.events.on("message", async chunk => {
       await this.#onInputTransform(chunk)
@@ -111,35 +110,35 @@ export class TlsClientDuplex {
   }
 
   get inner() {
-    return this.tls.inner
+    return this.duplex.inner
   }
 
   get outer() {
-    return this.tls.outer
+    return this.duplex.outer
   }
 
   get input() {
-    return this.tls.input
+    return this.duplex.input
   }
 
   get output() {
-    return this.tls.output
+    return this.duplex.output
   }
 
   get closing() {
-    return this.tls.closing
+    return this.duplex.closing
   }
 
   get closed() {
-    return this.tls.closed
+    return this.duplex.closed
   }
 
   async error(reason?: unknown) {
-    await this.tls.error(reason)
+    await this.duplex.error(reason)
   }
 
   async close() {
-    await this.tls.close()
+    await this.duplex.close()
   }
 
   async #onOutputStart() {
