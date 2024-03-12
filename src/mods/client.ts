@@ -4,15 +4,14 @@ import { IA5String, Integer, ObjectIdentifier, Sequence } from "@hazae41/asn1"
 import { Base16 } from "@hazae41/base16"
 import { Opaque, Readable, Writable } from "@hazae41/binary"
 import { Bytes, Uint8Array } from "@hazae41/bytes"
-import { CloseEvents, ErrorEvents, FullDuplex } from "@hazae41/cascade"
+import { FullDuplex } from "@hazae41/cascade"
 import { Cursor } from "@hazae41/cursor"
 import { Future } from "@hazae41/future"
-import { None } from "@hazae41/option"
-import { Plume, SuperEventTarget } from "@hazae41/plume"
 import { Panic } from "@hazae41/result"
 import { OtherName, SubjectAltName, X509 } from "@hazae41/x509"
 import { BigBytes } from "libs/bigint/bigint.js"
 import { BigMath } from "libs/bigmath/index.js"
+import { Awaitable } from "libs/promises/index.js"
 import { Resizer } from "libs/resizer/resizer.js"
 import { prfOrThrow } from "mods/algorithms/prf/prf.js"
 import { List } from "mods/binary/lists/writable.js"
@@ -62,51 +61,59 @@ export interface TlsClientDuplexParams {
    * Do not verify certificates against root certificate authorities
    */
   readonly authorized?: boolean
-}
 
-export type TlsClientDuplexEvents =
-  & CloseEvents
-  & ErrorEvents
-  & { certificates: (certificates: X509.Certificate[]) => void }
-  & { handshaked: () => void }
+  /**
+   * Called on close
+   */
+  close?(this: TlsClientDuplex): Awaitable<void>
+
+  /**
+   * Called on error
+   */
+  error?(this: TlsClientDuplex, reason?: unknown): Awaitable<void>
+
+  /**
+   * Called on handshake
+   */
+  handshake?(this: TlsClientDuplex): Awaitable<void>
+
+  /**
+   * Called on certificates
+   */
+  certificates?(this: TlsClientDuplex, certificates: X509.Certificate[]): Awaitable<void>
+}
 
 export class TlsClientDuplex {
 
-  readonly duplex = new FullDuplex<Opaque, Writable>()
-  readonly events = new SuperEventTarget<TlsClientDuplexEvents>()
+  readonly duplex: FullDuplex<Opaque, Writable>
 
   readonly #buffer = new Resizer()
 
   #state: TlsClientDuplexState = { type: "none", client_encrypted: false, server_encrypted: false }
 
+  #rejectOnClose = new Future<never>()
+  #rejectOnError = new Future<never>()
+
+  #resolveOnHandshake = new Future<void>()
+
   constructor(
     readonly params: TlsClientDuplexParams
   ) {
-    this.duplex.events.on("close", () => this.events.emit("close"))
-    this.duplex.events.on("error", e => this.events.emit("error", e))
-
-    this.input.events.on("message", async chunk => {
-      await this.#onInputTransform(chunk)
-      return new None()
-    })
-
-    this.output.events.on("open", async () => {
-      await this.#onOutputStart()
-      return new None()
-    })
-
-    this.output.events.on("message", async chunk => {
-      await this.#onOutputTransform(chunk)
-      return new None()
+    this.duplex = new FullDuplex<Opaque, Writable>({
+      input: {
+        message: m => this.#onInputMessage(m),
+      },
+      output: {
+        open: () => this.#onOutputStart(),
+        message: m => this.#onOutputMessage(m)
+      },
+      close: () => this.#onDuplexClose(),
+      error: e => this.#onDuplexError(e)
     })
   }
 
   [Symbol.dispose]() {
-    this.close().catch(console.error)
-  }
-
-  async [Symbol.asyncDispose]() {
-    await this.close()
+    this.close()
   }
 
   get inner() {
@@ -133,12 +140,22 @@ export class TlsClientDuplex {
     return this.duplex.closed
   }
 
-  async error(reason?: unknown) {
-    await this.duplex.error(reason)
+  error(reason?: unknown) {
+    this.duplex.error(reason)
   }
 
-  async close() {
-    await this.duplex.close()
+  close() {
+    this.duplex.close()
+  }
+
+  async #onDuplexClose() {
+    this.#rejectOnClose.reject(new Error("Closed"))
+    await this.params.close?.call(this)
+  }
+
+  async #onDuplexError(cause?: unknown) {
+    this.#rejectOnError.reject(new Error("Errored", { cause }))
+    await this.params.error?.call(this)
   }
 
   async #onOutputStart() {
@@ -160,15 +177,12 @@ export class TlsClientDuplex {
 
     const client_hello_handshake_record = PlaintextRecord.from(client_hello_handshake, 0x0301)
 
-    await this.output.enqueue(client_hello_handshake_record)
+    this.output.enqueue(client_hello_handshake_record)
 
-    await Plume.waitOrCloseOrError(this.events, "handshaked", (future: Future<void>) => {
-      future.resolve()
-      return new None()
-    })
+    await Promise.race([this.#resolveOnHandshake.promise, this.#rejectOnClose.promise, this.#rejectOnError.promise])
   }
 
-  async #onInputTransform(chunk: Opaque) {
+  async #onInputMessage(chunk: Opaque) {
     // Console.debug(this.#class.name, "<-", chunk)
 
     if (this.#buffer.inner.offset)
@@ -212,7 +226,7 @@ export class TlsClientDuplex {
     }
   }
 
-  async #onOutputTransform(chunk: Writable) {
+  async #onOutputMessage(chunk: Writable) {
     if (this.#state.type !== "handshaked")
       throw new InvalidTlsStateError()
 
@@ -224,7 +238,7 @@ export class TlsClientDuplex {
     const plaintext = new PlaintextRecord(type, version, chunk)
     const ciphertext = await plaintext.encryptOrThrow(encrypter, state.client_sequence++)
 
-    await this.output.enqueue(ciphertext)
+    this.output.enqueue(ciphertext)
   }
 
   async #onRecord(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
@@ -559,7 +573,7 @@ export class TlsClientDuplex {
     if (authorized !== true)
       throw new Error(`Could not verify certificate chain`)
 
-    await this.events.emit("certificates", server_certificates)
+    await this.params.certificates?.call(this, server_certificates)
 
     this.#state = { ...state, action: "server_certificate", server_certificates }
   }
@@ -829,7 +843,8 @@ export class TlsClientDuplex {
 
     this.#state = { ...state, type: "handshaked" }
 
-    await this.events.emit("handshaked")
+    this.#resolveOnHandshake.resolve()
+    await this.params.handshake?.call(this)
   }
 
 }
