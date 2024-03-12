@@ -286,7 +286,7 @@ export class TlsClientDuplex {
       throw new FatalAlertError(alert)
 
     if (alert.description === Alert.descriptions.close_notify)
-      return await this.input.close()
+      return this.input.close()
 
     if (alert.level === Alert.levels.warning)
       return console.warn(new WarningAlertError(alert))
@@ -311,7 +311,7 @@ export class TlsClientDuplex {
     if (state.type !== "handshaked")
       throw new InvalidTlsStateError()
 
-    await this.input.enqueue(record.fragment)
+    this.input.enqueue(record.fragment)
   }
 
   async #onHandshake(record: PlaintextRecord<Opaque>, state: TlsClientDuplexState) {
@@ -777,7 +777,7 @@ export class TlsClientDuplex {
       const record_certificate = PlaintextRecord.from(handshake_certificate, state.version)
 
       state.messages.push(Writable.writeToBytesOrThrow(handshake_certificate))
-      await this.output.enqueue(record_certificate)
+      this.output.enqueue(record_certificate)
     }
 
     let secrets: Secrets
@@ -789,7 +789,7 @@ export class TlsClientDuplex {
       const record_client_key_exchange = PlaintextRecord.from(handshake_client_key_exchange, state.version)
 
       state.messages.push(Writable.writeToBytesOrThrow(handshake_client_key_exchange))
-      await this.output.enqueue(record_client_key_exchange)
+      this.output.enqueue(record_client_key_exchange)
 
       secrets = await this.#computeSecretsOrThrow(state, dh_Z)
     }
@@ -801,7 +801,7 @@ export class TlsClientDuplex {
       const record_client_key_exchange = PlaintextRecord.from(handshake_client_key_exchange, state.version)
 
       state.messages.push(Writable.writeToBytesOrThrow(handshake_client_key_exchange))
-      await this.output.enqueue(record_client_key_exchange)
+      this.output.enqueue(record_client_key_exchange)
 
       secrets = await this.#computeSecretsOrThrow(state, ecdh_Z)
     }
@@ -817,7 +817,7 @@ export class TlsClientDuplex {
 
     this.#state = state2
 
-    await this.output.enqueue(record_change_cipher_spec)
+    this.output.enqueue(record_change_cipher_spec)
 
     const { handshake_md, prf_md } = state2.cipher.hash
 
@@ -828,7 +828,7 @@ export class TlsClientDuplex {
     const finished = PlaintextRecord.from(Handshake.from(new Finished2(verify_data)), state.version)
     const cfinished = await finished.encryptOrThrow(state2.encrypter, state2.client_sequence++)
 
-    await this.output.enqueue(cfinished)
+    this.output.enqueue(cfinished)
 
     this.#state = { ...state2, step: "client_finished" }
   }
