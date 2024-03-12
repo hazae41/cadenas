@@ -91,10 +91,10 @@ export class TlsClientDuplex {
 
   #state: TlsClientDuplexState = { type: "none", client_encrypted: false, server_encrypted: false }
 
-  #rejectOnClose = new Future<never>()
-  #rejectOnError = new Future<never>()
+  readonly #rejectOnClose = new Future<never>()
+  readonly #rejectOnError = new Future<never>()
 
-  #resolveOnHandshake = new Future<void>()
+  readonly #resolveOnHandshake = new Future<void>()
 
   constructor(
     readonly params: TlsClientDuplexParams
