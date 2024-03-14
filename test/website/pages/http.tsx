@@ -2,48 +2,43 @@ import { Opaque, Writable } from "@hazae41/binary"
 import { Cadenas, Ciphers, TlsClientDuplex } from "@hazae41/cadenas"
 import { fetch } from "@hazae41/fleche"
 import { Mutex } from "@hazae41/mutex"
-import { None } from "@hazae41/option"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { WebSocketStream, createWebSocketStream } from "../src/transports/websocket"
+import { WebSocketDuplex, createWebSocketDuplex } from "../src/transports/websocket"
 
 async function createTlsStream(tcp: ReadableWritablePair<Opaque, Writable>) {
   Cadenas.Console.debugging = true
 
-  const ciphers = [
-    // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-    // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
-    // Ciphers.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
-    // Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
-    // Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
-    // Ciphers.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
-    // Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-    Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-    Ciphers.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
-  ]
+  const tls = new TlsClientDuplex({
+    host_name: "sig.eth.samczsun.com",
 
-  const tls = new TlsClientDuplex({ host_name: "sig.eth.samczsun.com", ciphers })
+    ciphers: [
+      // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+      // Ciphers.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
+      // Ciphers.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
+      // Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+      // Ciphers.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
+      // Ciphers.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
+      // Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+      Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+      Ciphers.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+    ],
 
-  tls.events.input.on("certificates", c => {
-    console.log("certificates", c)
-    return new None()
+    certificates(certificates) {
+      console.log("certificates", certificates)
+    },
   })
 
-  tcp.readable
-    .pipeTo(tls.inner.writable, {})
-    .catch(e => console.error({ e }))
-
-  tls.inner.readable
-    .pipeTo(tcp.writable, {})
-    .catch(e => console.error({ e }))
+  tcp.readable.pipeTo(tls.inner.writable, {}).catch(e => console.error({ e }))
+  tls.inner.readable.pipeTo(tcp.writable, {}).catch(e => console.error({ e }))
 
   return tls
 }
 
 export default function Home() {
-  const [tcp, setTcp] = useState<WebSocketStream>()
+  const [tcp, setTcp] = useState<WebSocketDuplex>()
 
   useEffect(() => {
-    createWebSocketStream("ws://localhost:8080").then(setTcp)
+    createWebSocketDuplex("ws://localhost:8080").then(setTcp)
   }, [])
 
   const [tls, setTls] = useState<TlsClientDuplex>()
@@ -51,7 +46,7 @@ export default function Home() {
   useEffect(() => {
     if (tcp == null)
       return
-    createTlsStream(tcp).then(setTls)
+    createTlsStream(tcp.outer).then(setTls)
   }, [tcp])
 
   const mutex = useMemo(() => {
