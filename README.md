@@ -34,17 +34,12 @@ This is experimental software in early development
 ```typescript
 import { TlsClientDuplex, Ciphers } from "@hazae41/cadenas"
 
-function example(tcp: ReadableWritablePair<Opaque, Writable>): ReadableWritablePair<Opaque, Writable> {
+function encrypt(tcp: ReadableWritablePair<Opaque, Writable>): ReadableWritablePair<Opaque, Writable> {
   const ciphers = [Ciphers.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384]
   const tls = new TlsClientDuplex({ host_name: "example.com", ciphers })
 
-  tcp.readable
-    .pipeTo(tls.inner.writable, {})
-    .catch(e => console.error({ e }))
-
-  tls.inner.readable
-    .pipeTo(tcp.writable, {})
-    .catch(e => console.error({ e }))
+  tcp.readable.pipeTo(tls.inner.writable).catch(() => {})
+  tls.inner.readable.pipeTo(tcp.writable).catch(() => {})
 
   return tls.outer
 }
