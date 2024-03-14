@@ -91,6 +91,8 @@ export class TlsClientDuplex {
 
   #state: TlsClientDuplexState = { type: "none", client_encrypted: false, server_encrypted: false }
 
+  readonly #resolveOnStart = new Future<void>()
+
   readonly #rejectOnClose = new Future<never>()
   readonly #rejectOnError = new Future<never>()
 
@@ -101,15 +103,17 @@ export class TlsClientDuplex {
   ) {
     this.duplex = new FullDuplex<Opaque, Writable>({
       input: {
-        message: m => this.#onInputMessage(m),
+        write: m => this.#onInputWrite(m),
       },
       output: {
-        open: () => this.#onOutputStart(),
-        message: m => this.#onOutputMessage(m)
+        start: () => this.#onOutputStart(),
+        write: m => this.#onOutputWrite(m)
       },
       close: () => this.#onDuplexClose(),
       error: e => this.#onDuplexError(e)
     })
+
+    this.#resolveOnStart.resolve()
   }
 
   [Symbol.dispose]() {
@@ -159,6 +163,8 @@ export class TlsClientDuplex {
   }
 
   async #onOutputStart() {
+    await this.#resolveOnStart.promise
+
     if (this.#state.type !== "none")
       throw new InvalidTlsStateError()
 
@@ -182,7 +188,7 @@ export class TlsClientDuplex {
     await Promise.race([this.#resolveOnHandshake.promise, this.#rejectOnClose.promise, this.#rejectOnError.promise])
   }
 
-  async #onInputMessage(chunk: Opaque) {
+  async #onInputWrite(chunk: Opaque) {
     // Console.debug(this.#class.name, "<-", chunk)
 
     if (this.#buffer.inner.offset)
@@ -226,7 +232,7 @@ export class TlsClientDuplex {
     }
   }
 
-  async #onOutputMessage(chunk: Writable) {
+  async #onOutputWrite(chunk: Writable) {
     if (this.#state.type !== "handshaked")
       throw new InvalidTlsStateError()
 
