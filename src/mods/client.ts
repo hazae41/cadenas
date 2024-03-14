@@ -186,8 +186,11 @@ export class TlsClientDuplex {
     const rejectOnClose = new Future<void>()
     const rejectOnError = new Future<unknown>()
 
-    this.#resolveOnClose.promise.then(rejectOnClose.reject)
-    this.#resolveOnError.promise.then(rejectOnError.resolve)
+    rejectOnClose.promise.catch(() => { })
+    rejectOnError.promise.catch(() => { })
+
+    this.#resolveOnClose.promise.then(() => rejectOnClose.reject(new Error("Closed")))
+    this.#resolveOnError.promise.then(cause => rejectOnError.reject(new Error("Errored", { cause })))
 
     await Promise.race([this.#resolveOnHandshake.promise, rejectOnClose.promise, rejectOnError.promise])
   }
