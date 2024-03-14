@@ -92,10 +92,8 @@ export class TlsClientDuplex {
   #state: TlsClientDuplexState = { type: "none", client_encrypted: false, server_encrypted: false }
 
   readonly #resolveOnStart = new Future<void>()
-
-  readonly #rejectOnClose = new Future<never>()
-  readonly #rejectOnError = new Future<never>()
-
+  readonly #resolveOnClose = new Future<void>()
+  readonly #resolveOnError = new Future<unknown>()
   readonly #resolveOnHandshake = new Future<void>()
 
   constructor(
@@ -153,12 +151,12 @@ export class TlsClientDuplex {
   }
 
   async #onDuplexClose() {
-    this.#rejectOnClose.reject(new Error("Closed"))
+    this.#resolveOnClose.resolve()
     await this.params.close?.call(this)
   }
 
   async #onDuplexError(cause?: unknown) {
-    this.#rejectOnError.reject(new Error("Errored", { cause }))
+    this.#resolveOnError.resolve(cause)
     await this.params.error?.call(this)
   }
 
@@ -185,7 +183,13 @@ export class TlsClientDuplex {
 
     this.output.enqueue(client_hello_handshake_record)
 
-    await Promise.race([this.#resolveOnHandshake.promise, this.#rejectOnClose.promise, this.#rejectOnError.promise])
+    const rejectOnClose = new Future<void>()
+    const rejectOnError = new Future<unknown>()
+
+    this.#resolveOnClose.promise.then(rejectOnClose.reject)
+    this.#resolveOnError.promise.then(rejectOnError.resolve)
+
+    await Promise.race([this.#resolveOnHandshake.promise, rejectOnClose.promise, rejectOnError.promise])
   }
 
   async #onInputWrite(chunk: Opaque) {
