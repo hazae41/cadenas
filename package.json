@@ -43,12 +43,12 @@
     "@hazae41/saumon": "^0.2.7",
     "@rollup/plugin-inject": "^5.0.5",
     "@rollup/plugin-typescript": "^11.1.6",
-    "@types/node": "^20.11.27",
-    "rollup": "^4.13.0",
+    "@types/node": "^20.11.30",
+    "rollup": "^4.13.1",
     "rollup-plugin-dts": "^6.1.0",
-    "rollup-plugin-node-externals": "^7.0.1",
+    "rollup-plugin-node-externals": "^7.1.1",
     "tslib": "^2.6.2",
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.3"
   },
   "exports": {
     ".": {

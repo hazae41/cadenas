@@ -183,16 +183,10 @@ export class TlsClientDuplex {
 
     this.output.enqueue(client_hello_handshake_record)
 
-    const rejectOnClose = new Future<void>()
-    const rejectOnError = new Future<unknown>()
+    const rejectOnClose = this.#resolveOnClose.promise.then(() => { throw new Error("Closed") })
+    const rejectOnError = this.#resolveOnError.promise.then(cause => { throw new Error("Errored", { cause }) })
 
-    rejectOnClose.promise.catch(() => { })
-    rejectOnError.promise.catch(() => { })
-
-    this.#resolveOnClose.promise.then(() => rejectOnClose.reject(new Error("Closed")))
-    this.#resolveOnError.promise.then(cause => rejectOnError.reject(new Error("Errored", { cause })))
-
-    await Promise.race([this.#resolveOnHandshake.promise, rejectOnClose.promise, rejectOnError.promise])
+    await Promise.race([this.#resolveOnHandshake.promise, rejectOnClose, rejectOnError])
   }
 
   async #onInputWrite(chunk: Opaque) {
