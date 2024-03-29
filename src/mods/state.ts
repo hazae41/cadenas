@@ -884,9 +884,8 @@ export interface TlsClientHandshakeServerCipheredStateParams {
 }
 
 export class TlsClientHandshakeServerCipheredState implements TlsClientHandshakeServerCipheredStateParams {
-
   readonly type = "handshake"
-  readonly step = "client_finished"
+  readonly step = "server_ciphered"
 
   readonly client_encrypted = true
   readonly server_encrypted = true
