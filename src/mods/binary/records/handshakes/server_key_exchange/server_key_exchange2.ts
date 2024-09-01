@@ -1,6 +1,5 @@
-import { Panic } from "@hazae41/result"
-import { ECDHE_ECDSA } from "index.js"
 import { Cipher } from "mods/ciphers/cipher.js"
+import { ECDHE_ECDSA } from "mods/ciphers/index.js"
 import { DHE_RSA } from "mods/ciphers/key_exchanges/dhe_rsa/dhe_rsa.js"
 import { ECDHE_RSA } from "mods/ciphers/key_exchanges/ecdhe_rsa/ecdhe_rsa.js"
 import { ServerKeyExchange2DH } from "./server_key_exchange2_dh.js"
@@ -27,7 +26,7 @@ export namespace ReadableServerKeyExchange2 {
     if (cipher.key_exchange === ECDHE_ECDSA)
       return ServerKeyExchange2ECDHSigned
 
-    throw new Panic(`Invalid key exchange`)
+    throw new Error(`Invalid key exchange`)
   }
 
 }

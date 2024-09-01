@@ -7,8 +7,8 @@ import { SHA } from "mods/ciphers/hashes/sha/sha.js"
 import { SHA256 } from "mods/ciphers/hashes/sha256/sha256.js"
 import { SHA384 } from "mods/ciphers/hashes/sha384/sha384.js"
 import { DHE_RSA } from "mods/ciphers/key_exchanges/dhe_rsa/dhe_rsa.js"
-import { ECDHE_ECDSA } from "./index.js"
 import { ECDHE_RSA } from "./key_exchanges/ecdhe_rsa/ecdhe_rsa.js"
+import { ECDHE_ECDSA } from "./key_exchanges/index.js"
 
 /**
  * Weak ciphers

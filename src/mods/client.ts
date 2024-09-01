@@ -1,5 +1,3 @@
-import "@hazae41/symbol-dispose-polyfill"
-
 import { Opaque, Readable, Writable } from "@hazae41/binary"
 import { Uint8Array } from "@hazae41/bytes"
 import { FullDuplex } from "@hazae41/cascade"

@@ -1,4 +1,3 @@
-import { Panic } from "@hazae41/result";
 import { ClientKeyExchange2DH } from "mods/binary/records/handshakes/client_key_exchange/client_key_exchange2_dh.js";
 import { Cipher } from "mods/ciphers/cipher.js";
 import { DHE_RSA } from "mods/ciphers/key_exchanges/dhe_rsa/dhe_rsa.js";
@@ -21,7 +20,7 @@ export namespace ReadableClientKeyExchange2 {
     if (cipher.key_exchange === ECDHE_RSA)
       return ClientKeyExchange2ECDH
 
-    throw new Panic(`Unsupported key exchange`)
+    throw new Error(`Invalid key exchange`)
   }
 
 }

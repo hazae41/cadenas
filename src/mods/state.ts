@@ -383,8 +383,8 @@ export class TlsClientHandshakeServerHelloState implements TlsClientHandshakeSer
         if (trusted == null)
           continue
 
-        const raw = Base16.get().padStartAndDecodeOrThrow(trusted.certBase16).copyAndDispose()
-        const x509 = X509.readAndResolveFromBytesOrThrow(X509.Certificate, raw)
+        using raw = Base16.get().getOrThrow().padStartAndDecodeOrThrow(trusted.certBase16)
+        const x509 = X509.readAndResolveFromBytesOrThrow(X509.Certificate, raw.bytes.slice())
 
         next = x509
       }
@@ -479,7 +479,7 @@ export class TlsClientHandshakeServerHelloState implements TlsClientHandshakeSer
       if (notAfter && now > new Date(notAfter))
         continue
 
-      using trustedIdentityHash = Base16.get().padStartAndDecodeOrThrow(trusted.hashBase16)
+      using trustedIdentityHash = Base16.get().getOrThrow().padStartAndDecodeOrThrow(trusted.hashBase16)
 
       if (!Bytes.equals(identityHash, trustedIdentityHash.bytes))
         continue

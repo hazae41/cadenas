@@ -1,6 +1,5 @@
 import { Opaque, Writable } from "@hazae41/binary"
 import { Cursor } from "@hazae41/cursor"
-import { Panic } from "@hazae41/result"
 import { GenericAEADCipher } from "mods/binary/records/generic_ciphers/aead/aead.js"
 import { GenericBlockCipher } from "mods/binary/records/generic_ciphers/block/block.js"
 import { AEADEncrypter, BlockEncrypter, Encrypter } from "mods/ciphers/encryptions/encryption.js"
@@ -72,7 +71,7 @@ export class PlaintextRecord<T extends Writable> {
     if (encrypter.cipher_type === "aead")
       return this.#encryptAeadOrThrow(encrypter, sequence)
 
-    throw new Panic(`Invalid cipher type`)
+    throw new Error(`Invalid cipher type`)
   }
 
 }

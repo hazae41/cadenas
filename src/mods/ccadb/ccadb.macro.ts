@@ -1,12 +1,13 @@
 /**
  * @macro delete-next-lines
  */
-import { $run$ } from "@hazae41/saumon"
 import { PEM, X509 } from "@hazae41/x509"
 import fs from "fs/promises"
 
 import { Writable } from "@hazae41/binary"
 import { Nullable } from "@hazae41/option"
+
+declare function $run$<T>(fn: () => Promise<T>): T
 
 export namespace CCADB {
 
@@ -32,7 +33,7 @@ export namespace CCADB {
 
     for (const cert of certs) {
       try {
-        const pem = PEM.tryDecode(cert.PEM.slice(1, -1)).unwrap()
+        const pem = PEM.decodeOrThrow(cert.PEM.slice(1, -1))
         const x509 = X509.readAndResolveFromBytesOrThrow(X509.Certificate, pem)
 
         const spki = Writable.writeToBytesOrThrow(x509.tbsCertificate.subjectPublicKeyInfo.toDER())
