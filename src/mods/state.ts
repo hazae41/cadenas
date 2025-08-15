@@ -384,8 +384,8 @@ export class TlsClientHandshakeServerHelloState implements TlsClientHandshakeSer
         if (trusted == null)
           continue
 
-        using raw = Base16.padStartAndDecodeOrThrow(trusted.certBase16)
-        const x509 = X509.readAndResolveFromBytesOrThrow(X509.Certificate, raw.bytes.slice())
+        const raw = Base16.padStartAndDecodeOrThrow(trusted.certBase16)
+        const x509 = X509.readAndResolveFromBytesOrThrow(X509.Certificate, raw)
 
         next = x509
       }
@@ -480,9 +480,9 @@ export class TlsClientHandshakeServerHelloState implements TlsClientHandshakeSer
       if (notAfter && now > new Date(notAfter))
         continue
 
-      using trustedIdentityHash = Base16.get().getOrThrow().padStartAndDecodeOrThrow(trusted.hashBase16)
+      const trustedIdentityHash = Base16.padStartAndDecodeOrThrow(trusted.hashBase16)
 
-      if (!Bytes.equals(identityHash, trustedIdentityHash.bytes))
+      if (!Bytes.equals(identityHash, trustedIdentityHash))
         continue
 
       /**
@@ -999,10 +999,10 @@ export class TlsClientHandshakedState implements TlsClientHandshakedStateParams 
   readonly version: number
   readonly cipher: Cipher
 
-  readonly client_random: Uint8Array<32>
+  readonly client_random: Uint8Array<ArrayBuffer> & Lengthed<32>
   readonly client_extensions: Extensions
 
-  readonly server_random: Uint8Array<32>
+  readonly server_random: Uint8Array<ArrayBuffer> & Lengthed<32>
   readonly server_extensions: Extensions
 
   client_sequence: bigint
