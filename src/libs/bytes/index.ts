@@ -1,7 +1,4 @@
 import { Cursor } from "@hazae41/cursor"
-import { Lengthed } from "@hazae41/lengthed"
-
-export type Bytes<N extends number = number> = Uint8Array<ArrayBuffer> & Lengthed<N>
 
 export namespace Bytes {
 
