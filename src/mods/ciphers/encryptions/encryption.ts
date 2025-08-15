@@ -47,6 +47,6 @@ export interface AEADEncrypter {
 
   readonly secrets: Secrets
 
-  encryptOrThrow(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array): Promise<Uint8Array>
-  decryptOrThrow(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array): Promise<Uint8Array>
+  encryptOrThrow(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array): Promise<Uint8Array<ArrayBuffer>>
+  decryptOrThrow(nonce: Uint8Array, block: Uint8Array, additionalData: Uint8Array): Promise<Uint8Array<ArrayBuffer>>
 }

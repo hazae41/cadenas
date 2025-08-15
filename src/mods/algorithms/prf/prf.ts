@@ -1,6 +1,6 @@
-import { Bytes } from "@hazae41/bytes"
+import { Bytes } from "libs/bytes/index.js"
 
-export async function hmacOrThrow(key: CryptoKey, seed: Uint8Array): Promise<Uint8Array> {
+export async function hmacOrThrow(key: CryptoKey, seed: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
   return new Uint8Array(await crypto.subtle.sign("HMAC", key, seed))
 }
 
@@ -14,7 +14,7 @@ export async function hmacOrThrow(key: CryptoKey, seed: Uint8Array): Promise<Uin
  * @param index 
  * @returns 
  */
-async function A(key: CryptoKey, seed: Uint8Array, index: number): Promise<Uint8Array> {
+async function A(key: CryptoKey, seed: Uint8Array<ArrayBuffer>, index: number): Promise<Uint8Array<ArrayBuffer>> {
   if (index === 0)
     return seed
 
@@ -34,18 +34,18 @@ async function A(key: CryptoKey, seed: Uint8Array, index: number): Promise<Uint8
  * @param length 
  * @returns 
  */
-async function P(key: CryptoKey, seed: Uint8Array, length: number): Promise<Uint8Array> {
+async function P(key: CryptoKey, seed: Uint8Array<ArrayBuffer>, length: number): Promise<Uint8Array<ArrayBuffer>> {
   let result = new Uint8Array()
 
   for (let i = 1; result.length < length; i++)
-    result = Bytes.concat([result, await hmacOrThrow(key, Bytes.concat([await A(key, seed, i), seed]))])
+    result = Bytes.concat(result, await hmacOrThrow(key, Bytes.concat(await A(key, seed, i), seed)))
 
   return result.subarray(0, length)
 }
 
-export async function prfOrThrow(hash: AlgorithmIdentifier, secret: Uint8Array, label: string, seed: Uint8Array, length: number): Promise<Uint8Array> {
+export async function prfOrThrow(hash: AlgorithmIdentifier, secret: Uint8Array<ArrayBuffer>, label: string, seed: Uint8Array<ArrayBuffer>, length: number): Promise<Uint8Array<ArrayBuffer>> {
   const key = await crypto.subtle.importKey("raw", secret, { name: "HMAC", hash }, false, ["sign"])
-  const prf = await P(key, Bytes.concat([Bytes.fromUtf8(label), seed]), length)
+  const prf = await P(key, Bytes.concat(new TextEncoder().encode(label), seed), length)
 
   return prf
 }

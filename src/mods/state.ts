@@ -1,11 +1,12 @@
 import { IA5String, Integer, ObjectIdentifier, Sequence } from "@hazae41/asn1"
 import { Base16 } from "@hazae41/base16"
 import { Opaque, Readable, Writable } from "@hazae41/binary"
-import { Bytes, Uint8Array } from "@hazae41/bytes"
 import { Cursor } from "@hazae41/cursor"
+import { Lengthed } from "@hazae41/lengthed"
 import { Certificate, OtherName, SubjectAltName, X509 } from "@hazae41/x509"
 import { BigBytes } from "libs/bigint/bigint.js"
 import { BigMath } from "libs/bigmath/index.js"
+import { Bytes } from "libs/bytes/index.js"
 import { prfOrThrow } from "./algorithms/prf/prf.js"
 import { List } from "./binary/lists/writable.js"
 import { Number24 } from "./binary/numbers/number24.js"
@@ -80,7 +81,7 @@ export class TlsClientNoneState {
 
     Console.debug(client_hello)
 
-    const client_random = Writable.writeToBytesOrThrow(client_hello.random) as Uint8Array<32>
+    const client_random = Writable.writeToBytesOrThrow(client_hello.random) as Uint8Array<ArrayBuffer> & Lengthed<32>
     const client_extensions = Extensions.getClientExtensions(client_hello)
 
     const client_hello_handshake = Handshake.from(client_hello)
@@ -115,7 +116,7 @@ export type TlsClientHandshakeState =
   | TlsClientHandshakeClientFinishedState
 
 export interface TlsClientHandshakeClientHelloStateParams {
-  readonly client_random: Uint8Array<32>
+  readonly client_random: Uint8Array<ArrayBuffer> & Lengthed<32>
   readonly client_extensions: Extensions
 }
 
@@ -126,7 +127,7 @@ export class TlsClientHandshakeClientHelloState implements TlsClientHandshakeCli
   readonly client_encrypted = false
   readonly server_encrypted = false
 
-  readonly client_random: Uint8Array<32>
+  readonly client_random: Uint8Array<ArrayBuffer> & Lengthed<32>
   readonly client_extensions: Extensions
 
   readonly messages = new Array<Uint8Array>()
@@ -186,7 +187,7 @@ export class TlsClientHandshakeClientHelloState implements TlsClientHandshakeCli
     if (cipher === undefined)
       throw new UnsupportedCipherError(server_hello.cipher_suite)
 
-    const server_random = Writable.writeToBytesOrThrow(server_hello.random) as Uint8Array<32>
+    const server_random = Writable.writeToBytesOrThrow(server_hello.random) as Uint8Array<ArrayBuffer> & Lengthed<32>
     const server_extensions = Extensions.getServerExtensions(server_hello, this.client_extensions)
 
     Console.debug(server_extensions)
@@ -201,10 +202,10 @@ export interface TlsClientHandshakeServerHelloStateParams {
   readonly version: number
   readonly cipher: Cipher
 
-  readonly client_random: Uint8Array<32>
+  readonly client_random: Uint8Array<ArrayBuffer> & Lengthed<32>
   readonly client_extensions: Extensions
 
-  readonly server_random: Uint8Array<32>
+  readonly server_random: Uint8Array<ArrayBuffer> & Lengthed<32>
   readonly server_extensions: Extensions
 
   readonly messages: Uint8Array[]
@@ -220,10 +221,10 @@ export class TlsClientHandshakeServerHelloState implements TlsClientHandshakeSer
   readonly version: number
   readonly cipher: Cipher
 
-  readonly client_random: Uint8Array<32>
+  readonly client_random: Uint8Array<ArrayBuffer> & Lengthed<32>
   readonly client_extensions: Extensions
 
-  readonly server_random: Uint8Array<32>
+  readonly server_random: Uint8Array<ArrayBuffer> & Lengthed<32>
   readonly server_extensions: Extensions
 
   readonly messages: Uint8Array[]
@@ -383,7 +384,7 @@ export class TlsClientHandshakeServerHelloState implements TlsClientHandshakeSer
         if (trusted == null)
           continue
 
-        using raw = Base16.get().getOrThrow().padStartAndDecodeOrThrow(trusted.certBase16)
+        using raw = Base16.padStartAndDecodeOrThrow(trusted.certBase16)
         const x509 = X509.readAndResolveFromBytesOrThrow(X509.Certificate, raw.bytes.slice())
 
         next = x509

@@ -1,14 +1,14 @@
 import { Opaque, Writable } from "@hazae41/binary";
-import { Bytes, Uint8Array } from "@hazae41/bytes";
 import { Cursor } from "@hazae41/cursor";
+import { Lengthed } from "@hazae41/lengthed";
 import { AEADCiphertextRecord, PlaintextRecord } from "mods/binary/records/record.js";
 import { AEADEncrypter } from "mods/ciphers/encryptions/encryption.js";
 
 export class GenericAEADCipher {
 
   constructor(
-    readonly nonce_explicit: Uint8Array<8>,
-    readonly block: Uint8Array
+    readonly nonce_explicit: Uint8Array<ArrayBuffer> & Lengthed<8>,
+    readonly block: Uint8Array<ArrayBuffer>
   ) { }
 
   sizeOrThrow() {
@@ -21,8 +21,8 @@ export class GenericAEADCipher {
   }
 
   static readOrThrow(cursor: Cursor) {
-    const nonce_explicit = cursor.readAndCopyOrThrow(8)
-    const block = cursor.readAndCopyOrThrow(cursor.remaining)
+    const nonce_explicit = new Uint8Array(cursor.readOrThrow(8)) as Uint8Array<ArrayBuffer> & Lengthed<8>
+    const block = new Uint8Array(cursor.readOrThrow(cursor.remaining))
 
     return new GenericAEADCipher(nonce_explicit, block)
   }
@@ -33,12 +33,12 @@ export class GenericAEADCipher {
     nonce.writeUint64OrThrow(sequence)
 
     nonce.offset = 0
-    const nonce_implicit = nonce.readAndCopyOrThrow(4)
-    const nonce_explicit = nonce.readAndCopyOrThrow(8)
+    const nonce_implicit = new Uint8Array(nonce.readOrThrow(4))
+    const nonce_explicit = new Uint8Array(nonce.readOrThrow(8)) as Uint8Array<ArrayBuffer> & Lengthed<8>
 
     const content = Writable.writeToBytesOrThrow(record.fragment)
 
-    const additional_data = new Cursor(Bytes.alloc(8 + 1 + 2 + 2))
+    const additional_data = new Cursor(new Uint8Array(8 + 1 + 2 + 2))
     additional_data.writeUint64OrThrow(sequence)
     additional_data.writeUint8OrThrow(record.type)
     additional_data.writeUint16OrThrow(record.version)
@@ -60,7 +60,7 @@ export class GenericAEADCipher {
     nonce.writeOrThrow(encrypter.secrets.server_write_IV)
     nonce.writeOrThrow(this.nonce_explicit)
 
-    const additional_data = new Cursor(Bytes.alloc(8 + 1 + 2 + 2))
+    const additional_data = new Cursor(new Uint8Array(8 + 1 + 2 + 2))
     additional_data.writeUint64OrThrow(sequence)
     additional_data.writeUint8OrThrow(record.type)
     additional_data.writeUint16OrThrow(record.version)
